@@ -1,0 +1,240 @@
+/* =========================
+   PODSTAWY
+   ========================= */
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  padding: 10px;
+  font-family: 'Arial', sans-serif;
+  line-height: 1.5;
+
+  /* Kolorystyka i tło:
+     Aby kontener się wyróżniał, używamy delikatnie ciemniejszego tła niż #f9f9f9. 
+     Możesz oczywiście zmienić #ececec na inną wartość, jeśli wolisz. */
+  background-color: #ececec;
+  color: #333;
+}
+
+/* =========================
+   NAGŁÓWKI
+   ========================= */
+h1, h2 {
+  text-align: center;
+  /* Zmieniamy kolor na ciemniejszy, 
+     usuwając podwójny # i zapewniając czytelność na białym tle kontenera. */
+  color: #2c3e50;
+  margin-bottom: 20px;
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 1.8rem; 
+}
+
+h2 {
+  font-size: 1.4rem;
+}
+
+/* =========================
+   KONTENER GŁÓWNY
+   ========================= */
+.container {
+  /* Ustawiamy szerokość na 100% w mobile-first,
+     a max-width ogranicza jej rozciąganie na większych ekranach. */
+  width: 100%;
+  max-width: 900px; 
+  margin: 0 auto;
+  background: #ffffff; /* Białe tło kontenera */
+  padding: 20px;
+  border-radius: 10px;
+  /* Delikatny cień wokół kontenera, by wyglądał jak „karta” na tle #ececec */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* =========================
+   NAWIGACJA I SELECT
+   ========================= */
+nav {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+nav select {
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  border: 1px solid #ccc;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+nav select:hover,
+nav select:focus {
+  /* Jasne szare tło po najechaniu lub focusie */
+  background-color: #f0f0f0; 
+  border-color: #ccc;
+}
+
+/* =========================
+   TABELA
+   ========================= */
+table {
+  width: 100%; /* Tabela zajmuje całą szerokość rodzica */
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  table-layout: auto; /* Wymusza stałe szerokości kolumn */
+}
+th, td {
+  padding: 8px; /* Zapewnia więcej miejsca wokół tekstu */
+  text-align: left;
+}
+/* Obramowanie tabeli i jej komórek */
+table, th, td {
+  border: 1px solid #ddd;
+}
+
+/* Styl dla nagłówków kolumn */
+th {
+  background-color: #f0f0f0;
+  padding: 10px;
+  text-align: left;
+}
+
+/* Komórki danych */
+td {
+  padding: 8px;
+}
+
+/* Zebra stripes: co drugi wiersz ma jasne tło */
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize; /* Kursor zmienia się na przeciąganie */
+  z-index: 1;
+  user-select: none; /* Zapobiega zaznaczaniu tekstu podczas przeciągania */
+}
+
+.resizer:hover {
+  background-color: #ccc; /* Widoczny uchwyt podczas najechania myszką */
+}
+/* =========================
+   WRAPPER DLA TABELI
+   =========================
+   Dzięki temu, jeśli tabela przekroczy szerokość ekranu,
+   pojawi się poziomy pasek przewijania,
+   zamiast wychodzić poza kontener.
+*/
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+/* =========================
+   KLASA HIDDEN
+   ========================= */
+.hidden {
+  display: none;
+}
+
+/* =========================
+   FORMULARZE (LABEL + INPUT)
+   ========================= */
+label {
+  display: inline-block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+input[type="text"],
+input[type="number"],
+textarea {
+  width: 100%; 
+  max-width: 400px; 
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  border-color: #999;
+  outline: none;
+}
+/* Przyciski zapisu */
+.btn-save {
+  background-color: #28a745; /* zielony (Bootstrapowy) */
+  color: #fff;              /* biały tekst */
+  border: none;             /* bez obramowania */
+  border-radius: 4px;       /* lekko zaokrąglone rogi */
+  padding: 8px 12px;        /* wewnętrzne odstępy poziome i pionowe */
+  cursor: pointer;          /* zmienia kursor na „rączkę” */
+  font-size: 14px;          /* ewentualnie dostosuj rozmiar */
+  margin-right: 10px;       /* odstęp, żeby przyciski nie były sklejone */
+}
+
+.btn-save:hover {
+  background-color: #218838; /* ciemniejszy zielony przy najechaniu myszką */
+}
+
+/* Przyciski reset */
+.btn-reset {
+  background-color: #dc3545; /* czerwony (Bootstrapowy) */
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-reset:hover {
+  background-color: #c82333; /* ciemniejszy czerwony przy najechaniu */
+}
+/* =========================
+   MEDIA QUERIES – na większe ekrany
+   ========================= */
+@media (min-width: 768px) {
+  body {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.6rem;
+  }
+
+  .container {
+    margin: 20px auto;
+  }
+
+  nav select {
+    font-size: 18px;
+  }
+
+  table, th, td {
+    font-size: 16px;
+  }
+}
