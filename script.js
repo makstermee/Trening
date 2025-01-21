@@ -1,5 +1,5 @@
 // Tablica przechowująca historię treningów
-let trainingHistory = JSON.parse(localStorage.getItem('trainingHistory')) || [];
+let trainingHistory = JSON.parse(localStorage.getItem('history-data')) || [];
 
 // Lista wszystkich dni
 const allDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
@@ -45,104 +45,95 @@ function addRow(day) {
     saveTableData(day);
 }
 
-// Funkcja filtrująca daty na podstawie wybranego dnia
-function showDatesForDay() {
-    const selectedDay = document.getElementById("filter-day").value;
-    const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
-    const dateFilter = document.getElementById("date-filter");
+// Funkcja zapisująca dane tabeli do localStorage
+function saveTableData(day) {
+    const tableBody = document.getElementById(`${day}-body`);
+    const rows = tableBody.querySelectorAll('tr');
+    const data = [];
 
-    // Jeśli wybrano "Wszystkie dni", wczytujemy pełną historię
-    if (!selectedDay) {
-        dateFilter.classList.add("hidden");
-        loadHistory(); // Wczytaj wszystkie dane
-        return;
-    }
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = {
+            exercise: cells[0].querySelector('input').value.trim(),
+            series: cells[1].querySelector('input').value.trim(),
+            reps: cells[2].querySelector('input').value.trim(),
+            weight: cells[3].querySelector('input').value.trim(),
+            notes: cells[4].querySelector('input').value.trim()
+        };
 
-    // Filtrujemy unikalne daty dla wybranego dnia
-    const uniqueDates = [...new Set(historyData
-        .filter(entry => entry.day === selectedDay)
-        .map(entry => entry.date)
-    )];
-
-    // Jeśli brak dat, ukrywamy filtr daty i czyścimy tabelę
-    if (uniqueDates.length === 0) {
-        dateFilter.classList.add("hidden");
-        document.getElementById("history-table-body").innerHTML = '';
-        return;
-    }
-
-    // Tworzymy listę dat dla wybranego dnia
-    const dateSelect = document.getElementById("filter-date");
-    dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
-    uniqueDates.forEach(date => {
-        const option = document.createElement("option");
-        option.value = date;
-        option.textContent = date;
-        dateSelect.appendChild(option);
+        if (Object.values(rowData).some(value => value !== "")) {
+            data.push(rowData);
+        }
     });
 
-    dateFilter.classList.remove("hidden");
+    localStorage.setItem(`${day}-data`, JSON.stringify(data));
 }
 
-// Funkcja wczytująca dane dla wybranej daty
-function loadHistoryForDate() {
-    const selectedDay = document.getElementById("filter-day").value;
-    const selectedDate = document.getElementById("filter-date").value;
-    const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
-    const historyBody = document.getElementById("history-table-body");
+// Funkcja wczytująca dane tabeli z localStorage
+function loadTableData(day) {
+    const tableBody = document.getElementById(`${day}-body`);
+    const data = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
 
-    // Jeśli brak daty, czyścimy tabelę
-    if (!selectedDate) {
-        historyBody.innerHTML = '';
-        return;
-    }
-
-    // Filtrujemy dane dla wybranego dnia i daty
-    const filteredData = historyData.filter(entry => entry.day === selectedDay && entry.date === selectedDate);
-
-    historyBody.innerHTML = ''; // Czyszczenie tabeli
-
-    if (filteredData.length === 0) {
-        const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = `
-            <td colspan="8" style="text-align: center; color: #999;">Brak danych dla wybranej daty</td>
+    tableBody.innerHTML = '';
+    data.forEach(rowData => {
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><input type="text" placeholder="Ćwiczenie" value="${escapeHTML(rowData.exercise)}" oninput="saveTableData('${day}')"></td>
+            <td><input type="number" placeholder="Serie" value="${escapeHTML(rowData.series)}" oninput="saveTableData('${day}')"></td>
+            <td><input type="number" placeholder="Powtórzenia" value="${escapeHTML(rowData.reps)}" oninput="saveTableData('${day}')"></td>
+            <td><input type="number" placeholder="Ciężar (kg)" value="${escapeHTML(rowData.weight)}" oninput="saveTableData('${day}')"></td>
+            <td><input type="text" placeholder="Notatki" value="${escapeHTML(rowData.notes)}" oninput="saveTableData('${day}')"></td>
+            <td><button class="btn-reset" onclick="deleteRow(this, '${day}')">Usuń</button></td>
         `;
-        historyBody.appendChild(emptyRow);
-        return;
-    }
-
-    // Dodajemy dane do tabeli
-    filteredData.forEach((entry, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${escapeHTML(entry.exercise)}</td>
-            <td>${escapeHTML(entry.series)}</td>
-            <td>${escapeHTML(entry.reps)}</td>
-            <td>${escapeHTML(entry.weight)}</td>
-            <td>${escapeHTML(entry.notes)}</td>
-            <td><button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button></td>
-        `;
-        historyBody.appendChild(row);
+        tableBody.appendChild(newRow);
     });
 }
 
-// Funkcja wczytująca całą historię
-function loadHistory() {
-    const historyBody = document.getElementById('history-table-body');
-    historyBody.innerHTML = '';
+// Funkcja zapisująca dane treningowe do historii
+function saveToHistory(day) {
+    const date = new Date().toLocaleDateString();
+    const tableBody = document.getElementById(`${day}-body`);
+    const rows = tableBody.querySelectorAll('tr');
     const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
 
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const entry = {
+            date: date,
+            day: capitalizeFirstLetter(day),
+            exercise: cells[0].querySelector('input').value.trim(),
+            series: cells[1].querySelector('input').value.trim(),
+            reps: cells[2].querySelector('input').value.trim(),
+            weight: cells[3].querySelector('input').value.trim(),
+            notes: cells[4].querySelector('input').value.trim()
+        };
+
+        if (Object.values(entry).some(value => value !== "")) {
+            historyData.push(entry);
+        }
+    });
+
+    localStorage.setItem('history-data', JSON.stringify(historyData));
+    alert('Dane zapisane w historii!');
+    loadHistory(); // Odświeżenie historii
+}
+
+// Funkcja wczytująca historię
+function loadHistory() {
+    const historyBody = document.getElementById('history-table-body');
+    const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
+
+    historyBody.innerHTML = '';
     if (historyData.length === 0) {
-        const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = `
-            <td colspan="8" style="text-align: center; color: #999;">Brak zapisanej historii</td>
+        historyBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center;">Brak zapisanej historii</td>
+            </tr>
         `;
-        historyBody.appendChild(emptyRow);
         return;
     }
 
-    // Dodajemy wszystkie dane do tabeli
-    historyData.forEach((entry, index) => {
+    historyData.forEach(entry => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${escapeHTML(entry.date)}</td>
@@ -152,27 +143,12 @@ function loadHistory() {
             <td>${escapeHTML(entry.reps)}</td>
             <td>${escapeHTML(entry.weight)}</td>
             <td>${escapeHTML(entry.notes)}</td>
-            <td><button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button></td>
         `;
         historyBody.appendChild(row);
     });
 }
 
-// Usuwanie wpisu z historii
-function deleteHistoryEntry(index) {
-    const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
-    if (index >= 0 && index < historyData.length) {
-        historyData.splice(index, 1);
-        localStorage.setItem('history-data', JSON.stringify(historyData));
-        loadHistory();
-    }
-}
-
-// Funkcje pomocnicze
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
+// Funkcja pomocnicza do ochrony przed XSS
 function escapeHTML(str) {
     if (!str) return '';
     return str.replace(/&/g, "&amp;")
