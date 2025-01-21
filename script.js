@@ -44,7 +44,84 @@ function addRow(day) {
     tableBody.appendChild(newRow);
     saveTableData(day);
 }
+function showDatesForDay() {
+    const selectedDay = document.getElementById("filter-day").value;
+    const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+    const dateFilter = document.getElementById("date-filter");
 
+    // Jeśli nie wybrano dnia, ukrywamy filtr dat i czyścimy tabelę
+    if (!selectedDay) {
+        dateFilter.classList.add("hidden");
+        document.getElementById("history-table-body").innerHTML = '';
+        return;
+    }
+
+    // Filtrujemy unikalne daty dla wybranego dnia
+    const uniqueDates = [...new Set(historyData
+        .filter(entry => entry.day === selectedDay)
+        .map(entry => entry.date)
+    )];
+
+    // Jeśli brak dat, ukrywamy filtr dat i czyścimy tabelę
+    if (uniqueDates.length === 0) {
+        dateFilter.classList.add("hidden");
+        document.getElementById("history-table-body").innerHTML = '';
+        return;
+    }
+
+    // Pokazujemy filtr daty z listą dostępnych dat
+    const dateSelect = document.getElementById("filter-date");
+    dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
+    uniqueDates.forEach(date => {
+        const option = document.createElement("option");
+        option.value = date;
+        option.textContent = date;
+        dateSelect.appendChild(option);
+    });
+
+    dateFilter.classList.remove("hidden");
+}
+function loadHistoryForDate() {
+    const selectedDay = document.getElementById("filter-day").value;
+    const selectedDate = document.getElementById("filter-date").value;
+    const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+    const historyBody = document.getElementById("history-table-body");
+
+    // Jeśli nie wybrano daty, czyścimy tabelę
+    if (!selectedDate) {
+        historyBody.innerHTML = '';
+        return;
+    }
+
+    // Filtrujemy dane dla wybranego dnia i daty
+    const filteredData = historyData.filter(entry => entry.day === selectedDay && entry.date === selectedDate);
+
+    // Czyścimy tabelę
+    historyBody.innerHTML = '';
+
+    // Dodajemy wiersze do tabeli
+    if (filteredData.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `
+            <td colspan="8" style="text-align: center; color: #999;">Brak danych dla wybranej daty</td>
+        `;
+        historyBody.appendChild(emptyRow);
+        return;
+    }
+
+    filteredData.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${escapeHTML(entry.exercise)}</td>
+            <td>${escapeHTML(entry.series)}</td>
+            <td>${escapeHTML(entry.reps)}</td>
+            <td>${escapeHTML(entry.weight)}</td>
+            <td>${escapeHTML(entry.notes)}</td>
+            <td><button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button></td>
+        `;
+        historyBody.appendChild(row);
+    });
+}
 // Usuwanie wiersza z tabeli
 function deleteRow(button, day) {
     const row = button.parentElement.parentElement;
