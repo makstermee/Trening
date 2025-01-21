@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadMuscleGroup(day);
     });
 
-    loadHistory();
+    loadHistory(); // Wczytaj pełną historię przy starcie
 });
 
 // Dodawanie wiersza do tabeli
