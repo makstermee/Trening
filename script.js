@@ -32,7 +32,7 @@ function showSection() {
   const sectionToShow = document.getElementById(selectedDay);
 
   if (sectionToShow) {
-      sectionToShow.classList.remove('hidden');
+    sectionToShow.classList.remove('hidden');
   }
 }
 
@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMuscleGroup(day);
   });
 
-  // Ładujemy pełną historię przy starcie
-  loadHistory();
+  // UWAGA: Usunięto loadHistory(), by domyślnie nie wyświetlała się cała historia
+  // loadHistory();
 });
 
 /*************************************************************
@@ -257,6 +257,7 @@ function showDatesForDay() {
   }
 
   // Inaczej – tworzymy listę dat
+  dateFilter.classList.remove("hidden");
   const dateSelect = document.getElementById("filter-date");
   dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
   uniqueDates.forEach(date => {
@@ -265,9 +266,6 @@ function showDatesForDay() {
     option.textContent = date;
     dateSelect.appendChild(option);
   });
-
-  // Pokazujemy filtr daty
-  dateFilter.classList.remove("hidden");
 }
 
 /** Wczytuje historię dla wybranego dnia (polska nazwa) i daty */
@@ -321,14 +319,10 @@ function deleteHistoryEntryFiltered(dayName, date, indexInFiltered) {
   filtered.splice(indexInFiltered, 1);
 
   // Teraz musimy "złożyć" resztę historyData (elementy niefiltrowane + nowy filtered)
-  // 1) Usuń z historyData wszystkie elementy, które day=dayName i date=date
   historyData = historyData.filter(e => !(e.day === dayName && e.date === date));
-  // 2) Doklej obcięty filtered
   historyData = historyData.concat(filtered);
 
   localStorage.setItem('history-data', JSON.stringify(historyData));
-
-  // Odśwież widok filtra
   loadHistoryForDate();
 }
 
