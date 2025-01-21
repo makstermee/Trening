@@ -1,159 +1,348 @@
-// Tablica przechowująca historię treningów
-let trainingHistory = JSON.parse(localStorage.getItem('history-data')) || [];
+/*************************************************************
+  MAPA DNI TYGODNIA:
+  Angielskie ID (monday, tuesday...) -> Polskie nazwy (Poniedziałek, Wtorek...)
+*************************************************************/
+const dayMap = {
+  monday: "Poniedziałek",
+  tuesday: "Wtorek",
+  wednesday: "Środa",
+  thursday: "Czwartek",
+  friday: "Piątek",
+  saturday: "Sobota",
+  sunday: "Niedziela"
+};
 
-// Lista wszystkich dni
+// Lista wszystkich dni w angielskich ID (do inicjalizacji)
 const allDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-// Funkcja do pokazywania wybranej sekcji
+// Główna tablica historii (bezpośrednio z localStorage)
+let trainingHistory = JSON.parse(localStorage.getItem('history-data')) || [];
+
+/*************************************************************
+  1. FUNKCJA POKAZUJĄCA WYBRANĄ SEKCJĘ DNIA
+*************************************************************/
 function showSection() {
-    const sections = document.querySelectorAll('.day-section');
-    sections.forEach(section => section.classList.add('hidden'));
+  // Ukrywamy wszystkie sekcje
+  const sections = document.querySelectorAll('.day-section');
+  sections.forEach(section => section.classList.add('hidden'));
 
-    const selectedDay = document.getElementById('day-selector').value;
-    const sectionToShow = document.getElementById(selectedDay);
+  // Pobieramy wartość z selecta
+  const selectedDay = document.getElementById('day-selector').value;
+  // Pokazujemy wybraną sekcję
+  const sectionToShow = document.getElementById(selectedDay);
 
-    if (sectionToShow) {
-        sectionToShow.classList.remove('hidden');
-    }
+  if (sectionToShow) {
+      sectionToShow.classList.remove('hidden');
+  }
 }
 
-// Inicjalizacja danych po załadowaniu strony
+/*************************************************************
+  2. INICJALIZACJA DANYCH PO ZAŁADOWANIU STRONY
+*************************************************************/
 document.addEventListener('DOMContentLoaded', () => {
-    allDays.forEach(day => {
-        loadTableData(day);
-        loadMuscleGroup(day);
-    });
+  // Ładujemy dane tabel dla każdego dnia
+  allDays.forEach(day => {
+    loadTableData(day);
+    loadMuscleGroup(day);
+  });
 
-    loadHistory(); // Wczytaj pełną historię przy starcie
+  // Ładujemy pełną historię przy starcie
+  loadHistory();
 });
 
-// Dodawanie wiersza do tabeli
+/*************************************************************
+  3. DODAWANIE NOWEGO WIERSZA ĆWICZEŃ W DANEJ SEKCJI
+*************************************************************/
 function addRow(day) {
-    const tableBody = document.getElementById(`${day}-body`);
-    const newRow = document.createElement('tr');
+  const tableBody = document.getElementById(`${day}-body`);
+  const newRow = document.createElement('tr');
 
-    newRow.innerHTML = `
-        <td><input type="text" placeholder="Ćwiczenie" oninput="saveTableData('${day}')"></td>
-        <td><input type="number" placeholder="Serie" min="1" oninput="saveTableData('${day}')"></td>
-        <td><input type="number" placeholder="Powtórzenia" min="1" oninput="saveTableData('${day}')"></td>
-        <td><input type="number" placeholder="Ciężar (kg)" min="0" oninput="saveTableData('${day}')"></td>
-        <td><input type="text" placeholder="Notatki" oninput="saveTableData('${day}')"></td>
-        <td><button class="btn-reset" onclick="deleteRow(this, '${day}')">Usuń</button></td>
-    `;
+  newRow.innerHTML = `
+      <td><input type="text" placeholder="Ćwiczenie" oninput="saveTableData('${day}')"></td>
+      <td><input type="number" placeholder="Serie" min="1" oninput="saveTableData('${day}')"></td>
+      <td><input type="number" placeholder="Powtórzenia" min="1" oninput="saveTableData('${day}')"></td>
+      <td><input type="number" placeholder="Ciężar (kg)" min="0" oninput="saveTableData('${day}')"></td>
+      <td><input type="text" placeholder="Notatki" oninput="saveTableData('${day}')"></td>
+      <td><button class="btn-reset" onclick="deleteRow(this, '${day}')">Usuń</button></td>
+  `;
 
-    tableBody.appendChild(newRow);
-    saveTableData(day);
+  tableBody.appendChild(newRow);
+  saveTableData(day);
 }
 
-// Funkcja zapisująca dane tabeli do localStorage
+/*************************************************************
+  4. ZAPIS (I ODCZYT) TABELI (DANE DNIA) W LOCALSTORAGE
+*************************************************************/
+
+/** ZAPISUJE dane w tabeli dnia (np. monday) do localStorage */
 function saveTableData(day) {
-    const tableBody = document.getElementById(`${day}-body`);
-    const rows = tableBody.querySelectorAll('tr');
-    const data = [];
+  const tableBody = document.getElementById(`${day}-body`);
+  const rows = tableBody.querySelectorAll('tr');
+  const data = [];
 
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        const rowData = {
-            exercise: cells[0].querySelector('input').value.trim(),
-            series: cells[1].querySelector('input').value.trim(),
-            reps: cells[2].querySelector('input').value.trim(),
-            weight: cells[3].querySelector('input').value.trim(),
-            notes: cells[4].querySelector('input').value.trim()
-        };
-
-        if (Object.values(rowData).some(value => value !== "")) {
-            data.push(rowData);
-        }
-    });
-
-    localStorage.setItem(`${day}-data`, JSON.stringify(data));
-}
-
-// Funkcja wczytująca dane tabeli z localStorage
-function loadTableData(day) {
-    const tableBody = document.getElementById(`${day}-body`);
-    const data = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
-
-    tableBody.innerHTML = '';
-    data.forEach(rowData => {
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
-            <td><input type="text" placeholder="Ćwiczenie" value="${escapeHTML(rowData.exercise)}" oninput="saveTableData('${day}')"></td>
-            <td><input type="number" placeholder="Serie" value="${escapeHTML(rowData.series)}" oninput="saveTableData('${day}')"></td>
-            <td><input type="number" placeholder="Powtórzenia" value="${escapeHTML(rowData.reps)}" oninput="saveTableData('${day}')"></td>
-            <td><input type="number" placeholder="Ciężar (kg)" value="${escapeHTML(rowData.weight)}" oninput="saveTableData('${day}')"></td>
-            <td><input type="text" placeholder="Notatki" value="${escapeHTML(rowData.notes)}" oninput="saveTableData('${day}')"></td>
-            <td><button class="btn-reset" onclick="deleteRow(this, '${day}')">Usuń</button></td>
-        `;
-        tableBody.appendChild(newRow);
-    });
-}
-
-// Funkcja zapisująca dane treningowe do historii
-function saveToHistory(day) {
-    const date = new Date().toLocaleDateString();
-    const tableBody = document.getElementById(`${day}-body`);
-    const rows = tableBody.querySelectorAll('tr');
-    const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        const entry = {
-            date: date,
-            day: capitalizeFirstLetter(day),
-            exercise: cells[0].querySelector('input').value.trim(),
-            series: cells[1].querySelector('input').value.trim(),
-            reps: cells[2].querySelector('input').value.trim(),
-            weight: cells[3].querySelector('input').value.trim(),
-            notes: cells[4].querySelector('input').value.trim()
-        };
-
-        if (Object.values(entry).some(value => value !== "")) {
-            historyData.push(entry);
-        }
-    });
-
-    localStorage.setItem('history-data', JSON.stringify(historyData));
-    alert('Dane zapisane w historii!');
-    loadHistory(); // Odświeżenie historii
-}
-
-// Funkcja wczytująca historię
-function loadHistory() {
-    const historyBody = document.getElementById('history-table-body');
-    const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
-
-    historyBody.innerHTML = '';
-    if (historyData.length === 0) {
-        historyBody.innerHTML = `
-            <tr>
-                <td colspan="6" style="text-align: center;">Brak zapisanej historii</td>
-            </tr>
-        `;
-        return;
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    const rowData = {
+      exercise: cells[0].querySelector('input').value.trim(),
+      series:   cells[1].querySelector('input').value.trim(),
+      reps:     cells[2].querySelector('input').value.trim(),
+      weight:   cells[3].querySelector('input').value.trim(),
+      notes:    cells[4].querySelector('input').value.trim()
+    };
+    // Jeśli cokolwiek w wierszu jest wypełnione, dodajemy do data
+    if (Object.values(rowData).some(value => value !== "")) {
+      data.push(rowData);
     }
+  });
 
-    historyData.forEach(entry => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${escapeHTML(entry.date)}</td>
-            <td>${escapeHTML(entry.day)}</td>
-            <td>${escapeHTML(entry.exercise)}</td>
-            <td>${escapeHTML(entry.series)}</td>
-            <td>${escapeHTML(entry.reps)}</td>
-            <td>${escapeHTML(entry.weight)}</td>
-            <td>${escapeHTML(entry.notes)}</td>
-        `;
-        historyBody.appendChild(row);
-    });
+  localStorage.setItem(`${day}-data`, JSON.stringify(data));
 }
 
-// Funkcja pomocnicza do ochrony przed XSS
+/** ŁADUJE dane z localStorage do tabeli wybranego dnia */
+function loadTableData(day) {
+  const tableBody = document.getElementById(`${day}-body`);
+  const data = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+
+  tableBody.innerHTML = '';
+  data.forEach(rowData => {
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+      <td><input type="text" placeholder="Ćwiczenie" value="${escapeHTML(rowData.exercise)}" oninput="saveTableData('${day}')"></td>
+      <td><input type="number" placeholder="Serie" min="1" value="${escapeHTML(rowData.series)}" oninput="saveTableData('${day}')"></td>
+      <td><input type="number" placeholder="Powtórzenia" min="1" value="${escapeHTML(rowData.reps)}" oninput="saveTableData('${day}')"></td>
+      <td><input type="number" placeholder="Ciężar (kg)" min="0" value="${escapeHTML(rowData.weight)}" oninput="saveTableData('${day}')"></td>
+      <td><input type="text" placeholder="Notatki" value="${escapeHTML(rowData.notes)}" oninput="saveTableData('${day}')"></td>
+      <td><button class="btn-reset" onclick="deleteRow(this, '${day}')">Usuń</button></td>
+    `;
+    tableBody.appendChild(newRow);
+  });
+}
+
+/** USUWA pojedynczy wiersz z tabeli dnia */
+function deleteRow(button, day) {
+  const row = button.parentElement.parentElement;
+  row.remove();
+  saveTableData(day);
+}
+
+/*************************************************************
+  5. ZAPIS GRUPY MIĘŚNIOWEJ (INPUT "Partia mięśniowa")
+*************************************************************/
+function saveMuscleGroups() {
+  allDays.forEach(day => {
+    const muscleGroupInput = document.getElementById(`${day}-muscle-group`);
+    if (!muscleGroupInput) return;
+    const muscleGroup = muscleGroupInput.value.trim();
+    localStorage.setItem(`${day}-muscle-group`, muscleGroup);
+  });
+}
+
+/** ŁADUJE grupę mięśniową z localStorage */
+function loadMuscleGroup(day) {
+  const muscleGroupInput = document.getElementById(`${day}-muscle-group`);
+  if (!muscleGroupInput) return;
+  const stored = localStorage.getItem(`${day}-muscle-group`) || '';
+  muscleGroupInput.value = stored;
+}
+
+/*************************************************************
+  6. ZAPIS (SAVE) DANYCH TABELI DNIA DO HISTORII
+*************************************************************/
+function saveToHistory(day) {
+  const date = new Date().toLocaleDateString(); // Data zapisu
+  const tableBody = document.getElementById(`${day}-body`);
+  const rows = tableBody.querySelectorAll('tr');
+  let historyData = JSON.parse(localStorage.getItem('history-data')) || [];
+
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    const entry = {
+      date:   date,
+      // Zamieniamy ID dnia (monday) na polską nazwę (Poniedziałek):
+      day:    dayMap[day] || "Nieznany dzień",
+      exercise: cells[0].querySelector('input').value.trim(),
+      series:   cells[1].querySelector('input').value.trim(),
+      reps:     cells[2].querySelector('input').value.trim(),
+      weight:   cells[3].querySelector('input').value.trim(),
+      notes:    cells[4].querySelector('input').value.trim()
+    };
+
+    // Jeżeli w wierszu cokolwiek jest wypełnione
+    if (Object.values(entry).some(value => value !== "")) {
+      historyData.push(entry);
+    }
+  });
+
+  localStorage.setItem('history-data', JSON.stringify(historyData));
+  alert('Dane zostały zapisane do historii.');
+  loadHistory(); // Odśwież historię w sekcji "Historia"
+}
+
+/*************************************************************
+  7. ŁADOWANIE CAŁEJ HISTORII (SEKCJA "HISTORIA")
+*************************************************************/
+function loadHistory() {
+  const historyBody = document.getElementById('history-table-body');
+  if (!historyBody) return; // Bezpiecznik
+
+  historyBody.innerHTML = '';
+  const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
+
+  if (historyData.length === 0) {
+    const emptyRow = document.createElement('tr');
+    emptyRow.innerHTML = `
+      <td colspan="6" style="text-align: center; color: #999;">Brak zapisanej historii</td>
+    `;
+    historyBody.appendChild(emptyRow);
+    return;
+  }
+
+  historyData.forEach((entry, index) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${escapeHTML(entry.exercise)}</td>
+      <td>${escapeHTML(entry.series)}</td>
+      <td>${escapeHTML(entry.reps)}</td>
+      <td>${escapeHTML(entry.weight)}</td>
+      <td>${escapeHTML(entry.notes)}</td>
+      <td>
+        <button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button>
+      </td>
+    `;
+    historyBody.appendChild(row);
+  });
+}
+
+/*************************************************************
+  8. USUWANIE WPISU Z HISTORII
+*************************************************************/
+function deleteHistoryEntry(index) {
+  let historyData = JSON.parse(localStorage.getItem('history-data')) || [];
+  if (index >= 0 && index < historyData.length) {
+    historyData.splice(index, 1);
+    localStorage.setItem('history-data', JSON.stringify(historyData));
+    loadHistory();
+  }
+}
+
+/*************************************************************
+  9. FILTROWANIE W SEKCJI HISTORIA
+  -> Filtr "Dzień tygodnia" (np. Poniedziałek)
+  -> Filtr daty
+*************************************************************/
+function showDatesForDay() {
+  // Wybrany dzień TYGODNIA (po polsku)
+  const selectedDay = document.getElementById("filter-day").value;
+  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+  const dateFilter = document.getElementById("date-filter");
+
+  // Jeśli "Wszystkie dni", ładujemy całą historię i ukrywamy filtr dat
+  if (!selectedDay) {
+    dateFilter.classList.add("hidden");
+    loadHistory();
+    return;
+  }
+
+  // Filtrujemy unikalne daty dla wybranego dnia (po polsku!)
+  const uniqueDates = [...new Set(historyData
+    .filter(entry => entry.day === selectedDay)
+    .map(entry => entry.date)
+  )];
+
+  // Jeśli brak dat, ukrywamy filtr daty i czyścimy tabelę
+  if (uniqueDates.length === 0) {
+    dateFilter.classList.add("hidden");
+    document.getElementById("history-table-body").innerHTML = '';
+    return;
+  }
+
+  // Inaczej – tworzymy listę dat
+  const dateSelect = document.getElementById("filter-date");
+  dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
+  uniqueDates.forEach(date => {
+    const option = document.createElement("option");
+    option.value = date;
+    option.textContent = date;
+    dateSelect.appendChild(option);
+  });
+
+  // Pokazujemy filtr daty
+  dateFilter.classList.remove("hidden");
+}
+
+/** Wczytuje historię dla wybranego dnia (polska nazwa) i daty */
+function loadHistoryForDate() {
+  const selectedDay = document.getElementById("filter-day").value;  // polska nazwa
+  const selectedDate = document.getElementById("filter-date").value;
+  const historyBody  = document.getElementById("history-table-body");
+  const historyData  = JSON.parse(localStorage.getItem("history-data")) || [];
+
+  // Jeśli nie wybrano konkretnej daty -> czyścimy i koniec
+  if (!selectedDate) {
+    historyBody.innerHTML = '';
+    return;
+  }
+
+  // Filtrujemy dane
+  const filtered = historyData.filter(e => e.day === selectedDay && e.date === selectedDate);
+
+  historyBody.innerHTML = '';
+  if (filtered.length === 0) {
+    const emptyRow = document.createElement('tr');
+    emptyRow.innerHTML = `
+      <td colspan="6" style="text-align: center; color: #999;">Brak danych dla wybranej daty</td>
+    `;
+    historyBody.appendChild(emptyRow);
+    return;
+  }
+
+  filtered.forEach((entry, index) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${escapeHTML(entry.exercise)}</td>
+      <td>${escapeHTML(entry.series)}</td>
+      <td>${escapeHTML(entry.reps)}</td>
+      <td>${escapeHTML(entry.weight)}</td>
+      <td>${escapeHTML(entry.notes)}</td>
+      <td><button class="btn-reset" onclick="deleteHistoryEntryFiltered('${selectedDay}','${selectedDate}',${index})">Usuń</button></td>
+    `;
+    historyBody.appendChild(row);
+  });
+}
+
+/** Usuwa wpis z historii w trybie filtrowanym */
+function deleteHistoryEntryFiltered(dayName, date, indexInFiltered) {
+  let historyData = JSON.parse(localStorage.getItem('history-data')) || [];
+  // Najpierw filtrujemy oryginalną tablicę
+  const filtered = historyData.filter(e => e.day === dayName && e.date === date);
+  if (indexInFiltered < 0 || indexInFiltered >= filtered.length) return;
+
+  // Usuwamy wybrany element z 'filtered'
+  filtered.splice(indexInFiltered, 1);
+
+  // Teraz musimy "złożyć" resztę historyData (elementy niefiltrowane + nowy filtered)
+  // 1) Usuń z historyData wszystkie elementy, które day=dayName i date=date
+  historyData = historyData.filter(e => !(e.day === dayName && e.date === date));
+  // 2) Doklej obcięty filtered
+  historyData = historyData.concat(filtered);
+
+  localStorage.setItem('history-data', JSON.stringify(historyData));
+
+  // Odśwież widok filtra
+  loadHistoryForDate();
+}
+
+/*************************************************************
+  10. FUNKCJE POMOCNICZE
+*************************************************************/
+
+/** Zabezpieczenie przed XSS */
 function escapeHTML(str) {
-    if (!str) return '';
-    return str.replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/"/g, "&quot;")
-              .replace(/'/g, "&#039;");
+  if (!str) return '';
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
