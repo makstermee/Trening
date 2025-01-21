@@ -40,7 +40,65 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Inicjalizacja historii
-    loadHistory();
+    function loadHistory() {
+  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+  // Historia będzie teraz wyświetlana tylko po wyborze dnia i daty
+}
+   function showDatesForDay() {
+  const selectedDay = document.getElementById("filter-day").value;
+  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+  
+  // Filtrujemy daty, które pasują do wybranego dnia tygodnia
+  const uniqueDates = [...new Set(historyData
+    .filter(entry => entry.day === selectedDay)
+    .map(entry => entry.date)
+  )];
+
+  // Jeśli brak danych, ukrywamy filtr daty
+  const dateFilter = document.getElementById("date-filter");
+  if (uniqueDates.length === 0) {
+    dateFilter.classList.add("hidden");
+    return;
+  }
+
+  // Wypełniamy listę dostępnych dat
+  const dateSelect = document.getElementById("filter-date");
+  dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
+  uniqueDates.forEach(date => {
+    const option = document.createElement("option");
+    option.value = date;
+    option.textContent = date;
+    dateSelect.appendChild(option);
+  });
+
+  // Pokazujemy filtr daty
+  dateFilter.classList.remove("hidden");
+}
+   function loadHistoryForDate() {
+  const selectedDate = document.getElementById("filter-date").value;
+  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+  const historyBody = document.getElementById("history-table-body");
+
+  // Filtrujemy dane dla wybranej daty
+  const filteredData = historyData.filter(entry => entry.date === selectedDate);
+
+  // Czyszczenie tabeli
+  historyBody.innerHTML = "";
+
+  // Dodawanie wierszy
+  filteredData.forEach((entry, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${escapeHTML(entry.exercise)}</td>
+      <td>${escapeHTML(entry.series)}</td>
+      <td>${escapeHTML(entry.reps)}</td>
+      <td>${escapeHTML(entry.weight)}</td>
+      <td>${escapeHTML(entry.notes)}</td>
+      <td><button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button></td>
+    `;
+    historyBody.appendChild(row);
+  });
+   } 
 });
 
 // Funkcja dodająca wiersz do tabeli
