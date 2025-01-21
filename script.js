@@ -231,15 +231,15 @@ function deleteHistoryEntry(index) {
   -> Filtr daty
 *************************************************************/
 function showDatesForDay() {
-  // Wybrany dzień TYGODNIA (po polsku)
   const selectedDay = document.getElementById("filter-day").value;
   const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
   const dateFilter = document.getElementById("date-filter");
+  const historyBody = document.getElementById("history-table-body");
 
-  // Jeśli "Wszystkie dni", ładujemy całą historię i ukrywamy filtr dat
+  // Jeśli nie wybrano dnia, ukrywamy filtr dat i czyścimy tabelę
   if (!selectedDay) {
     dateFilter.classList.add("hidden");
-    loadHistory();
+    historyBody.innerHTML = '';
     return;
   }
 
@@ -252,7 +252,7 @@ function showDatesForDay() {
   // Jeśli brak dat, ukrywamy filtr daty i czyścimy tabelę
   if (uniqueDates.length === 0) {
     dateFilter.classList.add("hidden");
-    document.getElementById("history-table-body").innerHTML = '';
+    historyBody.innerHTML = '';
     return;
   }
 
