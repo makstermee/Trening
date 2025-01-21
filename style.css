@@ -238,3 +238,40 @@ textarea:focus {
     font-size: 16px;
   }
 }
+/* Stylizacja dla sekcji Historia */
+.filters {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filters.hidden {
+  display: none; /* Ukrywamy filtry, gdy nie są używane */
+}
+
+#history .table-wrapper {
+  margin-top: 20px;
+}
+
+#history table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#history th {
+  background-color: #007bff; /* niebieski Bootstrapowy */
+  color: white;
+  font-weight: bold;
+  padding: 10px;
+  text-align: center;
+}
+
+#history td {
+  padding: 8px;
+  text-align: center;
+}
+
+#history tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
