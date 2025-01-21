@@ -91,10 +91,9 @@ function loadHistoryForDate() {
     const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
     const historyBody = document.getElementById("history-table-body");
 
-    // Jeśli brak daty, wczytujemy pełną historię
+    // Jeśli brak daty, czyścimy tabelę
     if (!selectedDate) {
         historyBody.innerHTML = '';
-        loadHistory();
         return;
     }
 
