@@ -157,9 +157,9 @@ function saveToHistory(day) {
   rows.forEach(row => {
     const cells = row.querySelectorAll('td');
     const entry = {
-      date:   date,
+      date: date,
       // Zamieniamy ID dnia (monday) na polską nazwę (Poniedziałek):
-      day:    dayMap[day] || "Nieznany dzień",
+      day: dayMap[day] || "Nieznany dzień",
       exercise: cells[0].querySelector('input').value.trim(),
       series:   cells[1].querySelector('input').value.trim(),
       reps:     cells[2].querySelector('input').value.trim(),
@@ -275,7 +275,7 @@ function loadHistoryForDate() {
   const selectedDay = document.getElementById("filter-day").value;  // polska nazwa
   const selectedDate = document.getElementById("filter-date").value;
   const historyBody  = document.getElementById("history-table-body");
-  const historyData  = JSON.parse(localStorage.getItem("history-data")) || [];
+  const historyData  = JSON.parse(localStorage.getItem('history-data')) || [];
 
   // Jeśli nie wybrano konkretnej daty -> czyścimy i koniec
   if (!selectedDate) {
@@ -333,10 +333,23 @@ function deleteHistoryEntryFiltered(dayName, date, indexInFiltered) {
 }
 
 /*************************************************************
-  10. FUNKCJE POMOCNICZE
+  10. RESETOWANIE TABELI DNIA
 *************************************************************/
+function resetTable(day) {
+  if (confirm('Czy na pewno chcesz zresetować tabelę?')) {
+    // Usuwamy z localStorage
+    localStorage.removeItem(day + '-data');
+    // Czyścimy wiersze w tabeli
+    const tableBody = document.getElementById(day + '-body');
+    if (tableBody) {
+      tableBody.innerHTML = '';
+    }
+  }
+}
 
-/** Zabezpieczenie przed XSS */
+/*************************************************************
+  FUNKCJA ZABEZPIECZAJĄCA PRZED XSS
+*************************************************************/
 function escapeHTML(str) {
   if (!str) return '';
   return str
