@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMuscleGroup(day);
   });
 
-  // UWAGA: Usunięto loadHistory(), by domyślnie nie wyświetlała się cała historia
+  // NIE wywołujemy loadHistory(), aby domyślnie Historia była pusta
   // loadHistory();
 });
 
@@ -175,7 +175,8 @@ function saveToHistory(day) {
 
   localStorage.setItem('history-data', JSON.stringify(historyData));
   alert('Dane zostały zapisane do historii.');
-  loadHistory(); // Odśwież historię w sekcji "Historia"
+  // Nie ładujemy tu całej historii, aby nie pokazywać poprzedniego stanu
+  // loadHistory();
 }
 
 /*************************************************************
@@ -221,7 +222,8 @@ function deleteHistoryEntry(index) {
   if (index >= 0 && index < historyData.length) {
     historyData.splice(index, 1);
     localStorage.setItem('history-data', JSON.stringify(historyData));
-    loadHistory();
+    // Po usunięciu wpisu
+    loadHistory(); 
   }
 }
 
@@ -236,7 +238,7 @@ function showDatesForDay() {
   const dateFilter = document.getElementById("date-filter");
   const historyBody = document.getElementById("history-table-body");
 
-  // Jeśli nie wybrano dnia, ukrywamy filtr dat i czyścimy tabelę
+  // Jeśli nie wybrano dnia -> pusta tabela
   if (!selectedDay) {
     dateFilter.classList.add("hidden");
     historyBody.innerHTML = '';
@@ -244,9 +246,8 @@ function showDatesForDay() {
   }
 
   // Filtrujemy unikalne daty dla wybranego dnia (po polsku!)
-  const uniqueDates = [...new Set(historyData
-    .filter(entry => entry.day === selectedDay)
-    .map(entry => entry.date)
+  const uniqueDates = [...new Set(
+    historyData.filter(entry => entry.day === selectedDay).map(entry => entry.date)
   )];
 
   // Jeśli brak dat, ukrywamy filtr daty i czyścimy tabelę
@@ -266,6 +267,9 @@ function showDatesForDay() {
     option.textContent = date;
     dateSelect.appendChild(option);
   });
+
+  // Po zmianie dnia, dopóki nie wybrano daty -> pusta tabela
+  historyBody.innerHTML = '';
 }
 
 /** Wczytuje historię dla wybranego dnia (polska nazwa) i daty */
@@ -275,7 +279,7 @@ function loadHistoryForDate() {
   const historyBody  = document.getElementById("history-table-body");
   const historyData  = JSON.parse(localStorage.getItem('history-data')) || [];
 
-  // Jeśli nie wybrano konkretnej daty -> czyścimy i koniec
+  // Jeśli nie wybrano konkretnej daty -> czyścimy
   if (!selectedDate) {
     historyBody.innerHTML = '';
     return;
@@ -323,6 +327,7 @@ function deleteHistoryEntryFiltered(dayName, date, indexInFiltered) {
   historyData = historyData.concat(filtered);
 
   localStorage.setItem('history-data', JSON.stringify(historyData));
+  // Odśwież widok filtra
   loadHistoryForDate();
 }
 
