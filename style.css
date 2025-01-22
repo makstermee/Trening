@@ -73,7 +73,7 @@ nav select:focus {
 }
 
 /* =========================
-   FORMULARZE
+   FORMULARZE, INPUTY
    ========================= */
 label {
   display: inline-block;
@@ -128,7 +128,7 @@ textarea:focus {
 }
 
 /* =========================
-   KARTY ZAMIAST TABEL
+   KARTY Z ROZWIJANYMI SZCZEGÓŁAMI
    ========================= */
 .cards-container {
   margin-top: 20px;
@@ -137,19 +137,48 @@ textarea:focus {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 15px;
+  padding: 10px 15px;
   margin-bottom: 15px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
+/* NAGŁÓWEK – klikalny, pokazuje/ukrywa detale */
 .exercise-card-header {
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 0; /* usunięty dolny margines, bo detale są ukryte */
   font-size: 1rem;
+  position: relative;
+  cursor: pointer;
+  padding-right: 30px; /* miejsce na strzałkę ▼ */
+}
+
+/* Strzałka w nagłówku */
+.exercise-card-header::after {
+  content: '▼';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.3s;
+  font-size: 0.8rem;
+}
+.exercise-card-header.expanded::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* Szczegóły karty */
+.exercise-card-details {
+  display: none; /* ukryte domyślnie */
+  margin-top: 10px;
+}
+.exercise-card-details.show {
+  display: block; /* klasa .show powoduje wyświetlenie */
 }
 .exercise-card-details p {
   margin: 4px 0;
 }
-/* Formularz do dodawania nowego ćwiczenia */
+
+/* Formularz dodawania nowego ćwiczenia */
 .exercise-form {
   background-color: #f7f7f7;
   padding: 10px;
