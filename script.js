@@ -145,7 +145,7 @@ function saveMuscleGroups() {
 function loadMuscleGroup(day) {
   const inp = document.getElementById(`${day}-muscle-group`);
   if(!inp) return;
-  inp.value = localStorage.getItem(day + '-muscle-group`) || '';
+  inp.value = localStorage.getItem(day + '-muscle-group') || '';
 }
 
 /*************************************************************
