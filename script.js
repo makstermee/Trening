@@ -16,7 +16,6 @@ const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","
 
 /*************************************************************
   ZMIENNA GLOBALNA – INFORMACJA O EDKCJI
-  Jeśli edytujemy jakąś kartę, trzymamy tu day + index
 *************************************************************/
 let editInfo = {
   day: null,
@@ -41,7 +40,6 @@ function showSection() {
   2. INICJALIZACJA PO ZAŁADOWANIU STRONY
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
-  // Ładujemy dane kafelkowe i grupy mięśniowe dla każdego dnia
   allDays.forEach(day => {
     loadCardsData(day);
     loadMuscleGroup(day);
@@ -49,10 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /*************************************************************
-  3. DODAWANIE LUB AKTUALIZOWANIE KARTY (PRZYCISK FORMULARZA)
+  3. DODAWANIE LUB AKTUALIZOWANIE KARTY
 *************************************************************/
 function addCard(day) {
-  // Sprawdzamy, czy jesteśmy w trybie edycji
   if (editInfo.day === day && editInfo.index !== null) {
     // aktualizujemy istniejącą kartę
     updateCard(day, editInfo.index);
@@ -91,13 +88,12 @@ function createNewCard(day) {
 }
 
 /*************************************************************
-  3b. EDYTOWANIE ISTNIEJĄCEJ KARTY
+  3b. AKTUALIZACJA ISTNIEJĄCEJ KARTY
 *************************************************************/
 function updateCard(day, index) {
   const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
   if (index < 0 || index >= stored.length) return;
 
-  // Nadpisujemy stare wartości
   stored[index].exercise = document.getElementById(`${day}-exercise`).value.trim();
   stored[index].series   = document.getElementById(`${day}-series`).value.trim();
   stored[index].reps     = document.getElementById(`${day}-reps`).value.trim();
@@ -117,11 +113,45 @@ function updateCard(day, index) {
   editInfo.day = null;
   editInfo.index = null;
 
-  // ZMIANA NAPISU PRZYCISKU NA "Dodaj ćwiczenie"
-  document.querySelector(`#${day} .exercise-form button`).textContent = "Dodaj ćwiczenie";
+  // Przywracamy główny przycisk do "Dodaj ćwiczenie"
+  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+  if (addBtn) addBtn.textContent = "Dodaj ćwiczenie";
 
-  // Odświeżamy widok
+  // Ukrywamy przycisk Anuluj
+  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+  if (cancelBtn) {
+    cancelBtn.classList.add("hidden");
+  }
+
   loadCardsData(day);
+}
+
+/*************************************************************
+  FUNKCJA ANULUJĄCA EDKCJĘ
+*************************************************************/
+function cancelEdit(day) {
+  // Czyścimy formularz
+  document.getElementById(`${day}-exercise`).value = "";
+  document.getElementById(`${day}-series`).value   = "";
+  document.getElementById(`${day}-reps`).value     = "";
+  document.getElementById(`${day}-weight`).value   = "";
+  document.getElementById(`${day}-notes`).value    = "";
+
+  // Wyłączamy tryb edycji
+  editInfo.day = null;
+  editInfo.index = null;
+
+  // Przywracamy główny przycisk do "Dodaj ćwiczenie"
+  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+  if (addBtn) {
+    addBtn.textContent = "Dodaj ćwiczenie";
+  }
+
+  // Ukrywamy "Anuluj"
+  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+  if (cancelBtn) {
+    cancelBtn.classList.add("hidden");
+  }
 }
 
 /*************************************************************
@@ -143,7 +173,7 @@ function loadCardsData(day) {
     headerDiv.classList.add("exercise-card-header");
     headerDiv.textContent = card.exercise || "(brak ćwiczenia)";
 
-    // Detale – schowane domyślnie
+    // Detale
     const detailsDiv = document.createElement("div");
     detailsDiv.classList.add("exercise-card-details");
     detailsDiv.innerHTML = `
@@ -193,27 +223,33 @@ function resetCards(day) {
 }
 
 /*************************************************************
-  7. EDYTOWANIE ISTNIEJĄCEJ KARTY – WYPEŁNIANIE FORMULARZA
+  7. EDYTOWANIE ISTNIEJĄCEJ KARTY
 *************************************************************/
 function editCard(day, index) {
   const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
   if (index < 0 || index >= stored.length) return;
 
   const card = stored[index];
-
-  // Wypełniamy formularz
   document.getElementById(`${day}-exercise`).value = card.exercise || "";
   document.getElementById(`${day}-series`).value   = card.series   || "";
   document.getElementById(`${day}-reps`).value     = card.reps     || "";
   document.getElementById(`${day}-weight`).value   = card.weight   || "";
   document.getElementById(`${day}-notes`).value    = card.notes    || "";
 
-  // Ustawiamy tryb edycji
   editInfo.day = day;
   editInfo.index = index;
 
   // ZMIANA NAPISU PRZYCISKU NA "Zapisz zmiany"
-  document.querySelector(`#${day} .exercise-form button`).textContent = "Zapisz zmiany";
+  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+  if (addBtn) {
+    addBtn.textContent = "Zapisz zmiany";
+  }
+
+  // Pokazujemy przycisk Anuluj
+  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+  if (cancelBtn) {
+    cancelBtn.classList.remove("hidden");
+  }
 }
 
 /*************************************************************
@@ -245,7 +281,7 @@ function saveToHistory(day) {
   stored.forEach(card => {
     if (Object.values(card).some(val => val !== "")) {
       historyData.push({
-        date: date,
+        date,
         day: dayName,
         exercise: card.exercise,
         series: card.series,
@@ -277,7 +313,6 @@ function showDatesForDay() {
   const uniqueDates = [...new Set(
     historyData.filter(e => e.day === selectedDay).map(e => e.date)
   )];
-
   if (uniqueDates.length === 0) {
     dateFilter.classList.add("hidden");
     historyBody.innerHTML = "";
@@ -307,7 +342,7 @@ function loadHistoryForDate() {
     return;
   }
 
-  const filtered = historyData.filter(e => e.day===selectedDay && e.date===selectedDate);
+  const filtered = historyData.filter(e => e.day === selectedDay && e.date === selectedDate);
   historyBody.innerHTML = "";
   if (filtered.length === 0) {
     const emptyRow = document.createElement("tr");
@@ -350,7 +385,7 @@ function loadHistory(){
   const historyBody= document.getElementById("history-table-body");
   if(!historyBody) return;
   historyBody.innerHTML='';
-  const historyData= JSON.parse(localStorage.getItem("history-data"))||[];
+  const historyData= JSON.parse(localStorage.getItem('history-data'))||[];
   if(historyData.length===0){
     const emptyRow= document.createElement('tr');
     emptyRow.innerHTML=`
