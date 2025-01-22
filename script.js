@@ -1,6 +1,6 @@
-/*************************************************************
+/*****************************************************************
   MAPA DNI TYGODNIA (angielskie ID -> polskie nazwy)
-*************************************************************/
+*****************************************************************/
 const dayMap = {
   monday: "Poniedziałek",
   tuesday: "Wtorek",
@@ -11,12 +11,11 @@ const dayMap = {
   sunday: "Niedziela"
 };
 
-// Wszystkie dni
 const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
-/*************************************************************
-  1. POKAZYWANIE WYBRANEJ SEKCJI
-*************************************************************/
+/*****************************************************************
+  1. SHOW SECTION
+*****************************************************************/
 function showSection() {
   const sections = document.querySelectorAll('.day-section');
   sections.forEach(sec => sec.classList.add('hidden'));
@@ -26,19 +25,20 @@ function showSection() {
   if(toShow) toShow.classList.remove('hidden');
 }
 
-/*************************************************************
-  2. INICJALIZACJA PO ZAŁADOWANIU
-*************************************************************/
+/*****************************************************************
+  2. DOMContentLoaded
+*****************************************************************/
 document.addEventListener('DOMContentLoaded', () => {
+  // Ładujemy karty i grupy mięśniowe
   allDays.forEach(day => {
     loadCardsData(day);
     loadMuscleGroup(day);
   });
 });
 
-/*************************************************************
+/*****************************************************************
   3. DODAWANIE NOWEJ KARTY
-*************************************************************/
+*****************************************************************/
 function addCard(day) {
   const exercise = document.getElementById(`${day}-exercise`).value.trim();
   const series   = document.getElementById(`${day}-series`).value.trim();
@@ -48,6 +48,7 @@ function addCard(day) {
 
   if(!exercise && !series && !reps && !weight && !notes) return;
 
+  // Tworzymy obiekt
   const cardData = { exercise, series, reps, weight, notes };
 
   const stored = JSON.parse(localStorage.getItem(day + '-data')) || [];
@@ -64,9 +65,9 @@ function addCard(day) {
   loadCardsData(day);
 }
 
-/*************************************************************
-  4. WCZYTYWANIE KART (Z ROZWIJANYMI DETALAMI)
-*************************************************************/
+/*****************************************************************
+  4. ŁADOWANIE KART Z ROZWIJANYMI DETALAMI
+*****************************************************************/
 function loadCardsData(day) {
   const container = document.getElementById(day + '-cards');
   if(!container) return;
@@ -78,12 +79,12 @@ function loadCardsData(day) {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('exercise-card');
 
-    // NAGŁÓWEK – wyświetla tylko nazwę ćwiczenia
+    // Nagłówek
     const headerDiv = document.createElement('div');
     headerDiv.classList.add('exercise-card-header');
     headerDiv.textContent = card.exercise || '(brak ćwiczenia)';
 
-    // DETALE – ukryte domyślnie
+    // Detale (ukryte)
     const detailsDiv = document.createElement('div');
     detailsDiv.classList.add('exercise-card-details');
     detailsDiv.innerHTML = `
@@ -94,23 +95,21 @@ function loadCardsData(day) {
       <button class="btn-reset" onclick="deleteCard('${day}', ${index})">Usuń</button>
     `;
 
-    // Po kliknięciu w nagłówek -> pokaż/ukryj szczegóły
+    // Kliknięcie w nagłówek -> toggle detale + strzałkę
     headerDiv.addEventListener('click', () => {
-      detailsDiv.classList.toggle('show');   // zmienia display: none->block lub odwrotnie
-      headerDiv.classList.toggle('expanded'); // obraca strzałkę w nagłówku
+      detailsDiv.classList.toggle('show');
+      headerDiv.classList.toggle('expanded');
     });
 
-    // Składamy kartę
     cardDiv.appendChild(headerDiv);
     cardDiv.appendChild(detailsDiv);
-
     container.appendChild(cardDiv);
   });
 }
 
-/*************************************************************
+/*****************************************************************
   5. USUWANIE KARTY
-*************************************************************/
+*****************************************************************/
 function deleteCard(day, index) {
   const stored = JSON.parse(localStorage.getItem(day + '-data')) || [];
   if(index<0 || index>=stored.length) return;
@@ -121,36 +120,37 @@ function deleteCard(day, index) {
   loadCardsData(day);
 }
 
-/*************************************************************
+/*****************************************************************
   6. RESETOWANIE KART
-*************************************************************/
+*****************************************************************/
 function resetCards(day) {
   if(confirm('Czy na pewno chcesz zresetować wszystkie ćwiczenia?')) {
     localStorage.removeItem(day + '-data');
     const container = document.getElementById(day + '-cards');
-    if(container) container.innerHTML = '';
+    if(container) container.innerHTML='';
   }
 }
 
-/*************************************************************
+/*****************************************************************
   7. GRUPA MIĘŚNIOWA (ZAPIS / ODCZYT)
-*************************************************************/
+*****************************************************************/
 function saveMuscleGroups() {
   allDays.forEach(day => {
-    const inp = document.getElementById(`${day}-muscle-group`);
+    const inp = document.getElementById(day + '-muscle-group');
     if(!inp) return;
     localStorage.setItem(day + '-muscle-group', inp.value.trim());
   });
 }
 function loadMuscleGroup(day) {
-  const inp = document.getElementById(`${day}-muscle-group`);
+  const inp = document.getElementById(day + '-muscle-group');
   if(!inp) return;
+  // UWAGA: Miej pewność, że tu nie ma literówki
   inp.value = localStorage.getItem(day + '-muscle-group') || '';
 }
 
-/*************************************************************
-  8. ZAPIS KART DO HISTORII
-*************************************************************/
+/*****************************************************************
+  8. ZAPIS (SAVE) KART DO HISTORII
+*****************************************************************/
 function saveToHistory(day) {
   const stored = JSON.parse(localStorage.getItem(day + '-data')) || [];
   let historyData = JSON.parse(localStorage.getItem('history-data')) || [];
@@ -159,7 +159,8 @@ function saveToHistory(day) {
   const dayName = dayMap[day] || 'Nieznany dzień';
 
   stored.forEach(card => {
-    if(Object.values(card).some(val => val !== '')) {
+    // Jeśli cokolwiek wypełnione
+    if(Object.values(card).some(val => val!=='')) {
       historyData.push({
         date: date,
         day: dayName,
@@ -176,63 +177,60 @@ function saveToHistory(day) {
   alert('Dane zostały zapisane do historii!');
 }
 
-/*************************************************************
-  9. CZĘŚĆ HISTORII (Filtrowanie)
-*************************************************************/
+/*****************************************************************
+  9. HISTORIA (FILTR) 
+*****************************************************************/
 function showDatesForDay() {
-  const selectedDay = document.getElementById("filter-day").value;
-  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+  const selectedDay= document.getElementById("filter-day").value;
+  const historyData= JSON.parse(localStorage.getItem("history-data"))||[];
   const dateFilter = document.getElementById("date-filter");
-  const historyBody = document.getElementById("history-table-body");
+  const historyBody= document.getElementById("history-table-body");
 
   if(!selectedDay) {
     dateFilter.classList.add("hidden");
-    historyBody.innerHTML = '';
+    historyBody.innerHTML='';
     return;
   }
-  const uniqueDates = [...new Set(
-    historyData.filter(e => e.day === selectedDay).map(e => e.date)
+  const uniqueDates=[...new Set(
+    historyData.filter(e=> e.day===selectedDay).map(e=> e.date)
   )];
-  if(uniqueDates.length===0) {
+  if(uniqueDates.length===0){
     dateFilter.classList.add("hidden");
     historyBody.innerHTML='';
     return;
   }
   dateFilter.classList.remove("hidden");
-  
-  const dateSelect = document.getElementById("filter-date");
-  dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
-  uniqueDates.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d;
-    opt.textContent = d;
+
+  const dateSelect= document.getElementById("filter-date");
+  dateSelect.innerHTML=`<option value="">Wybierz datę</option>`;
+  uniqueDates.forEach(d=>{
+    const opt= document.createElement('option');
+    opt.value=d; opt.textContent=d;
     dateSelect.appendChild(opt);
   });
   historyBody.innerHTML='';
 }
 
 function loadHistoryForDate() {
-  const selectedDay = document.getElementById("filter-day").value;
-  const selectedDate= document.getElementById("filter-date").value;
-  const historyBody = document.getElementById("history-table-body");
-  const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
+  const selectedDay= document.getElementById("filter-day").value;
+  const selectedDate=document.getElementById("filter-date").value;
+  const historyBody= document.getElementById("history-table-body");
+  const historyData= JSON.parse(localStorage.getItem("history-data"))||[];
 
-  if(!selectedDate) {
+  if(!selectedDate){
     historyBody.innerHTML='';
     return;
   }
-
-  const filtered = historyData.filter(e=> e.day===selectedDay && e.date===selectedDate);
+  const filtered= historyData.filter(e=> e.day===selectedDay && e.date===selectedDate);
   historyBody.innerHTML='';
-  if(filtered.length===0) {
-    const emptyRow = document.createElement('tr');
+  if(filtered.length===0){
+    const emptyRow= document.createElement('tr');
     emptyRow.innerHTML=`<td colspan="6" style="text-align:center;color:#999;">Brak danych dla wybranej daty</td>`;
     historyBody.appendChild(emptyRow);
     return;
   }
-
   filtered.forEach((entry,index)=>{
-    const row = document.createElement('tr');
+    const row= document.createElement('tr');
     row.innerHTML=`
       <td>${escapeHTML(entry.exercise)}</td>
       <td>${escapeHTML(entry.series)}</td>
@@ -248,7 +246,7 @@ function loadHistoryForDate() {
 function deleteHistoryEntryFiltered(dayName, date, indexInFiltered){
   let historyData= JSON.parse(localStorage.getItem('history-data'))||[];
   const filtered= historyData.filter(e=> e.day===dayName && e.date===date);
-  if(indexInFiltered<0||indexInFiltered>=filtered.length) return;
+  if(indexInFiltered<0 || indexInFiltered>=filtered.length) return;
   filtered.splice(indexInFiltered,1);
   historyData= historyData.filter(e=>!(e.day===dayName && e.date===date));
   historyData= historyData.concat(filtered);
@@ -256,22 +254,23 @@ function deleteHistoryEntryFiltered(dayName, date, indexInFiltered){
   loadHistoryForDate();
 }
 
-/*************************************************************
+/*****************************************************************
   10. USUWANIE WPISÓW Z HISTORII (BEZ FILTRA)
-*************************************************************/
+*****************************************************************/
 function loadHistory(){
-  const historyBody = document.getElementById('history-table-body');
+  const historyBody= document.getElementById('history-table-body');
   if(!historyBody) return;
   historyBody.innerHTML='';
   const historyData= JSON.parse(localStorage.getItem('history-data'))||[];
   if(historyData.length===0){
     const emptyRow= document.createElement('tr');
-    emptyRow.innerHTML=`<td colspan="6" style="text-align:center;color:#999;">Brak zapisanej historii</td>`;
+    emptyRow.innerHTML=`
+      <td colspan="6" style="text-align:center;color:#999;">Brak zapisanej historii</td>`;
     historyBody.appendChild(emptyRow);
     return;
   }
   historyData.forEach((entry,index)=>{
-    const row = document.createElement('tr');
+    const row= document.createElement('tr');
     row.innerHTML=`
       <td>${escapeHTML(entry.exercise)}</td>
       <td>${escapeHTML(entry.series)}</td>
@@ -283,6 +282,7 @@ function loadHistory(){
     historyBody.appendChild(row);
   });
 }
+
 function deleteHistoryEntry(index){
   let historyData= JSON.parse(localStorage.getItem('history-data'))||[];
   if(index>=0 && index<historyData.length){
@@ -292,9 +292,9 @@ function deleteHistoryEntry(index){
   }
 }
 
-/*************************************************************
-  XSS ZABEZPIECZENIE
-*************************************************************/
+/*****************************************************************
+  ZABEZPIECZENIE XSS
+*****************************************************************/
 function escapeHTML(str){
   if(!str) return '';
   return str
