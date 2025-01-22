@@ -1,6 +1,5 @@
 /*************************************************************
-  MAPA DNI TYGODNIA:
-  Angielskie ID (monday, tuesday...) -> Polskie nazwy (Poniedziałek, Wtorek...)
+  MAPA DNI TYGODNIA (angielskie ID -> polskie nazwy)
 *************************************************************/
 const dayMap = {
   monday: "Poniedziałek",
@@ -12,225 +11,293 @@ const dayMap = {
   sunday: "Niedziela"
 };
 
-// Lista wszystkich dni w angielskich ID (do inicjalizacji)
-const allDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-
-// Główna tablica historii (bezpośrednio z localStorage)
-let trainingHistory = JSON.parse(localStorage.getItem('history-data')) || [];
+// Lista wszystkich dni
+const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
 /*************************************************************
-  1. FUNKCJA POKAZUJĄCA WYBRANĄ SEKCJĘ DNIA
+  ZMIENNA GLOBALNA – INFORMACJA O EDKCJI
+*************************************************************/
+let editInfo = {
+  day: null,
+  index: null
+};
+
+/*************************************************************
+  1. FUNKCJA POKAZUJĄCA WYBRANĄ SEKCJĘ
 *************************************************************/
 function showSection() {
-  // Ukrywamy wszystkie sekcje
-  const sections = document.querySelectorAll('.day-section');
-  sections.forEach(section => section.classList.add('hidden'));
+  const sections = document.querySelectorAll(".day-section");
+  sections.forEach(sec => sec.classList.add("hidden"));
 
-  // Pobieramy wartość z selecta
-  const selectedDay = document.getElementById('day-selector').value;
-  // Pokazujemy wybraną sekcję
-  const sectionToShow = document.getElementById(selectedDay);
-
-  if (sectionToShow) {
-    sectionToShow.classList.remove('hidden');
+  const selected = document.getElementById("day-selector").value;
+  const toShow = document.getElementById(selected);
+  if (toShow) {
+    toShow.classList.remove("hidden");
   }
 }
 
 /*************************************************************
-  2. INICJALIZACJA DANYCH PO ZAŁADOWANIU STRONY
+  2. INICJALIZACJA PO ZAŁADOWANIU STRONY
 *************************************************************/
-document.addEventListener('DOMContentLoaded', () => {
-  // Ładujemy dane tabel dla każdego dnia
+document.addEventListener("DOMContentLoaded", () => {
   allDays.forEach(day => {
-    loadTableData(day);
+    loadCardsData(day);
     loadMuscleGroup(day);
   });
-
-  // NIE wywołujemy loadHistory(), aby domyślnie Historia była pusta
-  // loadHistory();
 });
 
 /*************************************************************
-  3. DODAWANIE NOWEGO WIERSZA ĆWICZEŃ W DANEJ SEKCJI
+  3. DODAWANIE LUB AKTUALIZOWANIE KARTY
 *************************************************************/
-function addRow(day) {
-  const tableBody = document.getElementById(`${day}-body`);
-  const newRow = document.createElement('tr');
-
-  newRow.innerHTML = `
-      <td><input type="text" placeholder="Ćwiczenie" oninput="saveTableData('${day}')"></td>
-      <td><input type="number" placeholder="Serie" min="1" oninput="saveTableData('${day}')"></td>
-      <td><input type="number" placeholder="Powtórzenia" min="1" oninput="saveTableData('${day}')"></td>
-      <td><input type="number" placeholder="Ciężar (kg)" min="0" oninput="saveTableData('${day}')"></td>
-      <td><input type="text" placeholder="Notatki" oninput="saveTableData('${day}')"></td>
-      <td><button class="btn-reset" onclick="deleteRow(this, '${day}')">Usuń</button></td>
-  `;
-
-  tableBody.appendChild(newRow);
-  saveTableData(day);
+function addCard(day) {
+  if (editInfo.day === day && editInfo.index !== null) {
+    // aktualizujemy istniejącą kartę
+    updateCard(day, editInfo.index);
+  } else {
+    // tworzymy nową kartę
+    createNewCard(day);
+  }
 }
 
 /*************************************************************
-  4. ZAPIS (I ODCZYT) TABELI (DANE DNIA) W LOCALSTORAGE
+  3a. TWORZENIE NOWEJ KARTY
 *************************************************************/
+function createNewCard(day) {
+  const exercise = document.getElementById(`${day}-exercise`).value.trim();
+  const series   = document.getElementById(`${day}-series`).value.trim();
+  const reps     = document.getElementById(`${day}-reps`).value.trim();
+  const weight   = document.getElementById(`${day}-weight`).value.trim();
+  const notes    = document.getElementById(`${day}-notes`).value.trim();
 
-/** ZAPISUJE dane w tabeli dnia (np. monday) do localStorage */
-function saveTableData(day) {
-  const tableBody = document.getElementById(`${day}-body`);
-  const rows = tableBody.querySelectorAll('tr');
-  const data = [];
+  if (!exercise && !series && !reps && !weight && !notes) return;
 
-  rows.forEach(row => {
-    const cells = row.querySelectorAll('td');
-    const rowData = {
-      exercise: cells[0].querySelector('input').value.trim(),
-      series:   cells[1].querySelector('input').value.trim(),
-      reps:     cells[2].querySelector('input').value.trim(),
-      weight:   cells[3].querySelector('input').value.trim(),
-      notes:    cells[4].querySelector('input').value.trim()
-    };
-    // Jeśli cokolwiek w wierszu jest wypełnione, dodajemy do data
-    if (Object.values(rowData).some(value => value !== "")) {
-      data.push(rowData);
-    }
-  });
+  const cardData = { exercise, series, reps, weight, notes };
 
-  localStorage.setItem(`${day}-data`, JSON.stringify(data));
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+  stored.push(cardData);
+  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
+
+  // Czyścimy formularz
+  document.getElementById(`${day}-exercise`).value = "";
+  document.getElementById(`${day}-series`).value   = "";
+  document.getElementById(`${day}-reps`).value     = "";
+  document.getElementById(`${day}-weight`).value   = "";
+  document.getElementById(`${day}-notes`).value    = "";
+
+  loadCardsData(day);
 }
 
-/** ŁADUJE dane z localStorage do tabeli wybranego dnia */
-function loadTableData(day) {
-  const tableBody = document.getElementById(`${day}-body`);
-  const data = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+/*************************************************************
+  3b. AKTUALIZACJA ISTNIEJĄCEJ KARTY
+*************************************************************/
+function updateCard(day, index) {
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+  if (index < 0 || index >= stored.length) return;
 
-  tableBody.innerHTML = '';
-  data.forEach(rowData => {
-    const newRow = document.createElement('tr');
-    newRow.innerHTML = `
-      <td><input type="text" placeholder="Ćwiczenie" value="${escapeHTML(rowData.exercise)}" oninput="saveTableData('${day}')"></td>
-      <td><input type="number" placeholder="Serie" min="1" value="${escapeHTML(rowData.series)}" oninput="saveTableData('${day}')"></td>
-      <td><input type="number" placeholder="Powtórzenia" min="1" value="${escapeHTML(rowData.reps)}" oninput="saveTableData('${day}')"></td>
-      <td><input type="number" placeholder="Ciężar (kg)" min="0" value="${escapeHTML(rowData.weight)}" oninput="saveTableData('${day}')"></td>
-      <td><input type="text" placeholder="Notatki" value="${escapeHTML(rowData.notes)}" oninput="saveTableData('${day}')"></td>
-      <td><button class="btn-reset" onclick="deleteRow(this, '${day}')">Usuń</button></td>
+  stored[index].exercise = document.getElementById(`${day}-exercise`).value.trim();
+  stored[index].series   = document.getElementById(`${day}-series`).value.trim();
+  stored[index].reps     = document.getElementById(`${day}-reps`).value.trim();
+  stored[index].weight   = document.getElementById(`${day}-weight`).value.trim();
+  stored[index].notes    = document.getElementById(`${day}-notes`).value.trim();
+
+  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
+
+  // Czyścimy formularz
+  document.getElementById(`${day}-exercise`).value = "";
+  document.getElementById(`${day}-series`).value   = "";
+  document.getElementById(`${day}-reps`).value     = "";
+  document.getElementById(`${day}-weight`).value   = "";
+  document.getElementById(`${day}-notes`).value    = "";
+
+  // Wyłączamy tryb edycji
+  editInfo.day = null;
+  editInfo.index = null;
+
+  // Przywracamy główny przycisk do "Dodaj ćwiczenie"
+  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+  if (addBtn) addBtn.textContent = "Dodaj ćwiczenie";
+
+  // Ukrywamy przycisk Anuluj
+  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+  if (cancelBtn) {
+    cancelBtn.classList.add("hidden");
+  }
+
+  loadCardsData(day);
+}
+
+/*************************************************************
+  FUNKCJA ANULUJĄCA EDKCJĘ
+*************************************************************/
+function cancelEdit(day) {
+  // Czyścimy formularz
+  document.getElementById(`${day}-exercise`).value = "";
+  document.getElementById(`${day}-series`).value   = "";
+  document.getElementById(`${day}-reps`).value     = "";
+  document.getElementById(`${day}-weight`).value   = "";
+  document.getElementById(`${day}-notes`).value    = "";
+
+  // Wyłączamy tryb edycji
+  editInfo.day = null;
+  editInfo.index = null;
+
+  // Przywracamy główny przycisk do "Dodaj ćwiczenie"
+  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+  if (addBtn) {
+    addBtn.textContent = "Dodaj ćwiczenie";
+  }
+
+  // Ukrywamy "Anuluj"
+  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+  if (cancelBtn) {
+    cancelBtn.classList.add("hidden");
+  }
+}
+
+/*************************************************************
+  4. ŁADOWANIE KART (Z ROZWIJANYMI DETALAMI)
+*************************************************************/
+function loadCardsData(day) {
+  const container = document.getElementById(`${day}-cards`);
+  if (!container) return;
+
+  container.innerHTML = "";
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+
+  stored.forEach((card, index) => {
+    const cardDiv = document.createElement("div");
+    cardDiv.classList.add("exercise-card");
+
+    // Nagłówek
+    const headerDiv = document.createElement("div");
+    headerDiv.classList.add("exercise-card-header");
+    headerDiv.textContent = card.exercise || "(brak ćwiczenia)";
+
+    // Detale
+    const detailsDiv = document.createElement("div");
+    detailsDiv.classList.add("exercise-card-details");
+    detailsDiv.innerHTML = `
+      <p><strong>Serie:</strong> ${escapeHTML(card.series) || "-"}</p>
+      <p><strong>Powtórzenia:</strong> ${escapeHTML(card.reps) || "-"}</p>
+      <p><strong>Ciężar (kg):</strong> ${escapeHTML(card.weight) || "-"}</p>
+      <p><strong>Notatki:</strong> ${escapeHTML(card.notes) || "-"}</p>
+
+      <button class="btn-reset" onclick="deleteCard('${day}', ${index})">Usuń</button>
+      <button class="btn-save" onclick="editCard('${day}', ${index})">Edytuj</button>
     `;
-    tableBody.appendChild(newRow);
+
+    // Kliknięcie w nagłówek -> pokaż/ukryj szczegóły
+    headerDiv.addEventListener("click", () => {
+      detailsDiv.classList.toggle("show");
+      headerDiv.classList.toggle("expanded");
+    });
+
+    cardDiv.appendChild(headerDiv);
+    cardDiv.appendChild(detailsDiv);
+    container.appendChild(cardDiv);
   });
 }
 
-/** USUWA pojedynczy wiersz z tabeli dnia */
-function deleteRow(button, day) {
-  const row = button.parentElement.parentElement;
-  row.remove();
-  saveTableData(day);
+/*************************************************************
+  5. USUWANIE KARTY
+*************************************************************/
+function deleteCard(day, index) {
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+  if (index < 0 || index >= stored.length) return;
+
+  stored.splice(index, 1);
+  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
+
+  loadCardsData(day);
 }
 
 /*************************************************************
-  5. ZAPIS GRUPY MIĘŚNIOWEJ (INPUT "Partia mięśniowa")
+  6. RESETOWANIE KART
+*************************************************************/
+function resetCards(day) {
+  if (confirm("Czy na pewno chcesz zresetować wszystkie ćwiczenia?")) {
+    localStorage.removeItem(`${day}-data`);
+    const container = document.getElementById(`${day}-cards`);
+    if (container) container.innerHTML = "";
+  }
+}
+
+/*************************************************************
+  7. EDYTOWANIE ISTNIEJĄCEJ KARTY
+*************************************************************/
+function editCard(day, index) {
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+  if (index < 0 || index >= stored.length) return;
+
+  const card = stored[index];
+  document.getElementById(`${day}-exercise`).value = card.exercise || "";
+  document.getElementById(`${day}-series`).value   = card.series   || "";
+  document.getElementById(`${day}-reps`).value     = card.reps     || "";
+  document.getElementById(`${day}-weight`).value   = card.weight   || "";
+  document.getElementById(`${day}-notes`).value    = card.notes    || "";
+
+  editInfo.day = day;
+  editInfo.index = index;
+
+  // ZMIANA NAPISU PRZYCISKU NA "Zapisz zmiany"
+  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+  if (addBtn) {
+    addBtn.textContent = "Zapisz zmiany";
+  }
+
+  // Pokazujemy przycisk Anuluj
+  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+  if (cancelBtn) {
+    cancelBtn.classList.remove("hidden");
+  }
+}
+
+/*************************************************************
+  8. ZAPIS GRUP MIĘŚNIOWYCH
 *************************************************************/
 function saveMuscleGroups() {
   allDays.forEach(day => {
-    const muscleGroupInput = document.getElementById(`${day}-muscle-group`);
-    if (!muscleGroupInput) return;
-    const muscleGroup = muscleGroupInput.value.trim();
-    localStorage.setItem(`${day}-muscle-group`, muscleGroup);
+    const inp = document.getElementById(day + "-muscle-group");
+    if (!inp) return;
+    localStorage.setItem(day + "-muscle-group", inp.value.trim());
   });
 }
-
-/** ŁADUJE grupę mięśniową z localStorage */
 function loadMuscleGroup(day) {
-  const muscleGroupInput = document.getElementById(`${day}-muscle-group`);
-  if (!muscleGroupInput) return;
-  const stored = localStorage.getItem(`${day}-muscle-group`) || '';
-  muscleGroupInput.value = stored;
+  const inp = document.getElementById(day + "-muscle-group");
+  if (!inp) return;
+  inp.value = localStorage.getItem(day + "-muscle-group") || "";
 }
 
 /*************************************************************
-  6. ZAPIS (SAVE) DANYCH TABELI DNIA DO HISTORII
+  9. ZAPIS (SAVE) KART DO HISTORII
 *************************************************************/
 function saveToHistory(day) {
-  const date = new Date().toLocaleDateString(); // Data zapisu
-  const tableBody = document.getElementById(`${day}-body`);
-  const rows = tableBody.querySelectorAll('tr');
-  let historyData = JSON.parse(localStorage.getItem('history-data')) || [];
+  const stored = JSON.parse(localStorage.getItem(day + "-data")) || [];
+  let historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+  const date = new Date().toLocaleDateString();
 
-  rows.forEach(row => {
-    const cells = row.querySelectorAll('td');
-    const entry = {
-      date: date,
-      // Zamieniamy ID dnia (monday) na polską nazwę (Poniedziałek):
-      day: dayMap[day] || "Nieznany dzień",
-      exercise: cells[0].querySelector('input').value.trim(),
-      series:   cells[1].querySelector('input').value.trim(),
-      reps:     cells[2].querySelector('input').value.trim(),
-      weight:   cells[3].querySelector('input').value.trim(),
-      notes:    cells[4].querySelector('input').value.trim()
-    };
+  const dayName = dayMap[day] || "Nieznany dzień";
 
-    // Jeżeli w wierszu cokolwiek jest wypełnione
-    if (Object.values(entry).some(value => value !== "")) {
-      historyData.push(entry);
+  stored.forEach(card => {
+    if (Object.values(card).some(val => val !== "")) {
+      historyData.push({
+        date,
+        day: dayName,
+        exercise: card.exercise,
+        series: card.series,
+        reps: card.reps,
+        weight: card.weight,
+        notes: card.notes
+      });
     }
   });
 
-  localStorage.setItem('history-data', JSON.stringify(historyData));
-  alert('Dane zostały zapisane do historii.');
-  // Nie ładujemy tu całej historii, aby nie pokazywać poprzedniego stanu
-  // loadHistory();
+  localStorage.setItem("history-data", JSON.stringify(historyData));
+  alert("Dane zostały zapisane do historii!");
 }
 
 /*************************************************************
-  7. ŁADOWANIE CAŁEJ HISTORII (SEKCJA "HISTORIA")
-*************************************************************/
-function loadHistory() {
-  const historyBody = document.getElementById('history-table-body');
-  if (!historyBody) return; // Bezpiecznik
-
-  historyBody.innerHTML = '';
-  const historyData = JSON.parse(localStorage.getItem('history-data')) || [];
-
-  if (historyData.length === 0) {
-    const emptyRow = document.createElement('tr');
-    emptyRow.innerHTML = `
-      <td colspan="6" style="text-align: center; color: #999;">Brak zapisanej historii</td>
-    `;
-    historyBody.appendChild(emptyRow);
-    return;
-  }
-
-  historyData.forEach((entry, index) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${escapeHTML(entry.exercise)}</td>
-      <td>${escapeHTML(entry.series)}</td>
-      <td>${escapeHTML(entry.reps)}</td>
-      <td>${escapeHTML(entry.weight)}</td>
-      <td>${escapeHTML(entry.notes)}</td>
-      <td>
-        <button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button>
-      </td>
-    `;
-    historyBody.appendChild(row);
-  });
-}
-
-/*************************************************************
-  8. USUWANIE WPISU Z HISTORII
-*************************************************************/
-function deleteHistoryEntry(index) {
-  let historyData = JSON.parse(localStorage.getItem('history-data')) || [];
-  if (index >= 0 && index < historyData.length) {
-    historyData.splice(index, 1);
-    localStorage.setItem('history-data', JSON.stringify(historyData));
-    // Po usunięciu wpisu
-    loadHistory(); 
-  }
-}
-
-/*************************************************************
-  9. FILTROWANIE W SEKCJI HISTORIA
-  -> Filtr "Dzień tygodnia" (np. Poniedziałek)
-  -> Filtr daty
+  10. FILTROWANIE HISTORII
 *************************************************************/
 function showDatesForDay() {
   const selectedDay = document.getElementById("filter-day").value;
@@ -238,68 +305,55 @@ function showDatesForDay() {
   const dateFilter = document.getElementById("date-filter");
   const historyBody = document.getElementById("history-table-body");
 
-  // Jeśli nie wybrano dnia -> pusta tabela
   if (!selectedDay) {
     dateFilter.classList.add("hidden");
-    historyBody.innerHTML = '';
+    historyBody.innerHTML = "";
     return;
   }
-
-  // Filtrujemy unikalne daty dla wybranego dnia (po polsku!)
   const uniqueDates = [...new Set(
-    historyData.filter(entry => entry.day === selectedDay).map(entry => entry.date)
+    historyData.filter(e => e.day === selectedDay).map(e => e.date)
   )];
-
-  // Jeśli brak dat, ukrywamy filtr daty i czyścimy tabelę
   if (uniqueDates.length === 0) {
     dateFilter.classList.add("hidden");
-    historyBody.innerHTML = '';
+    historyBody.innerHTML = "";
     return;
   }
 
-  // Inaczej – tworzymy listę dat
   dateFilter.classList.remove("hidden");
   const dateSelect = document.getElementById("filter-date");
   dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
-  uniqueDates.forEach(date => {
-    const option = document.createElement("option");
-    option.value = date;
-    option.textContent = date;
-    dateSelect.appendChild(option);
+  uniqueDates.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    dateSelect.appendChild(opt);
   });
-
-  // Po zmianie dnia, dopóki nie wybrano daty -> pusta tabela
-  historyBody.innerHTML = '';
+  historyBody.innerHTML = "";
 }
 
-/** Wczytuje historię dla wybranego dnia (polska nazwa) i daty */
 function loadHistoryForDate() {
-  const selectedDay = document.getElementById("filter-day").value;  // polska nazwa
-  const selectedDate = document.getElementById("filter-date").value;
-  const historyBody  = document.getElementById("history-table-body");
-  const historyData  = JSON.parse(localStorage.getItem('history-data')) || [];
+  const selectedDay = document.getElementById("filter-day").value;
+  const selectedDate= document.getElementById("filter-date").value;
+  const historyBody = document.getElementById("history-table-body");
+  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
 
-  // Jeśli nie wybrano konkretnej daty -> czyścimy
   if (!selectedDate) {
-    historyBody.innerHTML = '';
+    historyBody.innerHTML = "";
     return;
   }
 
-  // Filtrujemy dane
   const filtered = historyData.filter(e => e.day === selectedDay && e.date === selectedDate);
-
-  historyBody.innerHTML = '';
+  historyBody.innerHTML = "";
   if (filtered.length === 0) {
-    const emptyRow = document.createElement('tr');
+    const emptyRow = document.createElement("tr");
     emptyRow.innerHTML = `
-      <td colspan="6" style="text-align: center; color: #999;">Brak danych dla wybranej daty</td>
-    `;
+      <td colspan="6" style="text-align:center;color:#999;">Brak danych dla wybranej daty</td>`;
     historyBody.appendChild(emptyRow);
     return;
   }
 
   filtered.forEach((entry, index) => {
-    const row = document.createElement('tr');
+    const row = document.createElement("tr");
     row.innerHTML = `
       <td>${escapeHTML(entry.exercise)}</td>
       <td>${escapeHTML(entry.series)}</td>
@@ -312,49 +366,65 @@ function loadHistoryForDate() {
   });
 }
 
-/** Usuwa wpis z historii w trybie filtrowanym */
-function deleteHistoryEntryFiltered(dayName, date, indexInFiltered) {
-  let historyData = JSON.parse(localStorage.getItem('history-data')) || [];
-  // Najpierw filtrujemy oryginalną tablicę
-  const filtered = historyData.filter(e => e.day === dayName && e.date === date);
-  if (indexInFiltered < 0 || indexInFiltered >= filtered.length) return;
+function deleteHistoryEntryFiltered(dayName, date, indexInFiltered){
+  let historyData= JSON.parse(localStorage.getItem('history-data'))||[];
+  const filtered= historyData.filter(e=> e.day===dayName && e.date===date);
+  if (indexInFiltered<0 || indexInFiltered>=filtered.length) return;
 
-  // Usuwamy wybrany element z 'filtered'
-  filtered.splice(indexInFiltered, 1);
-
-  // Teraz musimy "złożyć" resztę historyData (elementy niefiltrowane + nowy filtered)
-  historyData = historyData.filter(e => !(e.day === dayName && e.date === date));
-  historyData = historyData.concat(filtered);
-
+  filtered.splice(indexInFiltered,1);
+  historyData= historyData.filter(e=>!(e.day===dayName && e.date===date));
+  historyData= historyData.concat(filtered);
   localStorage.setItem('history-data', JSON.stringify(historyData));
-  // Odśwież widok filtra
   loadHistoryForDate();
 }
 
 /*************************************************************
-  10. RESETOWANIE TABELI DNIA
+  USUWANIE WPISÓW Z HISTORII (BEZ FILTRA)
 *************************************************************/
-function resetTable(day) {
-  if (confirm('Czy na pewno chcesz zresetować tabelę?')) {
-    // Usuwamy z localStorage
-    localStorage.removeItem(day + '-data');
-    // Czyścimy wiersze w tabeli
-    const tableBody = document.getElementById(day + '-body');
-    if (tableBody) {
-      tableBody.innerHTML = '';
-    }
+function loadHistory(){
+  const historyBody= document.getElementById("history-table-body");
+  if(!historyBody) return;
+  historyBody.innerHTML='';
+  const historyData= JSON.parse(localStorage.getItem('history-data'))||[];
+  if(historyData.length===0){
+    const emptyRow= document.createElement('tr');
+    emptyRow.innerHTML=`
+      <td colspan="6" style="text-align:center;color:#999;">Brak zapisanej historii</td>`;
+    historyBody.appendChild(emptyRow);
+    return;
+  }
+  historyData.forEach((entry,index)=>{
+    const row= document.createElement('tr');
+    row.innerHTML=`
+      <td>${escapeHTML(entry.exercise)}</td>
+      <td>${escapeHTML(entry.series)}</td>
+      <td>${escapeHTML(entry.reps)}</td>
+      <td>${escapeHTML(entry.weight)}</td>
+      <td>${escapeHTML(entry.notes)}</td>
+      <td><button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button></td>
+    `;
+    historyBody.appendChild(row);
+  });
+}
+
+function deleteHistoryEntry(index){
+  let historyData= JSON.parse(localStorage.getItem('history-data'))||[];
+  if(index>=0 && index<historyData.length){
+    historyData.splice(index,1);
+    localStorage.setItem('history-data', JSON.stringify(historyData));
+    loadHistory();
   }
 }
 
 /*************************************************************
-  FUNKCJA ZABEZPIECZAJĄCA PRZED XSS
+  ZABEZPIECZENIE PRZED XSS
 *************************************************************/
-function escapeHTML(str) {
-  if (!str) return '';
+function escapeHTML(str){
+  if(!str) return "";
   return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 }
