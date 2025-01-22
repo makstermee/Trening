@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Plan Treningowy - Trojboj</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
@@ -28,27 +28,39 @@
     <!-- Sekcja Poniedziałek -->
     <div id="monday" class="day-section hidden">
       <h2>Poniedziałek</h2>
+
+      <!-- Partia mięśniowa -->
       <div>
         <label for="monday-muscle-group">Partia mięśniowa:</label>
-        <input type="text" id="monday-muscle-group" placeholder="Wpisz partię mięśniową" oninput="saveMuscleGroups()">
+        <input 
+          type="text" 
+          id="monday-muscle-group" 
+          placeholder="Wpisz partię mięśniową" 
+          oninput="saveMuscleGroups()"
+        />
       </div>
 
-      <!-- Karty ćwiczeń -->
+      <!-- Kontener kart ćwiczeń -->
       <div class="cards-container" id="monday-cards"></div>
 
-      <!-- Formularz do dodania ćwiczenia -->
+      <!-- Formularz do dodania nowego ćwiczenia -->
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="monday-exercise" placeholder="np. Przysiad">
+        <input type="text" id="monday-exercise" placeholder="np. Przysiad" />
+        
         <label>Serie</label>
-        <input type="number" id="monday-series" placeholder="np. 4">
+        <input type="number" id="monday-series" placeholder="np. 4" />
+        
         <label>Powtórzenia</label>
-        <input type="number" id="monday-reps" placeholder="np. 12">
+        <input type="number" id="monday-reps" placeholder="np. 12" />
+        
         <label>Ciężar (kg)</label>
-        <input type="number" id="monday-weight" placeholder="np. 80">
+        <input type="number" id="monday-weight" placeholder="np. 80" />
+
         <label>Notatki</label>
-        <input type="text" id="monday-notes" placeholder="opcjonalne">
+        <input type="text" id="monday-notes" placeholder="opcjonalne" />
+
         <button onclick="addCard('monday')">Dodaj ćwiczenie</button>
       </div>
 
@@ -62,7 +74,12 @@
       <h2>Wtorek</h2>
       <div>
         <label for="tuesday-muscle-group">Partia mięśniowa:</label>
-        <input type="text" id="tuesday-muscle-group" placeholder="Wpisz partię mięśniową" oninput="saveMuscleGroups()">
+        <input 
+          type="text" 
+          id="tuesday-muscle-group" 
+          placeholder="Wpisz partię mięśniową" 
+          oninput="saveMuscleGroups()"
+        />
       </div>
 
       <div class="cards-container" id="tuesday-cards"></div>
@@ -70,15 +87,20 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="tuesday-exercise" placeholder="np. Wyciskanie">
+        <input type="text" id="tuesday-exercise" placeholder="np. Wyciskanie" />
+        
         <label>Serie</label>
-        <input type="number" id="tuesday-series" placeholder="np. 3">
+        <input type="number" id="tuesday-series" placeholder="np. 3" />
+
         <label>Powtórzenia</label>
-        <input type="number" id="tuesday-reps" placeholder="np. 10">
+        <input type="number" id="tuesday-reps" placeholder="np. 10" />
+
         <label>Ciężar (kg)</label>
-        <input type="number" id="tuesday-weight" placeholder="np. 60">
+        <input type="number" id="tuesday-weight" placeholder="np. 60" />
+
         <label>Notatki</label>
-        <input type="text" id="tuesday-notes" placeholder="opcjonalne">
+        <input type="text" id="tuesday-notes" placeholder="opcjonalne" />
+
         <button onclick="addCard('tuesday')">Dodaj ćwiczenie</button>
       </div>
 
@@ -91,7 +113,12 @@
       <h2>Środa</h2>
       <div>
         <label for="wednesday-muscle-group">Partia mięśniowa:</label>
-        <input type="text" id="wednesday-muscle-group" placeholder="Wpisz partię mięśniową" oninput="saveMuscleGroups()">
+        <input 
+          type="text" 
+          id="wednesday-muscle-group" 
+          placeholder="Wpisz partię mięśniową" 
+          oninput="saveMuscleGroups()"
+        />
       </div>
 
       <div class="cards-container" id="wednesday-cards"></div>
@@ -99,15 +126,15 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="wednesday-exercise" placeholder="np. Martwy ciąg">
+        <input type="text" id="wednesday-exercise" placeholder="np. Martwy ciąg" />
         <label>Serie</label>
-        <input type="number" id="wednesday-series" placeholder="np. 3">
+        <input type="number" id="wednesday-series" placeholder="np. 3" />
         <label>Powtórzenia</label>
-        <input type="number" id="wednesday-reps" placeholder="np. 10">
+        <input type="number" id="wednesday-reps" placeholder="np. 10" />
         <label>Ciężar (kg)</label>
-        <input type="number" id="wednesday-weight" placeholder="np. 70">
+        <input type="number" id="wednesday-weight" placeholder="np. 70" />
         <label>Notatki</label>
-        <input type="text" id="wednesday-notes" placeholder="opcjonalne">
+        <input type="text" id="wednesday-notes" placeholder="opcjonalne" />
         <button onclick="addCard('wednesday')">Dodaj ćwiczenie</button>
       </div>
 
@@ -120,7 +147,12 @@
       <h2>Czwartek</h2>
       <div>
         <label for="thursday-muscle-group">Partia mięśniowa:</label>
-        <input type="text" id="thursday-muscle-group" placeholder="Wpisz partię mięśniową" oninput="saveMuscleGroups()">
+        <input 
+          type="text" 
+          id="thursday-muscle-group" 
+          placeholder="Wpisz partię mięśniową" 
+          oninput="saveMuscleGroups()"
+        />
       </div>
 
       <div class="cards-container" id="thursday-cards"></div>
@@ -128,15 +160,15 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="thursday-exercise" placeholder="np. Wiosłowanie">
+        <input type="text" id="thursday-exercise" placeholder="np. Wiosłowanie" />
         <label>Serie</label>
-        <input type="number" id="thursday-series" placeholder="np. 3">
+        <input type="number" id="thursday-series" placeholder="np. 3" />
         <label>Powtórzenia</label>
-        <input type="number" id="thursday-reps" placeholder="np. 8">
+        <input type="number" id="thursday-reps" placeholder="np. 8" />
         <label>Ciężar (kg)</label>
-        <input type="number" id="thursday-weight" placeholder="np. 60">
+        <input type="number" id="thursday-weight" placeholder="np. 60" />
         <label>Notatki</label>
-        <input type="text" id="thursday-notes" placeholder="opcjonalne">
+        <input type="text" id="thursday-notes" placeholder="opcjonalne" />
         <button onclick="addCard('thursday')">Dodaj ćwiczenie</button>
       </div>
 
@@ -149,7 +181,12 @@
       <h2>Piątek</h2>
       <div>
         <label for="friday-muscle-group">Partia mięśniowa:</label>
-        <input type="text" id="friday-muscle-group" placeholder="Wpisz partię mięśniową" oninput="saveMuscleGroups()">
+        <input 
+          type="text" 
+          id="friday-muscle-group" 
+          placeholder="Wpisz partię mięśniową" 
+          oninput="saveMuscleGroups()"
+        />
       </div>
 
       <div class="cards-container" id="friday-cards"></div>
@@ -157,15 +194,15 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="friday-exercise" placeholder="np. Podciąganie">
+        <input type="text" id="friday-exercise" placeholder="np. Podciąganie" />
         <label>Serie</label>
-        <input type="number" id="friday-series" placeholder="np. 4">
+        <input type="number" id="friday-series" placeholder="np. 4" />
         <label>Powtórzenia</label>
-        <input type="number" id="friday-reps" placeholder="np. 10">
+        <input type="number" id="friday-reps" placeholder="np. 10" />
         <label>Ciężar (kg)</label>
-        <input type="number" id="friday-weight" placeholder="np. 0">
+        <input type="number" id="friday-weight" placeholder="np. 0" />
         <label>Notatki</label>
-        <input type="text" id="friday-notes" placeholder="opcjonalne">
+        <input type="text" id="friday-notes" placeholder="opcjonalne" />
         <button onclick="addCard('friday')">Dodaj ćwiczenie</button>
       </div>
 
@@ -178,7 +215,12 @@
       <h2>Sobota</h2>
       <div>
         <label for="saturday-muscle-group">Partia mięśniowa:</label>
-        <input type="text" id="saturday-muscle-group" placeholder="Wpisz partię mięśniową" oninput="saveMuscleGroups()">
+        <input 
+          type="text" 
+          id="saturday-muscle-group" 
+          placeholder="Wpisz partię mięśniową" 
+          oninput="saveMuscleGroups()"
+        />
       </div>
 
       <div class="cards-container" id="saturday-cards"></div>
@@ -186,15 +228,15 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="saturday-exercise" placeholder="np. Brzuszki">
+        <input type="text" id="saturday-exercise" placeholder="np. Brzuszki" />
         <label>Serie</label>
-        <input type="number" id="saturday-series" placeholder="np. 3">
+        <input type="number" id="saturday-series" placeholder="np. 3" />
         <label>Powtórzenia</label>
-        <input type="number" id="saturday-reps" placeholder="np. 15">
+        <input type="number" id="saturday-reps" placeholder="np. 15" />
         <label>Ciężar (kg)</label>
-        <input type="number" id="saturday-weight" placeholder="np. 0">
+        <input type="number" id="saturday-weight" placeholder="np. 0" />
         <label>Notatki</label>
-        <input type="text" id="saturday-notes" placeholder="opcjonalne">
+        <input type="text" id="saturday-notes" placeholder="opcjonalne" />
         <button onclick="addCard('saturday')">Dodaj ćwiczenie</button>
       </div>
 
@@ -207,7 +249,12 @@
       <h2>Niedziela</h2>
       <div>
         <label for="sunday-muscle-group">Partia mięśniowa:</label>
-        <input type="text" id="sunday-muscle-group" placeholder="Wpisz partię mięśniową" oninput="saveMuscleGroups()">
+        <input 
+          type="text" 
+          id="sunday-muscle-group" 
+          placeholder="Wpisz partię mięśniową" 
+          oninput="saveMuscleGroups()"
+        />
       </div>
 
       <div class="cards-container" id="sunday-cards"></div>
@@ -215,15 +262,15 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="sunday-exercise" placeholder="np. Spacer farmera">
+        <input type="text" id="sunday-exercise" placeholder="np. Spacer farmera" />
         <label>Serie</label>
-        <input type="number" id="sunday-series" placeholder="np. 2">
+        <input type="number" id="sunday-series" placeholder="np. 2" />
         <label>Powtórzenia</label>
-        <input type="number" id="sunday-reps" placeholder="np. 20m">
+        <input type="number" id="sunday-reps" placeholder="np. 20m" />
         <label>Ciężar (kg)</label>
-        <input type="number" id="sunday-weight" placeholder="np. 30">
+        <input type="number" id="sunday-weight" placeholder="np. 30" />
         <label>Notatki</label>
-        <input type="text" id="sunday-notes" placeholder="opcjonalne">
+        <input type="text" id="sunday-notes" placeholder="opcjonalne" />
         <button onclick="addCard('sunday')">Dodaj ćwiczenie</button>
       </div>
 
@@ -234,6 +281,7 @@
     <!-- Sekcja Historia -->
     <div id="history" class="day-section hidden">
       <h2>Historia zapisanych treningów</h2>
+
       <!-- Filtr po dniu tygodnia -->
       <div class="filters">
         <label for="filter-day">Wybierz dzień tygodnia:</label>
