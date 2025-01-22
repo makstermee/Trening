@@ -125,6 +125,10 @@ function updateCard(day, index) {
   editInfo.day = null;
   editInfo.index = null;
 
+  // W updateCard:
+document.querySelector(`#${day} .exercise-form button`).textContent = "Dodaj ćwiczenie";
+}
+
   // Odświeżamy widok
   loadCardsData(day);
 }
@@ -216,8 +220,11 @@ function editCard(day, index) {
   // Ustawiamy tryb edycji
   editInfo.day = day;
   editInfo.index = index;
-}
 
+  // W editCard:
+document.querySelector(`#${day} .exercise-form button`).textContent = "Zapisz zmiany";
+ }
+}
 /*************************************************************
   8. ZAPIS GRUP MIĘŚNIOWYCH
 *************************************************************/
