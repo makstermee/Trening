@@ -1,13 +1,10 @@
-/* =========================
-   PODSTAWY
-   ========================= */
+/* PODSTAWY */
 html {
   box-sizing: border-box;
 }
-*, *:before, *:after {
+*, *::before, *::after {
   box-sizing: inherit;
 }
-
 body {
   margin: 0;
   padding: 10px;
@@ -17,9 +14,7 @@ body {
   color: #333;
 }
 
-/* =========================
-   NAGŁÓWKI
-   ========================= */
+/* NAGŁÓWKI */
 h1, h2 {
   text-align: center;
   color: #2c3e50;
@@ -29,22 +24,18 @@ h1, h2 {
 h1 { font-size: 1.8rem; }
 h2 { font-size: 1.4rem; }
 
-/* =========================
-   KONTENER GŁÓWNY
-   ========================= */
+/* KONTENER GŁÓWNY */
 .container {
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
-  background: #ffffff;
+  background: #fff;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-/* =========================
-   NAWIGACJA I SELECT
-   ========================= */
+/* NAV, SELECT */
 nav {
   display: flex;
   justify-content: center;
@@ -65,16 +56,12 @@ nav select:focus {
   border-color: #ccc;
 }
 
-/* =========================
-   KLASA HIDDEN
-   ========================= */
+/* UKRYWANIE SEKCJI */
 .hidden {
   display: none;
 }
 
-/* =========================
-   FORMULARZE, INPUTY
-   ========================= */
+/* FORMULARZE */
 label {
   display: inline-block;
   font-weight: bold;
@@ -98,9 +85,7 @@ textarea:focus {
   outline: none;
 }
 
-/* =========================
-   PRZYCISKI
-   ========================= */
+/* PRZYCISKI */
 .btn-save {
   background-color: #28a745;
   color: #fff;
@@ -127,9 +112,7 @@ textarea:focus {
   background-color: #c82333;
 }
 
-/* =========================
-   KARTY Z ROZWIJANYMI SZCZEGÓŁAMI
-   ========================= */
+/* KARTY Z ROZWIJANYMI SZCZEGÓŁAMI */
 .cards-container {
   margin-top: 20px;
 }
@@ -145,14 +128,12 @@ textarea:focus {
 /* NAGŁÓWEK – klikalny, pokazuje/ukrywa detale */
 .exercise-card-header {
   font-weight: bold;
-  margin-bottom: 0; /* usunięty dolny margines, bo detale są ukryte */
+  margin-bottom: 0;
   font-size: 1rem;
   position: relative;
   cursor: pointer;
   padding-right: 30px; /* miejsce na strzałkę ▼ */
 }
-
-/* Strzałka w nagłówku */
 .exercise-card-header::after {
   content: '▼';
   position: absolute;
@@ -168,11 +149,11 @@ textarea:focus {
 
 /* Szczegóły karty */
 .exercise-card-details {
-  display: none; /* ukryte domyślnie */
+  display: none; 
   margin-top: 10px;
 }
 .exercise-card-details.show {
-  display: block; /* klasa .show powoduje wyświetlenie */
+  display: block;
 }
 .exercise-card-details p {
   margin: 4px 0;
@@ -201,9 +182,7 @@ textarea:focus {
   border-radius: 4px;
 }
 
-/* =========================
-   SEKCJA HISTORIA
-   ========================= */
+/* SEKCJA HISTORIA */
 .filters {
   margin-bottom: 20px;
   display: flex;
@@ -222,7 +201,7 @@ textarea:focus {
 }
 #history th {
   background-color: #007bff;
-  color: white;
+  color: #fff;
   font-weight: bold;
   padding: 10px;
   text-align: center;
@@ -235,9 +214,7 @@ textarea:focus {
   background-color: #f9f9f9;
 }
 
-/* =========================
-   MEDIA QUERIES
-   ========================= */
+/* MEDIA QUERIES */
 @media (min-width: 768px) {
   body {
     padding: 20px;
