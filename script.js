@@ -75,25 +75,25 @@ function addCard(day) {
 *************************************************************/
 function createNewCard(day) {
   const exercise = document.getElementById(`${day}-exercise`).value.trim();
-  const series = document.getElementById(`${day}-series`).value.trim();
-  const reps = document.getElementById(`${day}-reps`).value.trim();
-  const weight = document.getElementById(`${day}-weight`).value.trim();
-  const notes = document.getElementById(`${day}-notes`).value.trim();
+  const series   = document.getElementById(`${day}-series`).value.trim();
+  const reps     = document.getElementById(`${day}-reps`).value.trim();
+  const weight   = document.getElementById(`${day}-weight`).value.trim();
+  const notes    = document.getElementById(`${day}-notes`).value.trim();
 
   if (!exercise && !series && !reps && !weight && !notes) return;
 
   const cardData = { exercise, series, reps, weight, notes };
 
-  const stored = JSON.parse(localStorage.getItem(day + "-data")) || [];
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
   stored.push(cardData);
-  localStorage.setItem(day + "-data", JSON.stringify(stored));
+  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
 
   // Czyścimy formularz
   document.getElementById(`${day}-exercise`).value = "";
-  document.getElementById(`${day}-series`).value = "";
-  document.getElementById(`${day}-reps`).value = "";
-  document.getElementById(`${day}-weight`).value = "";
-  document.getElementById(`${day}-notes`).value = "";
+  document.getElementById(`${day}-series`).value   = "";
+  document.getElementById(`${day}-reps`).value     = "";
+  document.getElementById(`${day}-weight`).value   = "";
+  document.getElementById(`${day}-notes`).value    = "";
 
   loadCardsData(day);
 }
@@ -102,32 +102,31 @@ function createNewCard(day) {
   3b. EDYTOWANIE ISTNIEJĄCEJ KARTY
 *************************************************************/
 function updateCard(day, index) {
-  const stored = JSON.parse(localStorage.getItem(day + "-data")) || [];
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
   if (index < 0 || index >= stored.length) return;
 
   // Nadpisujemy stare wartości w karcie
   stored[index].exercise = document.getElementById(`${day}-exercise`).value.trim();
-  stored[index].series = document.getElementById(`${day}-series`).value.trim();
-  stored[index].reps = document.getElementById(`${day}-reps`).value.trim();
-  stored[index].weight = document.getElementById(`${day}-weight`).value.trim();
-  stored[index].notes = document.getElementById(`${day}-notes`).value.trim();
+  stored[index].series   = document.getElementById(`${day}-series`).value.trim();
+  stored[index].reps     = document.getElementById(`${day}-reps`).value.trim();
+  stored[index].weight   = document.getElementById(`${day}-weight`).value.trim();
+  stored[index].notes    = document.getElementById(`${day}-notes`).value.trim();
 
-  localStorage.setItem(day + "-data", JSON.stringify(stored));
+  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
 
   // Czyścimy formularz
   document.getElementById(`${day}-exercise`).value = "";
-  document.getElementById(`${day}-series`).value = "";
-  document.getElementById(`${day}-reps`).value = "";
-  document.getElementById(`${day}-weight`).value = "";
-  document.getElementById(`${day}-notes`).value = "";
+  document.getElementById(`${day}-series`).value   = "";
+  document.getElementById(`${day}-reps`).value     = "";
+  document.getElementById(`${day}-weight`).value   = "";
+  document.getElementById(`${day}-notes`).value    = "";
 
   // Wyłączamy tryb edycji
   editInfo.day = null;
   editInfo.index = null;
 
-  // W updateCard:
-document.querySelector(`#${day} .exercise-form button`).textContent = "Dodaj ćwiczenie";
-
+  // ZMIANA NAPISU PRZYCISKU NA "Dodaj ćwiczenie"
+  document.querySelector(`#${day} .exercise-form button`).textContent = "Dodaj ćwiczenie";
 
   // Odświeżamy widok
   loadCardsData(day);
@@ -137,11 +136,11 @@ document.querySelector(`#${day} .exercise-form button`).textContent = "Dodaj ćw
   4. ŁADOWANIE KART (Z ROZWIJANYMI DETALAMI)
 *************************************************************/
 function loadCardsData(day) {
-  const container = document.getElementById(day + "-cards");
+  const container = document.getElementById(`${day}-cards`);
   if (!container) return;
 
   container.innerHTML = "";
-  const stored = JSON.parse(localStorage.getItem(day + "-data")) || [];
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
 
   stored.forEach((card, index) => {
     const cardDiv = document.createElement("div");
@@ -181,11 +180,11 @@ function loadCardsData(day) {
   5. USUWANIE KARTY
 *************************************************************/
 function deleteCard(day, index) {
-  const stored = JSON.parse(localStorage.getItem(day + "-data")) || [];
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
   if (index < 0 || index >= stored.length) return;
 
   stored.splice(index, 1);
-  localStorage.setItem(day + "-data", JSON.stringify(stored));
+  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
 
   loadCardsData(day);
 }
@@ -195,8 +194,8 @@ function deleteCard(day, index) {
 *************************************************************/
 function resetCards(day) {
   if (confirm("Czy na pewno chcesz zresetować wszystkie ćwiczenia?")) {
-    localStorage.removeItem(day + "-data");
-    const container = document.getElementById(day + "-cards");
+    localStorage.removeItem(`${day}-data`);
+    const container = document.getElementById(`${day}-cards`);
     if (container) container.innerHTML = "";
   }
 }
@@ -205,26 +204,26 @@ function resetCards(day) {
   7. EDYTOWANIE ISTNIEJĄCEJ KARTY – WYPEŁNIANIE FORMULARZA
 *************************************************************/
 function editCard(day, index) {
-  const stored = JSON.parse(localStorage.getItem(day + "-data")) || [];
+  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
   if (index < 0 || index >= stored.length) return;
 
   const card = stored[index];
 
   // Wypełniamy formularz
   document.getElementById(`${day}-exercise`).value = card.exercise || "";
-  document.getElementById(`${day}-series`).value = card.series || "";
-  document.getElementById(`${day}-reps`).value = card.reps || "";
-  document.getElementById(`${day}-weight`).value = card.weight || "";
-  document.getElementById(`${day}-notes`).value = card.notes || "";
+  document.getElementById(`${day}-series`).value   = card.series   || "";
+  document.getElementById(`${day}-reps`).value     = card.reps     || "";
+  document.getElementById(`${day}-weight`).value   = card.weight   || "";
+  document.getElementById(`${day}-notes`).value    = card.notes    || "";
 
   // Ustawiamy tryb edycji
   editInfo.day = day;
   editInfo.index = index;
 
-  // W editCard:
-document.querySelector(`#${day} .exercise-form button`).textContent = "Zapisz zmiany";
- }
+  // ZMIANA NAPISU PRZYCISKU NA "Zapisz zmiany"
+  document.querySelector(`#${day} .exercise-form button`).textContent = "Zapisz zmiany";
 }
+
 /*************************************************************
   8. ZAPIS GRUP MIĘŚNIOWYCH
 *************************************************************/
@@ -283,14 +282,17 @@ function showDatesForDay() {
     historyBody.innerHTML = "";
     return;
   }
-  const uniqueDates = [...new Set(historyData.filter((e) => e.day === selectedDay).map((e) => e.date))];
+  const uniqueDates = [...new Set(historyData
+    .filter((e) => e.day === selectedDay)
+    .map((e) => e.date))];
+
   if (uniqueDates.length === 0) {
     dateFilter.classList.add("hidden");
     historyBody.innerHTML = "";
     return;
   }
-  dateFilter.classList.remove("hidden");
 
+  dateFilter.classList.remove("hidden");
   const dateSelect = document.getElementById("filter-date");
   dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
   uniqueDates.forEach((d) => {
@@ -313,8 +315,11 @@ function loadHistoryForDate() {
     return;
   }
 
-  const filtered = historyData.filter((e) => e.day === selectedDay && e.date === selectedDate);
+  const filtered = historyData.filter(
+    (e) => e.day === selectedDay && e.date === selectedDate
+  );
   historyBody.innerHTML = "";
+
   if (filtered.length === 0) {
     const emptyRow = document.createElement("tr");
     emptyRow.innerHTML = `
