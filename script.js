@@ -127,7 +127,7 @@ function updateCard(day, index) {
 
   // W updateCard:
 document.querySelector(`#${day} .exercise-form button`).textContent = "Dodaj ćwiczenie";
-}
+
 
   // Odświeżamy widok
   loadCardsData(day);
