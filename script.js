@@ -466,6 +466,12 @@ firebase.auth().onAuthStateChanged((user) => {
     console.log("Wylogowano lub nikt nie zalogowany");
     document.getElementById('login-info').textContent = "";
   }
+  firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    document.querySelector('.container').style.display = 'block'; // Pokaż plan
+  } else {
+    document.querySelector('.container').style.display = 'none';  // Ukryj plan
+  }
 });
 }
 
