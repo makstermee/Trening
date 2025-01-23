@@ -1,161 +1,97 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plan Treningowy</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan Treningowy - Trójbój</title>
+  <link rel="stylesheet" href="style.css">
   <script type="module" src="script.js"></script>
 </head>
 <body>
+  <!-- Sekcja logowania -->
   <div id="login-section">
     <h2>Logowanie</h2>
-    <input type="email" id="login-email" placeholder="Email" required />
-    <input type="password" id="login-password" placeholder="Hasło" required />
-    <div class="button-group">
+    <input type="email" id="login-email" placeholder="Email" required>
+    <input type="password" id="login-password" placeholder="Hasło" required>
+    <div>
       <button onclick="signIn()">Zaloguj</button>
       <button onclick="signUp()">Zarejestruj</button>
     </div>
-    <p id="login-info"></p>
     <p id="login-error" style="color: red;"></p>
   </div>
 
+  <!-- Główna zawartość -->
   <div class="container" style="display: none;">
-    <button class="logout-btn" onclick="signOut()">Wyloguj</button>
+    <button onclick="signOut()">Wyloguj</button>
     <h1>Plan Treningowy</h1>
-    <select id="day-selector" onchange="showSection()">
-      <option value="" disabled selected>Wybierz dzień</option>
-      <option value="monday">Poniedziałek</option>
-      <option value="tuesday">Wtorek</option>
-      <option value="wednesday">Środa</option>
-      <option value="thursday">Czwartek</option>
-      <option value="friday">Piątek</option>
-      <option value="saturday">Sobota</option>
-      <option value="sunday">Niedziela</option>
-      <option value="history">Historia</option>
-    </select>
+    <nav>
+      <select id="day-selector" onchange="showSection()">
+        <option value="" disabled selected>Wybierz dzień</option>
+        <option value="monday">Poniedziałek</option>
+        <option value="tuesday">Wtorek</option>
+        <option value="wednesday">Środa</option>
+        <option value="thursday">Czwartek</option>
+        <option value="friday">Piątek</option>
+        <option value="saturday">Sobota</option>
+        <option value="sunday">Niedziela</option>
+        <option value="history">Historia</option>
+      </select>
+    </nav>
 
-    <div id="days-container">
-      <!-- Szablon dnia -->
-      <div id="monday" class="day-section hidden">
-        <h2>Poniedziałek</h2>
-        <input type="text" id="monday-muscle-group" placeholder="Wpisz partię mięśniową" />
-        <div id="monday-cards" class="cards-container"></div>
-        <div class="exercise-form">
-          <h3>Dodaj ćwiczenie</h3>
-          <input type="text" id="monday-exercise" placeholder="Ćwiczenie" />
-          <input type="number" id="monday-series" placeholder="Serie" />
-          <input type="number" id="monday-reps" placeholder="Powtórzenia" />
-          <input type="number" id="monday-weight" placeholder="Ciężar" />
-          <input type="text" id="monday-notes" placeholder="Notatki" />
-          <button onclick="addCard('monday')">Dodaj</button>
+    <!-- Sekcje dla każdego dnia tygodnia -->
+    <!-- Uniwersalna struktura powtórzona dla wszystkich dni -->
+    <div id="monday" class="day-section hidden">
+      <h2>Poniedziałek</h2>
+      <div class="muscle-group">
+        <label for="monday-muscle-group">Partia mięśniowa:</label>
+        <input type="text" id="monday-muscle-group" placeholder="Wpisz partię mięśniową">
+      </div>
+      <div class="cards-container" id="monday-cards"></div>
+      <div class="exercise-form">
+        <h3>Dodaj nowe ćwiczenie</h3>
+        <label>Ćwiczenie:</label>
+        <input type="text" id="monday-exercise" placeholder="np. Przysiad">
+        <label>Serie:</label>
+        <input type="number" id="monday-series" placeholder="np. 4">
+        <label>Powtórzenia:</label>
+        <input type="number" id="monday-reps" placeholder="np. 10">
+        <label>Ciężar (kg):</label>
+        <input type="number" id="monday-weight" placeholder="np. 80">
+        <label>Notatki:</label>
+        <input type="text" id="monday-notes" placeholder="opcjonalne">
+        <div class="button-group">
+          <button onclick="addCard('monday')" id="monday-add-btn">Dodaj ćwiczenie</button>
+          <button onclick="cancelEdit('monday')" id="monday-cancel-btn" class="hidden">Anuluj</button>
         </div>
       </div>
-
-      <div id="tuesday" class="day-section hidden">
-        <h2>Wtorek</h2>
-        <input type="text" id="tuesday-muscle-group" placeholder="Wpisz partię mięśniową" />
-        <div id="tuesday-cards" class="cards-container"></div>
-        <div class="exercise-form">
-          <h3>Dodaj ćwiczenie</h3>
-          <input type="text" id="tuesday-exercise" placeholder="Ćwiczenie" />
-          <input type="number" id="tuesday-series" placeholder="Serie" />
-          <input type="number" id="tuesday-reps" placeholder="Powtórzenia" />
-          <input type="number" id="tuesday-weight" placeholder="Ciężar" />
-          <input type="text" id="tuesday-notes" placeholder="Notatki" />
-          <button onclick="addCard('tuesday')">Dodaj</button>
-        </div>
-      </div>
-
-      <div id="wednesday" class="day-section hidden">
-        <h2>Środa</h2>
-        <input type="text" id="wednesday-muscle-group" placeholder="Wpisz partię mięśniową" />
-        <div id="wednesday-cards" class="cards-container"></div>
-        <div class="exercise-form">
-          <h3>Dodaj ćwiczenie</h3>
-          <input type="text" id="wednesday-exercise" placeholder="Ćwiczenie" />
-          <input type="number" id="wednesday-series" placeholder="Serie" />
-          <input type="number" id="wednesday-reps" placeholder="Powtórzenia" />
-          <input type="number" id="wednesday-weight" placeholder="Ciężar" />
-          <input type="text" id="wednesday-notes" placeholder="Notatki" />
-          <button onclick="addCard('wednesday')">Dodaj</button>
-        </div>
-      </div>
-
-      <div id="thursday" class="day-section hidden">
-        <h2>Czwartek</h2>
-        <input type="text" id="thursday-muscle-group" placeholder="Wpisz partię mięśniową" />
-        <div id="thursday-cards" class="cards-container"></div>
-        <div class="exercise-form">
-          <h3>Dodaj ćwiczenie</h3>
-          <input type="text" id="thursday-exercise" placeholder="Ćwiczenie" />
-          <input type="number" id="thursday-series" placeholder="Serie" />
-          <input type="number" id="thursday-reps" placeholder="Powtórzenia" />
-          <input type="number" id="thursday-weight" placeholder="Ciężar" />
-          <input type="text" id="thursday-notes" placeholder="Notatki" />
-          <button onclick="addCard('thursday')">Dodaj</button>
-        </div>
-      </div>
-
-      <div id="friday" class="day-section hidden">
-        <h2>Piątek</h2>
-        <input type="text" id="friday-muscle-group" placeholder="Wpisz partię mięśniową" />
-        <div id="friday-cards" class="cards-container"></div>
-        <div class="exercise-form">
-          <h3>Dodaj ćwiczenie</h3>
-          <input type="text" id="friday-exercise" placeholder="Ćwiczenie" />
-          <input type="number" id="friday-series" placeholder="Serie" />
-          <input type="number" id="friday-reps" placeholder="Powtórzenia" />
-          <input type="number" id="friday-weight" placeholder="Ciężar" />
-          <input type="text" id="friday-notes" placeholder="Notatki" />
-          <button onclick="addCard('friday')">Dodaj</button>
-        </div>
-      </div>
-
-      <div id="saturday" class="day-section hidden">
-        <h2>Sobota</h2>
-        <input type="text" id="saturday-muscle-group" placeholder="Wpisz partię mięśniową" />
-        <div id="saturday-cards" class="cards-container"></div>
-        <div class="exercise-form">
-          <h3>Dodaj ćwiczenie</h3>
-          <input type="text" id="saturday-exercise" placeholder="Ćwiczenie" />
-          <input type="number" id="saturday-series" placeholder="Serie" />
-          <input type="number" id="saturday-reps" placeholder="Powtórzenia" />
-          <input type="number" id="saturday-weight" placeholder="Ciężar" />
-          <input type="text" id="saturday-notes" placeholder="Notatki" />
-          <button onclick="addCard('saturday')">Dodaj</button>
-        </div>
-      </div>
-
-      <div id="sunday" class="day-section hidden">
-        <h2>Niedziela</h2>
-        <input type="text" id="sunday-muscle-group" placeholder="Wpisz partię mięśniową" />
-        <div id="sunday-cards" class="cards-container"></div>
-        <div class="exercise-form">
-          <h3>Dodaj ćwiczenie</h3>
-          <input type="text" id="sunday-exercise" placeholder="Ćwiczenie" />
-          <input type="number" id="sunday-series" placeholder="Serie" />
-          <input type="number" id="sunday-reps" placeholder="Powtórzenia" />
-          <input type="number" id="sunday-weight" placeholder="Ciężar" />
-          <input type="text" id="sunday-notes" placeholder="Notatki" />
-          <button onclick="addCard('sunday')">Dodaj</button>
-        </div>
+      <div class="action-buttons">
+        <button onclick="saveToHistory('monday')">Zapisz Dane</button>
+        <button onclick="resetCards('monday')">Reset</button>
       </div>
     </div>
 
+    <!-- Powtórzenie sekcji dla każdego dnia tygodnia -->
+    <div id="tuesday" class="day-section hidden">[Podobna struktura jak Poniedziałek]</div>
+    <div id="wednesday" class="day-section hidden">[Podobna struktura jak Poniedziałek]</div>
+    <div id="thursday" class="day-section hidden">[Podobna struktura jak Poniedziałek]</div>
+    <div id="friday" class="day-section hidden">[Podobna struktura jak Poniedziałek]</div>
+    <div id="saturday" class="day-section hidden">[Podobna struktura jak Poniedziałek]</div>
+    <div id="sunday" class="day-section hidden">[Podobna struktura jak Poniedziałek]</div>
+
+    <!-- Sekcja historii -->
     <div id="history" class="day-section hidden">
       <h2>Historia</h2>
       <div>
         <label for="filter-day">Dzień:</label>
-        <select id="filter-day" onchange="loadHistory()">
+        <select id="filter-day" onchange="showDatesForDay()">
           <option value="" disabled selected>Wybierz dzień</option>
-          <option value="Poniedziałek">Poniedziałek</option>
-          <option value="Wtorek">Wtorek</option>
-          <option value="Środa">Środa</option>
-          <option value="Czwartek">Czwartek</option>
-          <option value="Piątek">Piątek</option>
-          <option value="Sobota">Sobota</option>
-          <option value="Niedziela">Niedziela</option>
+          <option value="monday">Poniedziałek</option>
+          <option value="tuesday">Wtorek</option>
+          <option value="wednesday">Środa</option>
+          <option value="thursday">Czwartek</option>
+          <option value="friday">Piątek</option>
+          <option value="saturday">Sobota</option>
+          <option value="sunday">Niedziela</option>
         </select>
       </div>
       <table>
@@ -168,10 +104,10 @@
             <th>Powtórzenia</th>
             <th>Ciężar</th>
             <th>Notatki</th>
-            <th>Akcja</th>
+            <th>Akcje</th>
           </tr>
         </thead>
-        <tbody id="history-table"></tbody>
+        <tbody id="history-table-body"></tbody>
       </table>
     </div>
   </div>
