@@ -473,8 +473,8 @@ async function saveToHistory(day) {
       const card = docSnapshot.data();
       if (Object.values(card).some(val => val !== "")) {
         console.log(`Saving to history: ${card.exercise}`);
-        const historyRef = collection(db, "users", user.uid, "history");
-        batch.set(doc(historyRef), {
+        const historyRef = doc(collection(db, "users", user.uid, "history"));
+        batch.set(historyRef, {
           date,
           day: dayName,
           exercise: card.exercise,
