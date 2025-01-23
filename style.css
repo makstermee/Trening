@@ -13,8 +13,66 @@ body {
   background-color: #ececec;
   color: #333;
 }
+
+/* SEKCJA LOGOWANIA */
+#login-section {
+  width: 100%;
+  max-width: 400px;
+  margin: 50px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  text-align: center;
+}
+#login-section input {
+  width: 90%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+#login-section button {
+  width: 45%;
+  padding: 10px;
+  margin: 10px 2.5%;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+#login-section button:nth-child(3) {
+  background-color: #28a745;
+  color: #fff;
+}
+#login-section button:nth-child(4) {
+  background-color: #007bff;
+  color: #fff;
+}
+.logout-btn {
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  float: right;
+}
+.logout-btn:hover {
+  background-color: #c82333;
+}
+
+/* KONTENER GŁÓWNY */
 .container {
   display: none; /* Ukryj plan treningowy domyślnie */
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 /* NAGŁÓWKI */
@@ -26,17 +84,6 @@ h1, h2 {
 }
 h1 { font-size: 1.8rem; }
 h2 { font-size: 1.4rem; }
-
-/* KONTENER GŁÓWNY */
-.container {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
 
 /* NAV, SELECT */
 nav {
@@ -229,5 +276,9 @@ textarea:focus {
   }
   nav select {
     font-size: 18px;
+  }
+  .logout-btn {
+    float: right;
+    margin-bottom: 10px;
   }
 }
