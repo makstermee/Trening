@@ -14,6 +14,86 @@ body {
   color: #333;
 }
 
+/* SEKCJA LOGOWANIA */
+#login-section {
+  width: 100%;
+  max-width: 400px;
+  margin: 50px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  text-align: center;
+}
+#login-section input {
+  width: 90%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+#login-section .button-group {
+  display: flex;
+  justify-content: space-between;
+}
+#login-section button {
+  width: 45%;
+  padding: 10px;
+  margin: 10px 2.5%;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  background-color: #007bff;
+  color: #fff;
+  transition: background-color 0.3s ease;
+}
+#login-section button:hover {
+  background-color: #0056b3;
+}
+#login-section button:nth-child(3) {
+  background-color: #28a745;
+}
+#login-section button:nth-child(3):hover {
+  background-color: #218838;
+}
+#login-section .info-message {
+  color: green;
+  font-weight: bold;
+}
+#login-section .error-message {
+  color: red;
+  font-weight: bold;
+}
+
+/* PRZYCISK WYLOGOWANIA */
+.logout-btn {
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  float: right;
+  transition: background-color 0.3s ease;
+}
+.logout-btn:hover {
+  background-color: #c82333;
+}
+
+/* KONTENER GŁÓWNY */
+.container {
+  display: none; /* Ukryj plan treningowy domyślnie */
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
 /* NAGŁÓWKI */
 h1, h2 {
   text-align: center;
@@ -23,17 +103,6 @@ h1, h2 {
 }
 h1 { font-size: 1.8rem; }
 h2 { font-size: 1.4rem; }
-
-/* KONTENER GŁÓWNY */
-.container {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
 
 /* NAV, SELECT */
 nav {
@@ -95,6 +164,7 @@ textarea:focus {
   cursor: pointer;
   font-size: 14px;
   margin-right: 10px;
+  transition: background-color 0.3s ease;
 }
 .btn-save:hover {
   background-color: #218838;
@@ -107,6 +177,7 @@ textarea:focus {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 14px;
+  transition: background-color 0.3s ease;
 }
 .btn-reset:hover {
   background-color: #c82333;
@@ -182,6 +253,45 @@ textarea:focus {
   border-radius: 4px;
 }
 
+/* GRUPA MIĘŚNIOWA */
+.muscle-group {
+  margin-bottom: 15px;
+}
+
+/* PRZYCISKI W FORMULARZU */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+}
+.button-group button {
+  width: 45%;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+.button-group button:first-child {
+  background-color: #007bff;
+  color: #fff;
+}
+.button-group button:first-child:hover {
+  background-color: #0056b3;
+}
+.button-group button:last-child {
+  background-color: #6c757d;
+  color: #fff;
+}
+.button-group button:last-child:hover {
+  background-color: #5a6268;
+}
+
+/* ACTION BUTTONS */
+.action-buttons {
+  margin-top: 15px;
+}
+
 /* SEKCJA HISTORIA */
 .filters {
   margin-bottom: 20px;
@@ -226,5 +336,9 @@ textarea:focus {
   }
   nav select {
     font-size: 18px;
+  }
+  .logout-btn {
+    float: right;
+    margin-bottom: 10px;
   }
 }
