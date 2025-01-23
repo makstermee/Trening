@@ -5,6 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Plan Treningowy - Trojboj</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- 
+    DODANE: SKRYPTY BIBLIOTEKI FIREBASE (v9.22, tryb "compat")
+    Aby móc używać firebase.initializeApp(firebaseConfig) itd.
+  -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+
+  <!-- 
+    DODANE: TWÓJ CONFIG I INICJALIZACJA
+    (Skopiowane z pliku wygenerowanego przez Firebase,
+     zmodyfikowane do stylu "compat" zamiast import {...})
+  -->
+  <script>
+    // Twoja konfiguracja (przekopiowałem klucze)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
+      authDomain: "plan-treningowy-a9d00.firebaseapp.com",
+      projectId: "plan-treningowy-a9d00",
+      storageBucket: "plan-treningowy-a9d00.firebasestorage.app",
+      messagingSenderId: "1087845341451",
+      appId: "1:1087845341451:web:08201e588c56d73013aa0e",
+      measurementId: "G-EY88TE8L7H"
+    };
+
+    // Inicjalizacja w trybie "compat"
+    firebase.initializeApp(firebaseConfig);
+
+    // Jeśli chcesz włączyć Analytics:
+    firebase.analytics(); 
+    // (Uwaga: by w pełni korzystać z analytics
+    //  musisz w konsoli Firebase włączyć Google Analytics.)
+  </script>
 </head>
 <body>
   <div class="container">
@@ -175,19 +210,14 @@
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
         <input type="text" id="thursday-exercise" placeholder="np. Wiosłowanie" />
-
         <label>Serie</label>
         <input type="number" id="thursday-series" placeholder="np. 3" />
-
         <label>Powtórzenia</label>
         <input type="number" id="thursday-reps" placeholder="np. 8" />
-
         <label>Ciężar (kg)</label>
         <input type="number" id="thursday-weight" placeholder="np. 60" />
-
         <label>Notatki</label>
         <input type="text" id="thursday-notes" placeholder="opcjonalne" />
-
         <button onclick="addCard('thursday')" id="thursday-add-btn">Dodaj ćwiczenie</button>
         <button onclick="cancelEdit('thursday')" id="thursday-cancel-btn" class="hidden">Anuluj</button>
       </div>
@@ -217,19 +247,14 @@
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
         <input type="text" id="friday-exercise" placeholder="np. Podciąganie" />
-
         <label>Serie</label>
         <input type="number" id="friday-series" placeholder="np. 4" />
-
         <label>Powtórzenia</label>
         <input type="number" id="friday-reps" placeholder="np. 10" />
-
         <label>Ciężar (kg)</label>
         <input type="number" id="friday-weight" placeholder="np. 0" />
-
         <label>Notatki</label>
         <input type="text" id="friday-notes" placeholder="opcjonalne" />
-
         <button onclick="addCard('friday')" id="friday-add-btn">Dodaj ćwiczenie</button>
         <button onclick="cancelEdit('friday')" id="friday-cancel-btn" class="hidden">Anuluj</button>
       </div>
@@ -259,19 +284,14 @@
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
         <input type="text" id="saturday-exercise" placeholder="np. Brzuszki" />
-
         <label>Serie</label>
         <input type="number" id="saturday-series" placeholder="np. 3" />
-
         <label>Powtórzenia</label>
         <input type="number" id="saturday-reps" placeholder="np. 15" />
-
         <label>Ciężar (kg)</label>
         <input type="number" id="saturday-weight" placeholder="np. 0" />
-
         <label>Notatki</label>
         <input type="text" id="saturday-notes" placeholder="opcjonalne" />
-
         <button onclick="addCard('saturday')" id="saturday-add-btn">Dodaj ćwiczenie</button>
         <button onclick="cancelEdit('saturday')" id="saturday-cancel-btn" class="hidden">Anuluj</button>
       </div>
@@ -368,7 +388,7 @@
 
   </div> <!-- /container -->
 
-  <!-- Podpinamy plik script.js (z cancelEdit, itp.) -->
+  <!-- Plik JS twojej logiki (ostatni) -->
   <script src="script.js"></script>
 </body>
 </html>
