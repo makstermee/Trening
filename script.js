@@ -414,6 +414,59 @@ function deleteHistoryEntry(index){
     localStorage.setItem('history-data', JSON.stringify(historyData));
     loadHistory();
   }
+  /*************************************************************
+  FUNKCJE LOGOWANIA Firebase
+*************************************************************/
+// 1) Zalogowanie istniejacego użytkownika
+async function signIn() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+
+  try {
+    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+    document.getElementById('login-error').textContent = "";
+    document.getElementById('login-info').textContent = "Zalogowano jako: " + userCredential.user.email;
+  } catch (error) {
+    document.getElementById('login-error').textContent = error.message;
+  }
+}
+
+// 2) Rejestracja nowego użytkownika
+async function signUp() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+
+  try {
+    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+    document.getElementById('login-error').textContent = "";
+    document.getElementById('login-info').textContent = "Utworzono konto: " + userCredential.user.email;
+  } catch (error) {
+    document.getElementById('login-error').textContent = error.message;
+  }
+}
+
+// 3) Wylogowanie
+async function signOut() {
+  try {
+    await firebase.auth().signOut();
+    document.getElementById('login-info').textContent = "Wylogowano";
+  } catch (error) {
+    document.getElementById('login-error').textContent = error.message;
+  }
+}
+
+// 4) Nasłuchiwanie stanu (czy jest zalogowany czy nie)
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    // Zalogowano
+    console.log("Zalogowano:", user.email);
+    document.getElementById('login-info').textContent = "Zalogowano jako: " + user.email;
+  } else {
+    // Wylogowano
+    console.log("Wylogowano lub nikt nie zalogowany");
+    document.getElementById('login-info').textContent = "";
+  }
+});
 }
 
 /*************************************************************
