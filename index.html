@@ -6,6 +6,22 @@
   <title>Plan Treningowy - Trojboj</title>
   <link rel="stylesheet" href="style.css" />
 
+  <!-- SEKCJA LOGOWANIA - wstaw ją np. na górze, nad .container -->
+<div id="login-section">
+  <h2>Logowanie</h2>
+  <input type="email" id="login-email" placeholder="Email" />
+  <input type="password" id="login-password" placeholder="Hasło" />
+
+  <button onclick="signIn()">Zaloguj</button>
+  <button onclick="signUp()">Zarejestruj</button>
+
+  <p id="login-info" style="color: green; font-weight: bold;"></p>
+  <p id="login-error" style="color: red; font-weight: bold;"></p>
+
+  <!-- Przycisk wylogowania -->
+  <button onclick="signOut()">Wyloguj</button>
+</div>
+  
   <!-- 
     DODANE: SKRYPTY BIBLIOTEKI FIREBASE (v9.22, tryb "compat")
     Aby móc używać firebase.initializeApp(firebaseConfig) itd.
