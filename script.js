@@ -51,10 +51,10 @@ document.addEventListener("DOMContentLoaded", () => {
 *************************************************************/
 function addCard(day) {
   if (editInfo.day === day && editInfo.index !== null) {
-    // aktualizujemy istniejącą kartę
+    // Aktualizujemy istniejącą kartę
     updateCard(day, editInfo.index);
   } else {
-    // tworzymy nową kartę
+    // Tworzymy nową kartę
     createNewCard(day);
   }
 }
