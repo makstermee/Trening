@@ -6,22 +6,6 @@
   <title>Plan Treningowy - Trojboj</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- SEKCJA LOGOWANIA - wstaw ją np. na górze, nad .container -->
-<div id="login-section">
-  <h2>Logowanie</h2>
-  <input type="email" id="login-email" placeholder="Email" />
-  <input type="password" id="login-password" placeholder="Hasło" />
-
-  <button onclick="signIn()">Zaloguj</button>
-  <button onclick="signUp()">Zarejestruj</button>
-
-  <p id="login-info" style="color: green; font-weight: bold;"></p>
-  <p id="login-error" style="color: red; font-weight: bold;"></p>
-
-  <!-- Przycisk wylogowania -->
-  <button onclick="signOut()">Wyloguj</button>
-</div>
-  
   <!-- 
     DODANE: SKRYPTY BIBLIOTEKI FIREBASE (v9.22, tryb "compat")
     Aby móc używać firebase.initializeApp(firebaseConfig) itd.
@@ -42,7 +26,7 @@
       apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
       authDomain: "plan-treningowy-a9d00.firebaseapp.com",
       projectId: "plan-treningowy-a9d00",
-      storageBucket: "plan-treningowy-a9d00.firebasestorage.app",
+      storageBucket: "plan-treningowy-a9d00.appspot.com",
       messagingSenderId: "1087845341451",
       appId: "1:1087845341451:web:08201e588c56d73013aa0e",
       measurementId: "G-EY88TE8L7H"
@@ -58,7 +42,24 @@
   </script>
 </head>
 <body>
+  <!-- SEKCJA LOGOWANIA -->
+  <div id="login-section">
+    <h2>Logowanie</h2>
+    <input type="email" id="login-email" placeholder="Email" required />
+    <input type="password" id="login-password" placeholder="Hasło" required />
+
+    <button onclick="signIn()">Zaloguj</button>
+    <button onclick="signUp()">Zarejestruj</button>
+
+    <p id="login-info" style="color: green; font-weight: bold;"></p>
+    <p id="login-error" style="color: red; font-weight: bold;"></p>
+  </div>
+
+  <!-- SEKCJA PLANU TRENINGOWEGO -->
   <div class="container">
+    <!-- PRZYCISK WYLOGOWANIA -->
+    <button class="logout-btn" onclick="signOut()">Wyloguj</button>
+
     <h1>Plan Treningowy</h1>
 
     <!-- Nawigacja (wybór sekcji) -->
@@ -77,8 +78,9 @@
     </nav>
 
     <!-- ===============================
-         SEKCJA Poniedziałek
+         SEKCJE DNIA TYGODNIA
        =============================== -->
+    <!-- Poniedziałek -->
     <div id="monday" class="day-section hidden">
       <h2>Poniedziałek</h2>
       <div>
@@ -121,9 +123,8 @@
       <button class="btn-reset" onclick="resetCards('monday')">Reset</button>
     </div>
 
-    <!-- ===============================
-         SEKCJA Wtorek
-       =============================== -->
+    <!-- Powtórz powyższą sekcję dla każdego dnia tygodnia -->
+    <!-- Wtorek -->
     <div id="tuesday" class="day-section hidden">
       <h2>Wtorek</h2>
       <div>
@@ -163,9 +164,7 @@
       <button class="btn-reset" onclick="resetCards('tuesday')">Reset</button>
     </div>
 
-    <!-- ===============================
-         SEKCJA Środa
-       =============================== -->
+    <!-- Środa -->
     <div id="wednesday" class="day-section hidden">
       <h2>Środa</h2>
       <div>
@@ -205,9 +204,7 @@
       <button class="btn-reset" onclick="resetCards('wednesday')">Reset</button>
     </div>
 
-    <!-- ===============================
-         SEKCJA Czwartek
-       =============================== -->
+    <!-- Czwartek -->
     <div id="thursday" class="day-section hidden">
       <h2>Czwartek</h2>
       <div>
@@ -242,9 +239,7 @@
       <button class="btn-reset" onclick="resetCards('thursday')">Reset</button>
     </div>
 
-    <!-- ===============================
-         SEKCJA Piątek
-       =============================== -->
+    <!-- Piątek -->
     <div id="friday" class="day-section hidden">
       <h2>Piątek</h2>
       <div>
@@ -279,9 +274,7 @@
       <button class="btn-reset" onclick="resetCards('friday')">Reset</button>
     </div>
 
-    <!-- ===============================
-         SEKCJA Sobota
-       =============================== -->
+    <!-- Sobota -->
     <div id="saturday" class="day-section hidden">
       <h2>Sobota</h2>
       <div>
@@ -316,9 +309,7 @@
       <button class="btn-reset" onclick="resetCards('saturday')">Reset</button>
     </div>
 
-    <!-- ===============================
-         SEKCJA Niedziela
-       =============================== -->
+    <!-- Niedziela -->
     <div id="sunday" class="day-section hidden">
       <h2>Niedziela</h2>
       <div>
@@ -387,6 +378,8 @@
         <table>
           <thead>
             <tr>
+              <th>Data</th>
+              <th>Dzień</th>
               <th>Ćwiczenie</th>
               <th>Serie</th>
               <th>Powtórzenia</th>
@@ -401,7 +394,6 @@
         </table>
       </div>
     </div>
-
   </div> <!-- /container -->
 
   <!-- Plik JS twojej logiki (ostatni) -->
