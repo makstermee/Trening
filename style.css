@@ -13,6 +13,9 @@ body {
   background-color: #ececec;
   color: #333;
 }
+.container {
+  display: none; /* Ukryj plan treningowy domyślnie */
+}
 
 /* NAGŁÓWKI */
 h1, h2 {
