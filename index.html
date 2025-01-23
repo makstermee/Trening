@@ -3,33 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Plan Treningowy - Trojboj</title>
+  <title>Plan Treningowy - Trójbój</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- 
-    DODANE: SKRYPTY BIBLIOTEKI FIREBASE (v9.22, tryb "compat")
-    Aby móc używać firebase.initializeApp(firebaseConfig) itd.
-  -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
-  <!-- 
-    DODANE: TWÓJ CONFIG I INICJALIZACJA
-    (Skopiowane z pliku wygenerowanego przez Firebase,
-     zmodyfikowane do stylu "compat" zamiast import {...})
-  -->
+  <!-- Twoja konfiguracja Firebase -->
   <script>
-    // TODO: Zamień poniższe dane konfiguracyjne na własne z Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
-  authDomain: "plan-treningowy-a9d00.firebaseapp.com",
-  projectId: "plan-treningowy-a9d00",
-  storageBucket: "plan-treningowy-a9d00.firebasestorage.app",
-  messagingSenderId: "1087845341451",
-  appId: "1:1087845341451:web:08201e588c56d73013aa0e",
-  measurementId: "G-EY88TE8L7H"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "plan-treningowy-a9d00.firebaseapp.com",
+      projectId: "plan-treningowy-a9d00",
+      storageBucket: "plan-treningowy-a9d00.appspot.com",
+      messagingSenderId: "1087845341451",
+      appId: "1:1087845341451:web:08201e588c56d73013aa0e",
+      measurementId: "G-EY88TE8L7H"
     };
 
     // Inicjalizacja Firebase
@@ -40,28 +32,25 @@
 <body>
   <!-- SEKCJA LOGOWANIA -->
   <div id="login-section">
-    <h2>Logowanie</h2>
+    <h2>Logowanie / Rejestracja</h2>
     <input type="email" id="login-email" placeholder="Email" required />
     <input type="password" id="login-password" placeholder="Hasło" required />
-
     <div class="button-group">
-      <button onclick="signIn()">Zaloguj</button>
-      <button onclick="signUp()">Zarejestruj</button>
+      <button onclick="signIn()">Zaloguj się</button>
+      <button onclick="signUp()">Zarejestruj się</button>
     </div>
-
-    <p id="login-info" class="info-message"></p>
-    <p id="login-error" class="error-message"></p>
+    <p id="login-error" style="color:red;"></p>
+    <p id="login-info" style="color:green;"></p>
   </div>
 
   <!-- SEKCJA PLANU TRENINGOWEGO -->
-  <div class="container">
-    <!-- PRZYCISK WYLOGOWANIA -->
-    <button class="logout-btn" onclick="signOut()">Wyloguj</button>
+  <div class="container" style="display:none;">
+    <h1>Plan Treningowy - Trójbój</h1>
+    <button onclick="signOut()">Wyloguj się</button>
 
-    <h1>Plan Treningowy</h1>
-
-    <!-- Nawigacja (wybór sekcji) -->
-    <nav>
+    <!-- Wybór Dnia Tygodnia -->
+    <div class="day-selector">
+      <label for="day-selector">Wybierz dzień tygodnia:</label>
       <select id="day-selector" onchange="showSection()">
         <option value="" disabled selected>Wybierz dzień</option>
         <option value="monday">Poniedziałek</option>
@@ -73,12 +62,9 @@
         <option value="sunday">Niedziela</option>
         <option value="history">Historia</option>
       </select>
-    </nav>
+    </div>
 
-    <!-- ===============================
-         SEKCJE DNI TYGODNIA
-       =============================== -->
-
+    <!-- Sekcje dla każdego dnia tygodnia -->
     <!-- Poniedziałek -->
     <div id="monday" class="day-section hidden">
       <h2>Poniedziałek</h2>
@@ -92,28 +78,25 @@
         />
       </div>
 
-      <!-- Karty ćwiczeń -->
       <div class="cards-container" id="monday-cards"></div>
 
-      <!-- Formularz dodawania ćwiczenia -->
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
         <input type="text" id="monday-exercise" placeholder="np. Przysiad" />
 
         <label>Serie</label>
-        <input type="number" id="monday-series" placeholder="np. 4" />
+        <input type="number" id="monday-series" placeholder="np. 3" />
 
         <label>Powtórzenia</label>
-        <input type="number" id="monday-reps" placeholder="np. 12" />
+        <input type="number" id="monday-reps" placeholder="np. 10" />
 
         <label>Ciężar (kg)</label>
-        <input type="number" id="monday-weight" placeholder="np. 80" />
+        <input type="number" id="monday-weight" placeholder="np. 100" />
 
         <label>Notatki</label>
         <input type="text" id="monday-notes" placeholder="opcjonalne" />
 
-        <!-- Dwa przyciski: główny (Dodaj/Zapisz) i Anuluj -->
         <div class="button-group">
           <button onclick="addCard('monday')" id="monday-add-btn">Dodaj ćwiczenie</button>
           <button onclick="cancelEdit('monday')" id="monday-cancel-btn" class="hidden">Anuluj</button>
@@ -126,7 +109,6 @@
       </div>
     </div>
 
-    <!-- Powtórz powyższą sekcję dla każdego dnia tygodnia -->
     <!-- Wtorek -->
     <div id="tuesday" class="day-section hidden">
       <h2>Wtorek</h2>
@@ -145,16 +127,16 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="tuesday-exercise" placeholder="np. Wyciskanie" />
+        <input type="text" id="tuesday-exercise" placeholder="np. Martwy ciąg" />
 
         <label>Serie</label>
-        <input type="number" id="tuesday-series" placeholder="np. 3" />
+        <input type="number" id="tuesday-series" placeholder="np. 4" />
 
         <label>Powtórzenia</label>
-        <input type="number" id="tuesday-reps" placeholder="np. 10" />
+        <input type="number" id="tuesday-reps" placeholder="np. 8" />
 
         <label>Ciężar (kg)</label>
-        <input type="number" id="tuesday-weight" placeholder="np. 60" />
+        <input type="number" id="tuesday-weight" placeholder="np. 120" />
 
         <label>Notatki</label>
         <input type="text" id="tuesday-notes" placeholder="opcjonalne" />
@@ -189,16 +171,16 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="wednesday-exercise" placeholder="np. Martwy ciąg" />
+        <input type="text" id="wednesday-exercise" placeholder="np. Wyciskanie sztangi" />
 
         <label>Serie</label>
-        <input type="number" id="wednesday-series" placeholder="np. 3" />
+        <input type="number" id="wednesday-series" placeholder="np. 5" />
 
         <label>Powtórzenia</label>
-        <input type="number" id="wednesday-reps" placeholder="np. 10" />
+        <input type="number" id="wednesday-reps" placeholder="np. 5" />
 
         <label>Ciężar (kg)</label>
-        <input type="number" id="wednesday-weight" placeholder="np. 70" />
+        <input type="number" id="wednesday-weight" placeholder="np. 80" />
 
         <label>Notatki</label>
         <input type="text" id="wednesday-notes" placeholder="opcjonalne" />
@@ -233,16 +215,16 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="thursday-exercise" placeholder="np. Wiosłowanie" />
+        <input type="text" id="thursday-exercise" placeholder="np. Podciąganie" />
 
         <label>Serie</label>
-        <input type="number" id="thursday-series" placeholder="np. 3" />
+        <input type="number" id="thursday-series" placeholder="np. 4" />
 
         <label>Powtórzenia</label>
-        <input type="number" id="thursday-reps" placeholder="np. 8" />
+        <input type="number" id="thursday-reps" placeholder="np. 6" />
 
         <label>Ciężar (kg)</label>
-        <input type="number" id="thursday-weight" placeholder="np. 60" />
+        <input type="number" id="thursday-weight" placeholder="np. 0" />
 
         <label>Notatki</label>
         <input type="text" id="thursday-notes" placeholder="opcjonalne" />
@@ -277,16 +259,16 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="friday-exercise" placeholder="np. Podciąganie" />
+        <input type="text" id="friday-exercise" placeholder="np. Wiosłowanie" />
 
         <label>Serie</label>
-        <input type="number" id="friday-series" placeholder="np. 4" />
+        <input type="number" id="friday-series" placeholder="np. 3" />
 
         <label>Powtórzenia</label>
-        <input type="number" id="friday-reps" placeholder="np. 10" />
+        <input type="number" id="friday-reps" placeholder="np. 12" />
 
         <label>Ciężar (kg)</label>
-        <input type="number" id="friday-weight" placeholder="np. 0" />
+        <input type="number" id="friday-weight" placeholder="np. 60" />
 
         <label>Notatki</label>
         <input type="text" id="friday-notes" placeholder="opcjonalne" />
@@ -321,16 +303,16 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="saturday-exercise" placeholder="np. Brzuszki" />
+        <input type="text" id="saturday-exercise" placeholder="np. Wyciskanie na ławce" />
 
         <label>Serie</label>
-        <input type="number" id="saturday-series" placeholder="np. 3" />
+        <input type="number" id="saturday-series" placeholder="np. 4" />
 
         <label>Powtórzenia</label>
-        <input type="number" id="saturday-reps" placeholder="np. 15" />
+        <input type="number" id="saturday-reps" placeholder="np. 8" />
 
         <label>Ciężar (kg)</label>
-        <input type="number" id="saturday-weight" placeholder="np. 0" />
+        <input type="number" id="saturday-weight" placeholder="np. 70" />
 
         <label>Notatki</label>
         <input type="text" id="saturday-notes" placeholder="opcjonalne" />
@@ -365,16 +347,16 @@
       <div class="exercise-form">
         <h3>Dodaj nowe ćwiczenie</h3>
         <label>Ćwiczenie</label>
-        <input type="text" id="sunday-exercise" placeholder="np. Spacer farmera" />
+        <input type="text" id="sunday-exercise" placeholder="np. Przysiad z wyskokiem" />
 
         <label>Serie</label>
-        <input type="number" id="sunday-series" placeholder="np. 2" />
+        <input type="number" id="sunday-series" placeholder="np. 5" />
 
         <label>Powtórzenia</label>
-        <input type="number" id="sunday-reps" placeholder="np. 20m" />
+        <input type="number" id="sunday-reps" placeholder="np. 5" />
 
         <label>Ciężar (kg)</label>
-        <input type="number" id="sunday-weight" placeholder="np. 30" />
+        <input type="number" id="sunday-weight" placeholder="np. 50" />
 
         <label>Notatki</label>
         <input type="text" id="sunday-notes" placeholder="opcjonalne" />
@@ -391,9 +373,7 @@
       </div>
     </div>
 
-    <!-- ===============================
-         SEKCJA HISTORIA
-       =============================== -->
+    <!-- Sekcja HISTORIA -->
     <div id="history" class="day-section hidden">
       <h2>Historia zapisanych treningów</h2>
       
