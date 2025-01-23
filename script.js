@@ -414,10 +414,12 @@ function deleteHistoryEntry(index){
     localStorage.setItem('history-data', JSON.stringify(historyData));
     loadHistory();
   }
-  /*************************************************************
+}
+
+/*************************************************************
   FUNKCJE LOGOWANIA Firebase
 *************************************************************/
-// 1) Zalogowanie istniejacego użytkownika
+// 1) Zalogowanie istniejącego użytkownika
 async function signIn() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value.trim();
@@ -455,25 +457,32 @@ async function signOut() {
   }
 }
 
-// 4) Nasłuchiwanie stanu (czy jest zalogowany czy nie)
+/*************************************************************
+  4. NASŁUCHIWANIE STANU UŻYTKOWNIKA
+*************************************************************/
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
     // Zalogowano
     console.log("Zalogowano:", user.email);
     document.getElementById('login-info').textContent = "Zalogowano jako: " + user.email;
+
+    // Pokazuj sekcje planu treningowego
+    document.querySelector('.container').style.display = 'block';
+
+    // Ukryj sekcję logowania
+    document.getElementById('login-section').style.display = 'none';
   } else {
     // Wylogowano
     console.log("Wylogowano lub nikt nie zalogowany");
     document.getElementById('login-info').textContent = "";
-  }
-  firebase.auth().onAuthStateChanged((user) => {
-  if (user) {
-    document.querySelector('.container').style.display = 'block'; // Pokaż plan
-  } else {
-    document.querySelector('.container').style.display = 'none';  // Ukryj plan
+
+    // Ukryj sekcje planu treningowego
+    document.querySelector('.container').style.display = 'none';
+
+    // Pokaz sekcję logowania
+    document.getElementById('login-section').style.display = 'block';
   }
 });
-}
 
 /*************************************************************
   ZABEZPIECZENIE PRZED XSS
