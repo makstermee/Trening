@@ -46,10 +46,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Początkowo ukryj sekcje planu treningowego
   document.querySelector('.container').style.display = 'none';
 
-  allDays.forEach(day => {
-    loadCardsDataFromFirestore(day);
-    loadMuscleGroupFromFirestore(day);
-  });
+  // Obsługa zmiany sekcji
+  document.getElementById("day-selector").addEventListener("change", showSection);
 });
 
 /*************************************************************
@@ -82,6 +80,7 @@ function createNewCard(day) {
 
   if (!exercise && !series && !reps && !weight && !notes) {
     console.log("All fields are empty, not adding card.");
+    alert("Proszę wypełnić przynajmniej jedno pole.");
     return;
   }
 
@@ -109,6 +108,7 @@ function createNewCard(day) {
     })
     .catch(error => {
       console.error("Błąd przy dodawaniu ćwiczenia: ", error);
+      alert("Wystąpił błąd podczas dodawania ćwiczenia. Spróbuj ponownie.");
     });
 }
 
@@ -162,6 +162,7 @@ function updateCard(day, docId) {
     })
     .catch(error => {
       console.error("Błąd przy aktualizacji ćwiczenia: ", error);
+      alert("Wystąpił błąd podczas aktualizacji ćwiczenia. Spróbuj ponownie.");
     });
 }
 
@@ -256,6 +257,7 @@ function loadCardsDataFromFirestore(day) {
     })
     .catch(error => {
       console.error("Błąd przy ładowaniu ćwiczeń: ", error);
+      alert("Wystąpił błąd podczas ładowania ćwiczeń. Spróbuj ponownie.");
     });
 }
 
@@ -267,7 +269,12 @@ function deleteCard(day, docId) {
   
   const user = firebase.auth().currentUser;
   if (!user) {
+    alert("Musisz być zalogowany, aby usuwać ćwiczenia.");
     console.log("Użytkownik nie jest zalogowany.");
+    return;
+  }
+
+  if (!confirm("Czy na pewno chcesz usunąć to ćwiczenie?")) {
     return;
   }
 
@@ -278,6 +285,7 @@ function deleteCard(day, docId) {
     })
     .catch(error => {
       console.error("Błąd przy usuwaniu ćwiczenia: ", error);
+      alert("Wystąpił błąd podczas usuwania ćwiczenia. Spróbuj ponownie.");
     });
 }
 
@@ -291,7 +299,7 @@ function resetCards(day) {
     const user = firebase.auth().currentUser;
     if (!user) {
       alert("Musisz być zalogowany, aby resetować ćwiczenia.");
-      console.log("No user is logged in.");
+      console.log("Użytkownik nie jest zalogowany.");
       return;
     }
 
@@ -299,6 +307,7 @@ function resetCards(day) {
       .then(querySnapshot => {
         if (querySnapshot.empty) {
           console.log("Nie ma żadnych ćwiczeń do zresetowania.");
+          alert("Brak ćwiczeń do zresetowania.");
           return;
         }
 
@@ -310,10 +319,12 @@ function resetCards(day) {
       })
       .then(() => {
         console.log("Wszystkie ćwiczenia zostały zresetowane.");
+        alert("Wszystkie ćwiczenia zostały zresetowane.");
         loadCardsDataFromFirestore(day);
       })
       .catch(error => {
         console.error("Błąd przy resetowaniu ćwiczeń: ", error);
+        alert("Wystąpił błąd podczas resetowania ćwiczeń. Spróbuj ponownie.");
       });
   }
 }
@@ -327,7 +338,7 @@ function editCard(day, docId) {
   const user = firebase.auth().currentUser;
   if (!user) {
     alert("Musisz być zalogowany, aby edytować ćwiczenia.");
-    console.log("No user is logged in.");
+    console.log("Użytkownik nie jest zalogowany.");
     return;
   }
 
@@ -335,6 +346,7 @@ function editCard(day, docId) {
     .then(doc => {
       if (!doc.exists) {
         console.log("Ćwiczenie nie istnieje.");
+        alert("Ćwiczenie nie istnieje.");
         return;
       }
 
@@ -364,6 +376,7 @@ function editCard(day, docId) {
     })
     .catch(error => {
       console.error("Błąd przy edytowaniu ćwiczenia: ", error);
+      alert("Wystąpił błąd podczas edytowania ćwiczenia. Spróbuj ponownie.");
     });
 }
 
@@ -376,6 +389,7 @@ function saveMuscleGroups() {
   const user = firebase.auth().currentUser;
   if (!user) {
     console.log("Użytkownik nie jest zalogowany. Nie można zapisać grup mięśniowych.");
+    alert("Musisz być zalogowany, aby zapisać grupy mięśniowe.");
     return;
   }
 
@@ -391,6 +405,7 @@ function saveMuscleGroups() {
       })
       .catch(error => {
         console.error(`Błąd przy zapisywaniu grupy mięśniowej dla ${dayMap[day]}: `, error);
+        alert(`Błąd przy zapisywaniu grupy mięśniowej dla ${dayMap[day]}. Spróbuj ponownie.`);
       });
   });
 }
@@ -416,6 +431,7 @@ function loadMuscleGroupFromFirestore(day) {
     })
     .catch(error => {
       console.error("Błąd przy ładowaniu grupy mięśniowej: ", error);
+      alert("Wystąpił błąd podczas ładowania grupy mięśniowej. Spróbuj ponownie.");
     });
 }
 
@@ -456,6 +472,7 @@ function saveToHistory(day) {
             })
             .catch(error => {
               console.error("Błąd przy zapisywaniu do historii: ", error);
+              alert("Wystąpił błąd podczas zapisywania do historii. Spróbuj ponownie.");
             });
         }
       });
@@ -464,6 +481,7 @@ function saveToHistory(day) {
     })
     .catch(error => {
       console.error("Błąd przy zapisywaniu do historii: ", error);
+      alert("Wystąpił błąd podczas zapisywania do historii. Spróbuj ponownie.");
     });
 }
 
@@ -487,6 +505,7 @@ function showDatesForDay() {
   const user = firebase.auth().currentUser;
   if (!user) {
     console.log("Użytkownik nie jest zalogowany.");
+    alert("Musisz być zalogowany, aby filtrować historię.");
     return;
   }
 
@@ -503,6 +522,7 @@ function showDatesForDay() {
         dateFilter.classList.add("hidden");
         historyBody.innerHTML = "";
         console.log("No unique dates found, hiding date filter and clearing history.");
+        alert("Brak wpisów dla wybranego dnia.");
         return;
       }
 
@@ -520,6 +540,7 @@ function showDatesForDay() {
     })
     .catch(error => {
       console.error("Błąd przy filtrowaniu historii: ", error);
+      alert("Wystąpił błąd podczas filtrowania historii. Spróbuj ponownie.");
     });
 }
 
@@ -539,6 +560,7 @@ function loadHistoryForDate() {
   const user = firebase.auth().currentUser;
   if (!user) {
     console.log("Użytkownik nie jest zalogowany.");
+    alert("Musisz być zalogowany, aby przeglądać historię.");
     return;
   }
 
@@ -554,6 +576,7 @@ function loadHistoryForDate() {
           <td colspan="8" style="text-align:center;color:#999;">Brak danych dla wybranej daty</td>`;
         historyBody.appendChild(emptyRow);
         console.log("No history data found for selected date.");
+        alert("Brak wpisów dla wybranej daty.");
         return;
       }
 
@@ -577,6 +600,7 @@ function loadHistoryForDate() {
     })
     .catch(error => {
       console.error("Błąd przy ładowaniu historii: ", error);
+      alert("Wystąpił błąd podczas ładowania historii. Spróbuj ponownie.");
     });
 }
 
@@ -592,7 +616,7 @@ function loadHistoryFromFirestore(){
     return;
   }
   historyBody.innerHTML='';
-  
+
   const user = firebase.auth().currentUser;
   if (!user) {
     console.log("Użytkownik nie jest zalogowany.");
@@ -629,6 +653,7 @@ function loadHistoryFromFirestore(){
     })
     .catch(error => {
       console.error("Błąd przy ładowaniu historii: ", error);
+      alert("Wystąpił błąd podczas ładowania historii. Spróbuj ponownie.");
     });
 }
 
@@ -637,7 +662,12 @@ function deleteHistoryEntry(docId){
   
   const user = firebase.auth().currentUser;
   if (!user) {
+    alert("Musisz być zalogowany, aby usuwać wpisy z historii.");
     console.log("Użytkownik nie jest zalogowany.");
+    return;
+  }
+
+  if (!confirm("Czy na pewno chcesz usunąć ten wpis z historii?")) {
     return;
   }
 
@@ -648,6 +678,7 @@ function deleteHistoryEntry(docId){
     })
     .catch(error => {
       console.error("Błąd przy usuwaniu wpisu historii: ", error);
+      alert("Wystąpił błąd podczas usuwania wpisu historii. Spróbuj ponownie.");
     });
 }
 
@@ -670,6 +701,7 @@ async function signIn() {
   } catch (error) {
     console.error("Sign in failed:", error);
     document.getElementById('login-error').textContent = error.message;
+    alert(`Logowanie nie powiodło się: ${error.message}`);
   }
 }
 
@@ -689,6 +721,7 @@ async function signUp() {
   } catch (error) {
     console.error("Sign up failed:", error);
     document.getElementById('login-error').textContent = error.message;
+    alert(`Rejestracja nie powiodła się: ${error.message}`);
   }
 }
 
@@ -700,9 +733,11 @@ async function signOut() {
     await firebase.auth().signOut();
     console.log("Sign out successful.");
     document.getElementById('login-info').textContent = "Wylogowano";
+    alert("Wylogowano pomyślnie.");
   } catch (error) {
     console.error("Sign out failed:", error);
     document.getElementById('login-error').textContent = error.message;
+    alert(`Wylogowanie nie powiodło się: ${error.message}`);
   }
 }
 
@@ -801,6 +836,7 @@ async function migrateLocalStorageToFirestore() {
     alert("Migracja danych zakończona pomyślnie!");
   } catch (error) {
     console.error("Błąd przy migracji danych: ", error);
+    alert(`Wystąpił błąd podczas migracji danych: ${error.message}`);
   }
 }
 
