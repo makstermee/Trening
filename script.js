@@ -1,6 +1,5 @@
-// Import Firebase functions
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
 // Firebase configuration
@@ -19,18 +18,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Days mapping
-const allDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-
-// Check auth state
+// Check user state
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    console.log("User logged in:", user.email);
+    console.log("Zalogowany użytkownik:", user.email);
     document.querySelector(".container").style.display = "block";
     document.getElementById("login-section").style.display = "none";
-    allDays.forEach((day) => loadCards(day));
   } else {
-    console.log("No user logged in.");
+    console.log("Brak użytkownika lub wylogowano.");
     document.querySelector(".container").style.display = "none";
     document.getElementById("login-section").style.display = "block";
   }
@@ -42,10 +37,10 @@ async function signIn() {
   const password = document.getElementById("login-password").value;
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    console.log("Logged in:", userCredential.user);
+    console.log("Zalogowano użytkownika:", userCredential.user);
     alert("Zalogowano pomyślnie.");
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Błąd logowania:", error.message);
     alert("Błąd logowania: " + error.message);
   }
 }
@@ -56,10 +51,10 @@ async function signUp() {
   const password = document.getElementById("login-password").value;
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    console.log("Registered:", userCredential.user);
+    console.log("Zarejestrowano użytkownika:", userCredential.user);
     alert("Rejestracja zakończona pomyślnie.");
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Błąd rejestracji:", error.message);
     alert("Błąd rejestracji: " + error.message);
   }
 }
@@ -68,78 +63,15 @@ async function signUp() {
 async function signOutUser() {
   try {
     await signOut(auth);
+    console.log("Wylogowano pomyślnie.");
     alert("Wylogowano pomyślnie.");
   } catch (error) {
-    console.error("Logout error:", error);
+    console.error("Błąd wylogowania:", error.message);
     alert("Błąd wylogowania: " + error.message);
   }
 }
 
-// Load cards
-async function loadCards(day) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const container = document.getElementById(`${day}-cards`);
-  container.innerHTML = "";
-
-  try {
-    const querySnapshot = await getDocs(collection(db, "users", user.uid, day));
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const card = document.createElement("div");
-      card.classList.add("exercise-card");
-      card.innerHTML = `
-        <p>Ćwiczenie: ${data.exercise}</p>
-        <p>Serie: ${data.series}</p>
-        <p>Powtórzenia: ${data.reps}</p>
-        <p>Ciężar: ${data.weight}</p>
-        <p>Notatki: ${data.notes}</p>
-        <button onclick="deleteExercise('${day}', '${doc.id}')">Usuń</button>
-      `;
-      container.appendChild(card);
-    });
-  } catch (error) {
-    console.error("Error loading cards:", error);
-  }
-}
-
-// Add exercise
-async function addExercise(day) {
-  const user = auth.currentUser;
-  if (!user) return alert("Musisz być zalogowany, aby dodać ćwiczenie.");
-
-  const exercise = document.getElementById(`${day}-exercise`).value;
-  const series = document.getElementById(`${day}-series`).value;
-  const reps = document.getElementById(`${day}-reps`).value;
-  const weight = document.getElementById(`${day}-weight`).value;
-  const notes = document.getElementById(`${day}-notes`).value;
-
-  try {
-    await setDoc(doc(collection(db, "users", user.uid, day)), {
-      exercise,
-      series,
-      reps,
-      weight,
-      notes,
-    });
-    alert("Ćwiczenie dodane pomyślnie.");
-    loadCards(day);
-  } catch (error) {
-    console.error("Error adding exercise:", error);
-  }
-}
-
-// Delete exercise
-async function deleteExercise(day, id) {
-  const user = auth.currentUser;
-  if (!user) return alert("Musisz być zalogowany, aby usunąć ćwiczenie.");
-
-  try {
-    await deleteDoc(doc(db, "users", user.uid, day, id));
-    alert("Ćwiczenie usunięte pomyślnie.");
-    loadCards(day);
-  } catch (error) {
-    console.error("Error deleting exercise:", error);
-  }
-}
+// Add event listeners
+document.getElementById("sign-in-btn").addEventListener("click", signIn);
+document.getElementById("sign-up-btn").addEventListener("click", signUp);
+document.getElementById("sign-out-btn").addEventListener("click", signOutUser);
