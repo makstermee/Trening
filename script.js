@@ -15,11 +15,11 @@ const dayMap = {
 const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
 /*************************************************************
-  ZMIENNA GLOBALNA – INFORMACJA O EDKCJI
+  ZMIENNA GLOBALNA – INFORMACJA O EDYCJI
 *************************************************************/
 let editInfo = {
-  day: null,
-  index: null
+  day: null,    // Nazwa dnia (monday, tuesday, ...)
+  docId: null  // ID dokumentu w Firestore
 };
 
 /*************************************************************
@@ -34,7 +34,7 @@ function showSection() {
   if (toShow) {
     toShow.classList.remove("hidden");
     if (selected === "history") {
-      loadHistory();
+      loadHistoryFromFirestore();
     }
   }
 }
@@ -47,8 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector('.container').style.display = 'none';
 
   allDays.forEach(day => {
-    loadCardsData(day);
-    loadMuscleGroup(day);
+    loadCardsDataFromFirestore(day);
+    loadMuscleGroupFromFirestore(day);
   });
 });
 
@@ -56,9 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
   3. DODAWANIE LUB AKTUALIZOWANIE KARTY
 *************************************************************/
 function addCard(day) {
-  if (editInfo.day === day && editInfo.index !== null) {
+  if (editInfo.day === day && editInfo.docId !== null) {
     // Aktualizujemy istniejącą kartę
-    updateCard(day, editInfo.index);
+    updateCard(day, editInfo.docId);
   } else {
     // Tworzymy nową kartę
     createNewCard(day);
@@ -79,61 +79,78 @@ function createNewCard(day) {
 
   const cardData = { exercise, series, reps, weight, notes };
 
-  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
-  stored.push(cardData);
-  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Musisz być zalogowany, aby dodawać ćwiczenia.");
+    return;
+  }
 
-  // Czyścimy formularz
-  document.getElementById(`${day}-exercise`).value = "";
-  document.getElementById(`${day}-series`).value   = "";
-  document.getElementById(`${day}-reps`).value     = "";
-  document.getElementById(`${day}-weight`).value   = "";
-  document.getElementById(`${day}-notes`).value    = "";
+  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").add(cardData)
+    .then(() => {
+      // Czyścimy formularz
+      document.getElementById(`${day}-exercise`).value = "";
+      document.getElementById(`${day}-series`).value   = "";
+      document.getElementById(`${day}-reps`).value     = "";
+      document.getElementById(`${day}-weight`).value   = "";
+      document.getElementById(`${day}-notes`).value    = "";
 
-  loadCardsData(day);
+      loadCardsDataFromFirestore(day);
+    })
+    .catch(error => {
+      console.error("Błąd przy dodawaniu ćwiczenia: ", error);
+    });
 }
 
 /*************************************************************
   3b. AKTUALIZACJA ISTNIEJĄCEJ KARTY
 *************************************************************/
-function updateCard(day, index) {
-  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
-  if (index < 0 || index >= stored.length) return;
-
-  stored[index].exercise = document.getElementById(`${day}-exercise`).value.trim();
-  stored[index].series   = document.getElementById(`${day}-series`).value.trim();
-  stored[index].reps     = document.getElementById(`${day}-reps`).value.trim();
-  stored[index].weight   = document.getElementById(`${day}-weight`).value.trim();
-  stored[index].notes    = document.getElementById(`${day}-notes`).value.trim();
-
-  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
-
-  // Czyścimy formularz
-  document.getElementById(`${day}-exercise`).value = "";
-  document.getElementById(`${day}-series`).value   = "";
-  document.getElementById(`${day}-reps`).value     = "";
-  document.getElementById(`${day}-weight`).value   = "";
-  document.getElementById(`${day}-notes`).value    = "";
-
-  // Wyłączamy tryb edycji
-  editInfo.day = null;
-  editInfo.index = null;
-
-  // Przywracamy główny przycisk do "Dodaj ćwiczenie"
-  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
-  if (addBtn) addBtn.textContent = "Dodaj ćwiczenie";
-
-  // Ukrywamy przycisk Anuluj
-  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
-  if (cancelBtn) {
-    cancelBtn.classList.add("hidden");
+function updateCard(day, docId) {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Musisz być zalogowany, aby aktualizować ćwiczenia.");
+    return;
   }
 
-  loadCardsData(day);
+  const exercise = document.getElementById(`${day}-exercise`).value.trim();
+  const series   = document.getElementById(`${day}-series`).value.trim();
+  const reps     = document.getElementById(`${day}-reps`).value.trim();
+  const weight   = document.getElementById(`${day}-weight`).value.trim();
+  const notes    = document.getElementById(`${day}-notes`).value.trim();
+
+  const updatedData = { exercise, series, reps, weight, notes };
+
+  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).update(updatedData)
+    .then(() => {
+      // Czyścimy formularz
+      document.getElementById(`${day}-exercise`).value = "";
+      document.getElementById(`${day}-series`).value   = "";
+      document.getElementById(`${day}-reps`).value     = "";
+      document.getElementById(`${day}-weight`).value   = "";
+      document.getElementById(`${day}-notes`).value    = "";
+
+      // Wyłączamy tryb edycji
+      editInfo.day = null;
+      editInfo.docId = null;
+
+      // Przywracamy główny przycisk do "Dodaj ćwiczenie"
+      const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+      if (addBtn) addBtn.textContent = "Dodaj ćwiczenie";
+
+      // Ukrywamy przycisk Anuluj
+      const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+      if (cancelBtn) {
+        cancelBtn.classList.add("hidden");
+      }
+
+      loadCardsDataFromFirestore(day);
+    })
+    .catch(error => {
+      console.error("Błąd przy aktualizacji ćwiczenia: ", error);
+    });
 }
 
 /*************************************************************
-  FUNKCJA ANULUJĄCA EDKCJĘ
+  FUNKCJA ANULUJĄCA EDYCJĘ
 *************************************************************/
 function cancelEdit(day) {
   // Czyścimy formularz
@@ -145,7 +162,7 @@ function cancelEdit(day) {
 
   // Wyłączamy tryb edycji
   editInfo.day = null;
-  editInfo.index = null;
+  editInfo.docId = null;
 
   // Przywracamy główny przycisk do "Dodaj ćwiczenie"
   const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
@@ -161,60 +178,81 @@ function cancelEdit(day) {
 }
 
 /*************************************************************
-  4. ŁADOWANIE KART (Z ROZWIJANYMI DETALAMI)
+  4. ŁADOWANIE KART Z FIRESTORE
 *************************************************************/
-function loadCardsData(day) {
+function loadCardsDataFromFirestore(day) {
   const container = document.getElementById(`${day}-cards`);
   if (!container) return;
 
   container.innerHTML = "";
-  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
 
-  stored.forEach((card, index) => {
-    const cardDiv = document.createElement("div");
-    cardDiv.classList.add("exercise-card");
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
+    return;
+  }
 
-    // Nagłówek
-    const headerDiv = document.createElement("div");
-    headerDiv.classList.add("exercise-card-header");
-    headerDiv.textContent = card.exercise || "(brak ćwiczenia)";
+  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
+    .then(querySnapshot => {
+      querySnapshot.forEach(doc => {
+        const card = doc.data();
+        const docId = doc.id; // ID dokumentu
 
-    // Detale
-    const detailsDiv = document.createElement("div");
-    detailsDiv.classList.add("exercise-card-details");
-    detailsDiv.innerHTML = `
-      <p><strong>Serie:</strong> ${escapeHTML(card.series) || "-"}</p>
-      <p><strong>Powtórzenia:</strong> ${escapeHTML(card.reps) || "-"}</p>
-      <p><strong>Ciężar (kg):</strong> ${escapeHTML(card.weight) || "-"}</p>
-      <p><strong>Notatki:</strong> ${escapeHTML(card.notes) || "-"}</p>
+        const cardDiv = document.createElement("div");
+        cardDiv.classList.add("exercise-card");
 
-      <button class="btn-reset" onclick="deleteCard('${day}', ${index})">Usuń</button>
-      <button class="btn-save" onclick="editCard('${day}', ${index})">Edytuj</button>
-    `;
+        // Nagłówek
+        const headerDiv = document.createElement("div");
+        headerDiv.classList.add("exercise-card-header");
+        headerDiv.textContent = card.exercise || "(brak ćwiczenia)";
 
-    // Kliknięcie w nagłówek -> pokaż/ukryj szczegóły
-    headerDiv.addEventListener("click", () => {
-      detailsDiv.classList.toggle("show");
-      headerDiv.classList.toggle("expanded");
+        // Detale
+        const detailsDiv = document.createElement("div");
+        detailsDiv.classList.add("exercise-card-details");
+        detailsDiv.innerHTML = `
+          <p><strong>Serie:</strong> ${escapeHTML(card.series) || "-"}</p>
+          <p><strong>Powtórzenia:</strong> ${escapeHTML(card.reps) || "-"}</p>
+          <p><strong>Ciężar (kg):</strong> ${escapeHTML(card.weight) || "-"}</p>
+          <p><strong>Notatki:</strong> ${escapeHTML(card.notes) || "-"}</p>
+
+          <button class="btn-reset" onclick="deleteCard('${day}', '${docId}')">Usuń</button>
+          <button class="btn-save" onclick="editCard('${day}', '${docId}')">Edytuj</button>
+        `;
+
+        // Kliknięcie w nagłówek -> pokaż/ukryj szczegóły
+        headerDiv.addEventListener("click", () => {
+          detailsDiv.classList.toggle("show");
+          headerDiv.classList.toggle("expanded");
+        });
+
+        cardDiv.appendChild(headerDiv);
+        cardDiv.appendChild(detailsDiv);
+        container.appendChild(cardDiv);
+      });
+    })
+    .catch(error => {
+      console.error("Błąd przy ładowaniu ćwiczeń: ", error);
     });
-
-    cardDiv.appendChild(headerDiv);
-    cardDiv.appendChild(detailsDiv);
-    container.appendChild(cardDiv);
-  });
 }
 
 /*************************************************************
   5. USUWANIE KARTY
 *************************************************************/
-function deleteCard(day, index) {
-  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
-  if (index < 0 || index >= stored.length) return;
+function deleteCard(day, docId) {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
+    return;
+  }
 
-  stored.splice(index, 1);
-  localStorage.setItem(`${day}-data`, JSON.stringify(stored));
-
-  loadCardsData(day);
+  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).delete()
+    .then(() => {
+      console.log("Ćwiczenie usunięte pomyślnie.");
+      loadCardsDataFromFirestore(day);
+    })
+    .catch(error => {
+      console.error("Błąd przy usuwaniu ćwiczenia: ", error);
+    });
 }
 
 /*************************************************************
@@ -222,85 +260,162 @@ function deleteCard(day, index) {
 *************************************************************/
 function resetCards(day) {
   if (confirm("Czy na pewno chcesz zresetować wszystkie ćwiczenia?")) {
-    localStorage.removeItem(`${day}-data`);
-    const container = document.getElementById(`${day}-cards`);
-    if (container) container.innerHTML = "";
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      alert("Musisz być zalogowany, aby resetować ćwiczenia.");
+      return;
+    }
+
+    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
+      .then(querySnapshot => {
+        const batch = db.batch();
+        querySnapshot.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        return batch.commit();
+      })
+      .then(() => {
+        console.log("Wszystkie ćwiczenia zostały zresetowane.");
+        loadCardsDataFromFirestore(day);
+      })
+      .catch(error => {
+        console.error("Błąd przy resetowaniu ćwiczeń: ", error);
+      });
   }
 }
 
 /*************************************************************
   7. EDYTOWANIE ISTNIEJĄCEJ KARTY
 *************************************************************/
-function editCard(day, index) {
-  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
-  if (index < 0 || index >= stored.length) return;
-
-  const card = stored[index];
-  document.getElementById(`${day}-exercise`).value = card.exercise || "";
-  document.getElementById(`${day}-series`).value   = card.series   || "";
-  document.getElementById(`${day}-reps`).value     = card.reps     || "";
-  document.getElementById(`${day}-weight`).value   = card.weight   || "";
-  document.getElementById(`${day}-notes`).value    = card.notes    || "";
-
-  editInfo.day = day;
-  editInfo.index = index;
-
-  // ZMIANA NAPISU PRZYCISKU NA "Zapisz zmiany"
-  const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
-  if (addBtn) {
-    addBtn.textContent = "Zapisz zmiany";
+function editCard(day, docId) {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Musisz być zalogowany, aby edytować ćwiczenia.");
+    return;
   }
 
-  // Pokazujemy przycisk Anuluj
-  const cancelBtn = document.getElementById(`${day}-cancel-btn`);
-  if (cancelBtn) {
-    cancelBtn.classList.remove("hidden");
-  }
+  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).get()
+    .then(doc => {
+      if (!doc.exists) {
+        console.log("Ćwiczenie nie istnieje.");
+        return;
+      }
+
+      const card = doc.data();
+      document.getElementById(`${day}-exercise`).value = card.exercise || "";
+      document.getElementById(`${day}-series`).value   = card.series   || "";
+      document.getElementById(`${day}-reps`).value     = card.reps     || "";
+      document.getElementById(`${day}-weight`).value   = card.weight   || "";
+      document.getElementById(`${day}-notes`).value    = card.notes    || "";
+
+      editInfo.day = day;
+      editInfo.docId = docId;
+
+      // ZMIANA NAPISU PRZYCISKU NA "Zapisz zmiany"
+      const addBtn = document.querySelector(`#${day} .exercise-form button#${day}-add-btn`);
+      if (addBtn) {
+        addBtn.textContent = "Zapisz zmiany";
+      }
+
+      // Pokazujemy przycisk Anuluj
+      const cancelBtn = document.getElementById(`${day}-cancel-btn`);
+      if (cancelBtn) {
+        cancelBtn.classList.remove("hidden");
+      }
+    })
+    .catch(error => {
+      console.error("Błąd przy edytowaniu ćwiczenia: ", error);
+    });
 }
 
 /*************************************************************
   8. ZAPIS GRUP MIĘŚNIOWYCH
 *************************************************************/
 function saveMuscleGroups() {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany. Nie można zapisać grup mięśniowych.");
+    return;
+  }
+
   allDays.forEach(day => {
     const inp = document.getElementById(`${day}-muscle-group`);
     if (!inp) return;
-    localStorage.setItem(`${day}-muscle-group`, inp.value.trim());
+    const muscleGroup = inp.value.trim();
+    db.collection("users").doc(user.uid).collection("days").doc(day).set({
+      muscleGroup: muscleGroup
+    }, { merge: true })
+      .then(() => {
+        console.log(`Grupa mięśniowa dla ${dayMap[day]} została zapisana.`);
+      })
+      .catch(error => {
+        console.error(`Błąd przy zapisywaniu grupy mięśniowej dla ${dayMap[day]}: `, error);
+      });
   });
 }
 
-function loadMuscleGroup(day) {
+function loadMuscleGroupFromFirestore(day) {
   const inp = document.getElementById(`${day}-muscle-group`);
   if (!inp) return;
-  inp.value = localStorage.getItem(`${day}-muscle-group`) || "";
+
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
+    return;
+  }
+
+  db.collection("users").doc(user.uid).collection("days").doc(day).get()
+    .then(doc => {
+      if (doc.exists && doc.data().muscleGroup) {
+        inp.value = doc.data().muscleGroup;
+      }
+    })
+    .catch(error => {
+      console.error("Błąd przy ładowaniu grupy mięśniowej: ", error);
+    });
 }
 
 /*************************************************************
   9. ZAPIS (SAVE) KART DO HISTORII
 *************************************************************/
 function saveToHistory(day) {
-  const stored = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
-  let historyData = JSON.parse(localStorage.getItem("history-data")) || [];
-  const date = new Date().toLocaleDateString();
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Musisz być zalogowany, aby zapisywać dane do historii.");
+    return;
+  }
 
-  const dayName = dayMap[day] || "Nieznany dzień";
+  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
+    .then(querySnapshot => {
+      const date = new Date().toLocaleDateString();
+      const dayName = dayMap[day] || "Nieznany dzień";
 
-  stored.forEach(card => {
-    if (Object.values(card).some(val => val !== "")) {
-      historyData.push({
-        date,
-        day: dayName,
-        exercise: card.exercise,
-        series: card.series,
-        reps: card.reps,
-        weight: card.weight,
-        notes: card.notes
+      querySnapshot.forEach(doc => {
+        const card = doc.data();
+        if (Object.values(card).some(val => val !== "")) {
+          db.collection("users").doc(user.uid).collection("history").add({
+            date,
+            day: dayName,
+            exercise: card.exercise,
+            series: card.series,
+            reps: card.reps,
+            weight: card.weight,
+            notes: card.notes
+          })
+            .then(() => {
+              console.log("Dane zostały zapisane do historii.");
+            })
+            .catch(error => {
+              console.error("Błąd przy zapisywaniu do historii: ", error);
+            });
+        }
       });
-    }
-  });
 
-  localStorage.setItem("history-data", JSON.stringify(historyData));
-  alert("Dane zostały zapisane do historii!");
+      alert("Dane zostały zapisane do historii!");
+    })
+    .catch(error => {
+      console.error("Błąd przy zapisywaniu do historii: ", error);
+    });
 }
 
 /*************************************************************
@@ -308,7 +423,6 @@ function saveToHistory(day) {
 *************************************************************/
 function showDatesForDay() {
   const selectedDay = document.getElementById("filter-day").value;
-  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
   const dateFilter = document.getElementById("date-filter");
   const historyBody = document.getElementById("history-table-body");
 
@@ -317,117 +431,154 @@ function showDatesForDay() {
     historyBody.innerHTML = "";
     return;
   }
-  const uniqueDates = [...new Set(
-    historyData.filter(e => e.day === selectedDay).map(e => e.date)
-  )];
-  if (uniqueDates.length === 0) {
-    dateFilter.classList.add("hidden");
-    historyBody.innerHTML = "";
+
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
     return;
   }
 
-  dateFilter.classList.remove("hidden");
-  const dateSelect = document.getElementById("filter-date");
-  dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
-  uniqueDates.forEach(d => {
-    const opt = document.createElement("option");
-    opt.value = d;
-    opt.textContent = d;
-    dateSelect.appendChild(opt);
-  });
-  historyBody.innerHTML = "";
+  db.collection("users").doc(user.uid).collection("history")
+    .where("day", "==", selectedDay)
+    .get()
+    .then(querySnapshot => {
+      const uniqueDates = [...new Set(
+        querySnapshot.docs.map(doc => doc.data().date)
+      )];
+      if (uniqueDates.length === 0) {
+        dateFilter.classList.add("hidden");
+        historyBody.innerHTML = "";
+        return;
+      }
+
+      dateFilter.classList.remove("hidden");
+      const dateSelect = document.getElementById("filter-date");
+      dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
+      uniqueDates.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d;
+        opt.textContent = d;
+        dateSelect.appendChild(opt);
+      });
+      historyBody.innerHTML = "";
+    })
+    .catch(error => {
+      console.error("Błąd przy filtrowaniu historii: ", error);
+    });
 }
 
 function loadHistoryForDate() {
   const selectedDay = document.getElementById("filter-day").value;
   const selectedDate= document.getElementById("filter-date").value;
   const historyBody = document.getElementById("history-table-body");
-  const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
 
   if (!selectedDate) {
     historyBody.innerHTML = "";
     return;
   }
 
-  const filtered = historyData.filter(e => e.day === selectedDay && e.date === selectedDate);
-  historyBody.innerHTML = "";
-  if (filtered.length === 0) {
-    const emptyRow = document.createElement("tr");
-    emptyRow.innerHTML = `
-      <td colspan="8" style="text-align:center;color:#999;">Brak danych dla wybranej daty</td>`;
-    historyBody.appendChild(emptyRow);
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
     return;
   }
 
-  filtered.forEach((entry, index) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${escapeHTML(entry.date)}</td>
-      <td>${escapeHTML(entry.day)}</td>
-      <td>${escapeHTML(entry.exercise)}</td>
-      <td>${escapeHTML(entry.series)}</td>
-      <td>${escapeHTML(entry.reps)}</td>
-      <td>${escapeHTML(entry.weight)}</td>
-      <td>${escapeHTML(entry.notes)}</td>
-      <td><button class="btn-reset" onclick="deleteHistoryEntryFiltered('${entry.date}', ${index})">Usuń</button></td>
-    `;
-    historyBody.appendChild(row);
-  });
-}
+  db.collection("users").doc(user.uid).collection("history")
+    .where("day", "==", selectedDay)
+    .where("date", "==", selectedDate)
+    .get()
+    .then(querySnapshot => {
+      historyBody.innerHTML = "";
+      if (querySnapshot.empty) {
+        const emptyRow = document.createElement("tr");
+        emptyRow.innerHTML = `
+          <td colspan="8" style="text-align:center;color:#999;">Brak danych dla wybranej daty</td>`;
+        historyBody.appendChild(emptyRow);
+        return;
+      }
 
-function deleteHistoryEntryFiltered(date, indexInFiltered){
-  let historyData= JSON.parse(localStorage.getItem('history-data'))||[];
-  const filtered= historyData.filter(e=> e.date === date);
-  if (indexInFiltered<0 || indexInFiltered>=filtered.length) return;
-
-  // Usuwamy wpis z oryginalnej tablicy
-  const entryToDelete = filtered[indexInFiltered];
-  const entryIndex = historyData.findIndex(e => e.date === date && e.exercise === entryToDelete.exercise && e.series === entryToDelete.series && e.reps === entryToDelete.reps && e.weight === entryToDelete.weight && e.notes === entryToDelete.notes);
-  if (entryIndex !== -1) {
-    historyData.splice(entryIndex,1);
-    localStorage.setItem('history-data', JSON.stringify(historyData));
-    loadHistoryForDate();
-  }
+      querySnapshot.forEach(doc => {
+        const entry = doc.data();
+        const docId = doc.id;
+        const row= document.createElement("tr");
+        row.innerHTML=`
+          <td>${escapeHTML(entry.date)}</td>
+          <td>${escapeHTML(entry.day)}</td>
+          <td>${escapeHTML(entry.exercise)}</td>
+          <td>${escapeHTML(entry.series)}</td>
+          <td>${escapeHTML(entry.reps)}</td>
+          <td>${escapeHTML(entry.weight)}</td>
+          <td>${escapeHTML(entry.notes)}</td>
+          <td><button class="btn-reset" onclick="deleteHistoryEntry('${docId}')">Usuń</button></td>
+        `;
+        historyBody.appendChild(row);
+      });
+    })
+    .catch(error => {
+      console.error("Błąd przy ładowaniu historii: ", error);
+    });
 }
 
 /*************************************************************
-  USUWANIE WPISÓW Z HISTORII (BEZ FILTRA)
+  USUWANIE WPISÓW Z HISTORII
 *************************************************************/
-function loadHistory(){
+function loadHistoryFromFirestore(){
   const historyBody= document.getElementById("history-table-body");
   if(!historyBody) return;
   historyBody.innerHTML='';
-  const historyData= JSON.parse(localStorage.getItem('history-data'))||[];
-  if(historyData.length===0){
-    const emptyRow= document.createElement('tr');
-    emptyRow.innerHTML=`
-      <td colspan="8" style="text-align:center;color:#999;">Brak zapisanej historii</td>`;
-    historyBody.appendChild(emptyRow);
+  
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
     return;
   }
-  historyData.forEach((entry,index)=>{
-    const row= document.createElement('tr');
-    row.innerHTML=`
-      <td>${escapeHTML(entry.date)}</td>
-      <td>${escapeHTML(entry.day)}</td>
-      <td>${escapeHTML(entry.exercise)}</td>
-      <td>${escapeHTML(entry.series)}</td>
-      <td>${escapeHTML(entry.reps)}</td>
-      <td>${escapeHTML(entry.weight)}</td>
-      <td>${escapeHTML(entry.notes)}</td>
-      <td><button class="btn-reset" onclick="deleteHistoryEntry(${index})">Usuń</button></td>
-    `;
-    historyBody.appendChild(row);
-  });
+
+  db.collection("users").doc(user.uid).collection("history").get()
+    .then(querySnapshot => {
+      if (querySnapshot.empty) {
+        const emptyRow= document.createElement('tr');
+        emptyRow.innerHTML=`
+          <td colspan="8" style="text-align:center;color:#999;">Brak zapisanej historii</td>`;
+        historyBody.appendChild(emptyRow);
+        return;
+      }
+      querySnapshot.forEach(doc => {
+        const entry = doc.data();
+        const docId = doc.id;
+        const row= document.createElement("tr");
+        row.innerHTML=`
+          <td>${escapeHTML(entry.date)}</td>
+          <td>${escapeHTML(entry.day)}</td>
+          <td>${escapeHTML(entry.exercise)}</td>
+          <td>${escapeHTML(entry.series)}</td>
+          <td>${escapeHTML(entry.reps)}</td>
+          <td>${escapeHTML(entry.weight)}</td>
+          <td>${escapeHTML(entry.notes)}</td>
+          <td><button class="btn-reset" onclick="deleteHistoryEntry('${docId}')">Usuń</button></td>
+        `;
+        historyBody.appendChild(row);
+      });
+    })
+    .catch(error => {
+      console.error("Błąd przy ładowaniu historii: ", error);
+    });
 }
 
-function deleteHistoryEntry(index){
-  let historyData= JSON.parse(localStorage.getItem('history-data'))||[];
-  if(index>=0 && index<historyData.length){
-    historyData.splice(index,1);
-    localStorage.setItem('history-data', JSON.stringify(historyData));
-    loadHistory();
+function deleteHistoryEntry(docId){
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
+    return;
   }
+
+  db.collection("users").doc(user.uid).collection("history").doc(docId).delete()
+    .then(() => {
+      console.log("Wpis historii usunięty pomyślnie.");
+      loadHistoryFromFirestore();
+    })
+    .catch(error => {
+      console.error("Błąd przy usuwaniu wpisu historii: ", error);
+    });
 }
 
 /*************************************************************
@@ -474,7 +625,7 @@ async function signOut() {
 /*************************************************************
   4. NASŁUCHIWANIE STANU UŻYTKOWNIKA
 *************************************************************/
-firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged(async (user) => {
   if (user) {
     // Zalogowano
     console.log("Zalogowano:", user.email);
@@ -485,6 +636,20 @@ firebase.auth().onAuthStateChanged((user) => {
 
     // Ukryj sekcję logowania
     document.getElementById('login-section').style.display = 'none';
+
+    // Sprawdź, czy są dane w localStorage
+    const hasLocalData = allDays.some(day => localStorage.getItem(`${day}-data`) || localStorage.getItem(`${day}-muscle-group`)) || localStorage.getItem("history-data");
+    if (hasLocalData) {
+      // Przeprowadź migrację
+      await migrateLocalStorageToFirestore();
+    }
+
+    // Ładuj dane z Firestore
+    allDays.forEach(day => {
+      loadCardsDataFromFirestore(day);
+      loadMuscleGroupFromFirestore(day);
+    });
+    loadHistoryFromFirestore();
   } else {
     // Wylogowano
     console.log("Wylogowano lub nikt nie zalogowany");
@@ -497,6 +662,53 @@ firebase.auth().onAuthStateChanged((user) => {
     document.getElementById('login-section').style.display = 'block';
   }
 });
+
+/*************************************************************
+  5. MIGRACJA DANYCH Z LOCALSTORAGE DO FIRESTORE
+*************************************************************/
+async function migrateLocalStorageToFirestore() {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany. Nie można przeprowadzić migracji.");
+    return;
+  }
+
+  try {
+    // Przechodzimy przez wszystkie dni tygodnia
+    for (const day of allDays) {
+      const dayData = JSON.parse(localStorage.getItem(`${day}-data`)) || [];
+      const muscleGroup = localStorage.getItem(`${day}-muscle-group`) || "";
+
+      // Zapisujemy grupę mięśniową
+      if (muscleGroup) {
+        await db.collection("users").doc(user.uid).collection("days").doc(day).set({
+          muscleGroup: muscleGroup
+        }, { merge: true });
+      }
+
+      // Zapisujemy ćwiczenia
+      for (const exercise of dayData) {
+        await db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").add(exercise);
+      }
+
+      // Opcjonalnie: usuń dane z localStorage po migracji
+      localStorage.removeItem(`${day}-data`);
+      localStorage.removeItem(`${day}-muscle-group`);
+    }
+
+    // Przechowujemy historię treningów
+    const historyData = JSON.parse(localStorage.getItem("history-data")) || [];
+    for (const entry of historyData) {
+      await db.collection("users").doc(user.uid).collection("history").add(entry);
+    }
+    localStorage.removeItem("history-data");
+
+    console.log("Migracja danych zakończona pomyślnie!");
+    alert("Migracja danych zakończona pomyślnie!");
+  } catch (error) {
+    console.error("Błąd przy migracji danych: ", error);
+  }
+}
 
 /*************************************************************
   ZABEZPIECZENIE PRZED XSS
