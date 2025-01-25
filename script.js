@@ -738,12 +738,51 @@ async function signUp() {
     document.getElementById('login-error').textContent = "Hasła nie są zgodne!";
     console.error("Password mismatch");
     return;
+/*************************************************************
+  FUNKCJE LOGOWANIA Firebase
+*************************************************************/
+
+// 1) Zalogowanie istniejącego użytkownika
+async function signIn() {
+  console.log("signIn called");
+
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+  console.log(`Attempting to sign in with email: ${email}`);
+
+  try {
+    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+    console.log("Sign in successful.");
+    document.getElementById('login-error').textContent = "";
+    document.getElementById('login-info').textContent = "Zalogowano jako: " + userCredential.user.email;
+  } catch (error) {
+    console.error("Sign in failed:", error);
+    document.getElementById('login-error').textContent = error.message;
+  }
+}
+
+// 2) Rejestracja nowego użytkownika z dodatkowymi danymi
+async function signUp() {
+  console.log("signUp called");
+
+  // Pobieranie danych z formularza
+  const name = document.getElementById('register-name').value.trim();
+  const surname = document.getElementById('register-surname').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value.trim();
+  const confirmPassword = document.getElementById('confirm-password').value.trim();
+
+  // Walidacja hasła
+  if (password !== confirmPassword) {
+    document.getElementById('login-error').textContent = "Hasła nie są zgodne!";
+    console.error("Password mismatch");
+    return;
   }
 
   console.log(`Attempting to sign up with email: ${email}, name: ${name}, surname: ${surname}`);
 
   try {
-    // Rejestracja w Firebase
+    // Rejestracja w Firebase Authentication
     const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
 
     // Zapisanie dodatkowych danych użytkownika w Firebase Firestore
@@ -765,10 +804,10 @@ async function signUp() {
   }
 }
 
-// 3) Wylogowanie
+// 3) Wylogowanie użytkownika
 async function signOut() {
   console.log("signOut called");
-  
+
   try {
     await firebase.auth().signOut();
     console.log("Sign out successful.");
