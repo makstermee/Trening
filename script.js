@@ -723,6 +723,46 @@ async function signUp() {
     console.error("Sign up failed:", error);
     document.getElementById('login-error').textContent = error.message;
   }
+  async function signUp() {
+  console.log("signUp called");
+
+  // Pobieranie danych z formularza
+  const name = document.getElementById('register-name').value.trim();
+  const surname = document.getElementById('register-surname').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value.trim();
+  const confirmPassword = document.getElementById('confirm-password').value.trim();
+
+  // Walidacja hasła
+  if (password !== confirmPassword) {
+    document.getElementById('login-error').textContent = "Hasła nie są zgodne!";
+    console.error("Password mismatch");
+    return;
+  }
+
+  console.log(`Attempting to sign up with email: ${email}, name: ${name}, surname: ${surname}`);
+
+  try {
+    // Rejestracja w Firebase
+    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+
+    // Zapisanie dodatkowych danych użytkownika w Firebase Firestore
+    const user = userCredential.user;
+    const db = firebase.firestore(); // Zakładam, że używasz Firestore
+    await db.collection("users").doc(user.uid).set({
+      name: name,
+      surname: surname,
+      email: email,
+      createdAt: new Date()
+    });
+
+    console.log("Sign up successful.");
+    document.getElementById('login-error').textContent = "";
+    document.getElementById('login-info').textContent = "Utworzono konto: " + user.email;
+  } catch (error) {
+    console.error("Sign up failed:", error);
+    document.getElementById('login-error').textContent = error.message;
+  }
 }
 
 // 3) Wylogowanie
