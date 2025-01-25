@@ -10,36 +10,43 @@ const db = firebase.firestore();
 
 // Logowanie użytkownika
 async function signIn() {
-  console.log("Logowanie rozpoczęte...");
-
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value.trim();
+
+  // Wyświetlanie komunikatu debugującego na stronie
+  const loginInfo = document.getElementById('login-info');
+  const loginError = document.getElementById('login-error');
+  loginInfo.textContent = "Próba logowania...";
+  loginError.textContent = "";
 
   try {
     const userCredential = await auth.signInWithEmailAndPassword(email, password);
     const user = userCredential.user;
-    document.getElementById('login-info').textContent = `Zalogowano jako: ${user.email}`;
-    document.getElementById('login-error').textContent = "";
-    console.log("Logowanie zakończone sukcesem.");
+
+    loginInfo.textContent = `Zalogowano jako: ${user.email}`;
+    console.log("Logowanie zakończone sukcesem:", user);
   } catch (error) {
-    console.error("Błąd logowania:", error);
-    document.getElementById('login-error').textContent = error.message;
+    loginError.textContent = `Błąd logowania: ${error.message}`;
+    console.error("Logowanie nieudane:", error);
   }
 }
 
 // Rejestracja użytkownika
 async function signUp() {
-  console.log("Rozpoczęto rejestrację...");
-
   const name = document.getElementById('register-name').value.trim();
   const surname = document.getElementById('register-surname').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value.trim();
   const confirmPassword = document.getElementById('confirm-password').value.trim();
 
+  const registerInfo = document.getElementById('login-info');
+  const registerError = document.getElementById('login-error');
+  registerInfo.textContent = "Próba rejestracji...";
+  registerError.textContent = "";
+
+  // Sprawdzenie hasła
   if (password !== confirmPassword) {
-    document.getElementById('login-error').textContent = "Hasła nie są zgodne!";
-    console.error("Hasła nie są zgodne.");
+    registerError.textContent = "Hasła nie są zgodne!";
     return;
   }
 
@@ -47,7 +54,7 @@ async function signUp() {
     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
     const user = userCredential.user;
 
-    // Zapisanie danych użytkownika w Firestore
+    // Zapisanie dodatkowych danych użytkownika w Firestore
     await db.collection('users').doc(user.uid).set({
       name: name,
       surname: surname,
@@ -55,27 +62,30 @@ async function signUp() {
       createdAt: new Date()
     });
 
-    document.getElementById('login-info').textContent = `Zarejestrowano: ${user.email}`;
-    document.getElementById('login-error').textContent = "";
-    console.log("Rejestracja zakończona sukcesem.");
-    toggleRegisterForm(); // Przełącz na formularz logowania
+    registerInfo.textContent = `Zarejestrowano pomyślnie jako: ${user.email}`;
+    console.log("Rejestracja zakończona sukcesem:", user);
+    toggleRegisterForm(); // Powrót do formularza logowania
   } catch (error) {
-    console.error("Błąd rejestracji:", error);
-    document.getElementById('login-error').textContent = error.message;
+    registerError.textContent = `Błąd rejestracji: ${error.message}`;
+    console.error("Rejestracja nieudana:", error);
   }
 }
 
 // Wylogowanie użytkownika
 async function signOut() {
-  console.log("Wylogowywanie...");
+  const loginInfo = document.getElementById('login-info');
+  const loginError = document.getElementById('login-error');
+
+  loginInfo.textContent = "Wylogowywanie...";
+  loginError.textContent = "";
 
   try {
     await auth.signOut();
-    document.getElementById('login-info').textContent = "Wylogowano.";
-    console.log("Wylogowano pomyślnie.");
+    loginInfo.textContent = "Wylogowano pomyślnie.";
+    console.log("Wylogowano użytkownika.");
   } catch (error) {
-    console.error("Błąd wylogowania:", error);
-    document.getElementById('login-error').textContent = error.message;
+    loginError.textContent = `Błąd wylogowania: ${error.message}`;
+    console.error("Wylogowanie nieudane:", error);
   }
 }
 
@@ -145,37 +155,4 @@ function addCard(day) {
   document.getElementById(`${day}-reps`).value = '';
   document.getElementById(`${day}-weight`).value = '';
   document.getElementById(`${day}-notes`).value = '';
-}
-
-// Zapisanie ćwiczeń do historii
-function saveToHistory(day) {
-  const cards = document.querySelectorAll(`#${day}-cards .exercise-card`);
-  const history = [];
-
-  cards.forEach(card => {
-    const data = {};
-    card.querySelectorAll('p').forEach(p => {
-      const [key, value] = p.textContent.split(': ');
-      data[key] = value;
-    });
-    history.push(data);
-  });
-
-  // Zapisanie danych do Firebase
-  db.collection('history').add({
-    day,
-    exercises: history,
-    timestamp: new Date()
-  }).then(() => {
-    alert("Dane zostały zapisane w historii.");
-  }).catch(error => {
-    console.error("Błąd zapisywania danych:", error);
-    alert("Nie udało się zapisać danych.");
-  });
-}
-
-// Resetowanie ćwiczeń
-function resetCards(day) {
-  const cardContainer = document.getElementById(`${day}-cards`);
-  cardContainer.innerHTML = '';
 }
