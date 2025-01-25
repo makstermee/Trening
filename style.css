@@ -65,7 +65,64 @@ body {
   color: red;
   font-weight: bold;
 }
+#registration-form {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #fff;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
 
+#registration-form h2 {
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+  color: #2c3e50;
+}
+
+#registration-form input {
+  display: block;
+  width: calc(100% - 20px);
+  margin: 10px auto;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+#registration-form .button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+#registration-form button {
+  width: 45%;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#registration-form button:first-child {
+  background-color: #28a745;
+}
+
+#registration-form button:first-child:hover {
+  background-color: #218838;
+}
+
+#registration-form button:last-child {
+  background-color: #6c757d;
+}
+
+#registration-form button:last-child:hover {
+  background-color: #5a6268;
+}
 /* PRZYCISK WYLOGOWANIA */
 .logout-btn {
   background-color: #dc3545;
