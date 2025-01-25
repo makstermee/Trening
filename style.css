@@ -16,23 +16,6 @@ body {
 
 /* SEKCJA LOGOWANIA */
 #login-section {
-  width: 300px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-#auth-container input {
-  display: block;
-  width: 100%;
-  margin: 10px 0;
-  padding: 8px;
-}
-
-#auth-container button {
-  margin: 10px 5px;
-  padding: 10px 15px;
-  cursor: pointer;
-}
   width: 100%;
   max-width: 400px;
   margin: 50px auto;
