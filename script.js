@@ -723,6 +723,15 @@ async function signUp() {
     console.error("Sign up failed:", error);
     document.getElementById('login-error').textContent = error.message;
   }
+  function showRegistration() {
+  document.getElementById("login-section").classList.add("hidden");
+  document.getElementById("registration-section").classList.remove("hidden");
+}
+
+function showLogin() {
+  document.getElementById("registration-section").classList.add("hidden");
+  document.getElementById("login-section").classList.remove("hidden");
+}
 }
 
 // 3) Wylogowanie
