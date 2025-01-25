@@ -65,23 +65,7 @@ body {
   color: red;
   font-weight: bold;
 }
-#registration-section {
-  width: 100%;
-  max-width: 400px;
-  margin: 50px auto;
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-#registration-section input, #registration-section textarea {
-  width: 90%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
+
 /* PRZYCISK WYLOGOWANIA */
 .logout-btn {
   background-color: #dc3545;
