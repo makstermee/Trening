@@ -35,6 +35,22 @@
   <button onclick="signIn()">Zaloguj</button>
   <button onclick="signUp()">Zarejestruj</button>
 </div>
+    <div id="registration-section" class="hidden">
+  <h2>Rejestracja</h2>
+  <input type="text" id="register-name" placeholder="Imię" required />
+  <input type="text" id="register-surname" placeholder="Nazwisko" required />
+  <input type="email" id="register-email" placeholder="Email" required />
+  <input type="password" id="register-password" placeholder="Hasło" required />
+  
+  <label for="register-preferences">Preferencje treningowe:</label>
+  <textarea id="register-preferences" placeholder="Opisz swoje preferencje..."></textarea>
+  
+  <div class="button-group">
+    <button onclick="register()">Zarejestruj</button>
+    <button onclick="showLogin()">Wróć do logowania</button>
+  </div>
+  <p id="register-error" class="error-message"></p>
+    </div>
 
 <p id="login-info" class="info-message"></p>
 <p id="login-error" class="error-message"></p>
