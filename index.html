@@ -29,11 +29,25 @@
 <body>
   <!-- SEKCJA LOGOWANIA -->
   <div id="login-section">
+<div id="auth-container">
+  <div id="login-form">
     <h2>Logowanie</h2>
-    <input type="email" id="login-email" placeholder="Email" required />
-    <input type="password" id="login-password" placeholder="Hasło" required /><div class="button-group">
-  <button onclick="signIn()">Zaloguj</button>
-  <button onclick="signUp()">Zarejestruj</button>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Hasło">
+    <button onclick="login()">Zaloguj się</button>
+    <button onclick="toggleRegisterForm()">Zarejestruj się</button>
+  </div>
+
+  <div id="register-form" style="display: none;">
+    <h2>Rejestracja</h2>
+    <input type="text" id="register-name" placeholder="Imię">
+    <input type="text" id="register-surname" placeholder="Nazwisko">
+    <input type="email" id="register-email" placeholder="Email">
+    <input type="password" id="register-password" placeholder="Hasło">
+    <input type="password" id="confirm-password" placeholder="Potwierdź hasło">
+    <button onclick="register()">Zarejestruj</button>
+    <button onclick="toggleRegisterForm()">Anuluj</button>
+  </div>
 </div>
 
 <p id="login-info" class="info-message"></p>
