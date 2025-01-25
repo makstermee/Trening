@@ -723,15 +723,6 @@ async function signUp() {
     console.error("Sign up failed:", error);
     document.getElementById('login-error').textContent = error.message;
   }
-  function showRegistration() {
-  document.getElementById("login-section").classList.add("hidden");
-  document.getElementById("registration-section").classList.remove("hidden");
-}
-
-function showLogin() {
-  document.getElementById("registration-section").classList.add("hidden");
-  document.getElementById("login-section").classList.remove("hidden");
-}
 }
 
 // 3) Wylogowanie
@@ -745,41 +736,6 @@ async function signOut() {
   } catch (error) {
     console.error("Sign out failed:", error);
     document.getElementById('login-error').textContent = error.message;
-  }
-  async function register() {
-  console.log("Rozpoczęto rejestrację...");
-
-  const name = document.getElementById("register-name").value.trim();
-  const surname = document.getElementById("register-surname").value.trim();
-  const email = document.getElementById("register-email").value.trim();
-  const password = document.getElementById("register-password").value.trim();
-  const preferences = document.getElementById("register-preferences").value.trim();
-
-  if (!name || !surname || !email || !password) {
-    document.getElementById("register-error").textContent = "Wypełnij wszystkie wymagane pola!";
-    return;
-  }
-
-  try {
-    // Rejestracja użytkownika w Firebase Authentication
-    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-    const userId = userCredential.user.uid;
-
-    // Zapisanie dodatkowych danych w Firestore
-    await firebase.firestore().collection("users").doc(userId).set({
-      name: name,
-      surname: surname,
-      email: email,
-      preferences: preferences,
-      registrationDate: new Date().toISOString(),
-    });
-
-    console.log("Rejestracja zakończona sukcesem.");
-    alert("Rejestracja zakończona sukcesem! Możesz się teraz zalogować.");
-    showLogin();
-  } catch (error) {
-    console.error("Błąd rejestracji:", error);
-    document.getElementById("register-error").textContent = error.message;
   }
 }
 
