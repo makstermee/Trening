@@ -28,9 +28,15 @@
   </script></head>
 <body>
   <!-- SEKCJA LOGOWANIA -->
-<div id="login-section">
-  <!-- Logowanie -->
-  <button onclick="toggleRegistrationForm()">Zarejestruj</button>
+<div id="login-form">
+  <h2>Logowanie</h2>
+  <input type="email" id="login-email" placeholder="Email" required />
+  <input type="password" id="login-password" placeholder="Hasło" required />
+  <div class="button-group">
+    <button onclick="signIn()">Zaloguj</button>
+    <button onclick="toggleRegistrationForm()">Zarejestruj</button>
+  </div>
+  <p id="login-error" class="error-message"></p>
 </div>
 
 <!-- Formularz rejestracji – osobna sekcja -->
