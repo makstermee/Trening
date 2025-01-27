@@ -795,11 +795,11 @@ async function migrateLocalStorageToFirestore() {
 const registrationForm = document.getElementById('registration-form');
 
 registrationForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+  e.preventDefault(); // Zapobiega odświeżeniu strony po wysłaniu formularza
   
-  const username = document.getElementById('register-username').value;
-  const email = document.getElementById('register-email').value;
-  const password = document.getElementById('register-password').value;
+  const username = document.getElementById('register-username').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value.trim();
   
   try {
     // Utworzenie użytkownika w Firebase Authentication
@@ -808,8 +808,8 @@ registrationForm.addEventListener('submit', async (e) => {
     // Dodanie nazwy użytkownika do profilu
     await userCredential.user.updateProfile({ displayName: username });
     
-    alert('Rejestracja zakończona sukcesem!');
-    registrationForm.reset();
+    alert('Rejestracja zakończona sukcesem! Witamy, ' + username + '!');
+    registrationForm.reset(); // Resetuje formularz po udanej rejestracji
   } catch (error) {
     console.error('Błąd rejestracji:', error.message);
     alert('Rejestracja nie powiodła się: ' + error.message);
