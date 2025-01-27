@@ -793,36 +793,23 @@ async function migrateLocalStorageToFirestore() {
   }
   // Obsługa formularza rejestracji
 const registrationForm = document.getElementById('registration-form');
-const registrationForm = document.getElementById('registration-form');
 
 registrationForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  console.log("Formularz przesłany!");
 
-  const username = document.getElementById('register-username').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value.trim();
 
-  console.log("Dane do rejestracji:", { username, email, password });
-
-  if (!email || !password) {
-    console.error("Email lub hasło są puste!");
-    return;
-  }
+  console.log("Próba rejestracji z danymi:", { email, password });
 
   try {
-    // Próba utworzenia użytkownika
     const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-    console.log("Użytkownik utworzony:", userCredential);
+    console.log("Użytkownik został zarejestrowany:", userCredential);
 
-    // Dodanie nazwy użytkownika do profilu
-    await userCredential.user.updateProfile({ displayName: username });
-    console.log("Profil użytkownika zaktualizowany z nazwą:", username);
-
-    alert('Rejestracja zakończona sukcesem! Witamy, ' + username + '!');
+    alert('Rejestracja zakończona sukcesem!');
     registrationForm.reset();
   } catch (error) {
-    console.error("Błąd rejestracji:", error);
+    console.error("Błąd rejestracji:", error.message);
     const errorMessage = document.getElementById('error-message');
     errorMessage.textContent = 'Błąd rejestracji: ' + error.message;
   }
