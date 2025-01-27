@@ -28,32 +28,18 @@
   </script></head>
 <body>
   <!-- SEKCJA LOGOWANIA -->
-<!-- Formularz rejestracji/logowania -->
-<div id="auth-form">
-  <h2 id="auth-form-title">Logowanie</h2>
-
-  <!-- Pole imienia (ukryte dla logowania, widoczne dla rejestracji) -->
-  <input type="text" id="auth-name" class="hidden" placeholder="Imię" />
-
-  <!-- Pole email -->
-  <input type="email" id="auth-email" placeholder="Email" required />
-
-  <!-- Pole hasła -->
-  <input type="password" id="auth-password" placeholder="Hasło" required />
-
-  <!-- Pole potwierdzenia hasła (ukryte dla logowania, widoczne dla rejestracji) -->
-  <input type="password" id="auth-confirm-password" class="hidden" placeholder="Potwierdź hasło" />
-
-  <!-- Komunikat o błędzie -->
-  <p id="auth-error" class="error-message"></p>
-
-  <!-- Grupa przycisków -->
-  <div class="button-group">
-    <button onclick="handleAuth()">Zaloguj</button>
-    <button onclick="toggleAuthMode()">Zarejestruj</button>
-  </div>
+  <div id="login-section">
+    <h2>Logowanie</h2>
+    <input type="email" id="login-email" placeholder="Email" required />
+    <input type="password" id="login-password" placeholder="Hasło" required /><div class="button-group">
+  <button onclick="signIn()">Zaloguj</button>
+  <button onclick="signUp()">Zarejestruj</button>
 </div>
-    <!-- SEKCJA PLANU TRENINGOWEGO -->  <div class="container">
+
+<p id="login-info" class="info-message"></p>
+<p id="login-error" class="error-message"></p>
+
+  </div>  <!-- SEKCJA PLANU TRENINGOWEGO -->  <div class="container">
     <!-- PRZYCISK WYLOGOWANIA -->
     <button class="logout-btn" onclick="signOut()">Wyloguj</button><h1>Plan Treningowy</h1>
 
