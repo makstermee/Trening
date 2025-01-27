@@ -792,34 +792,22 @@ async function migrateLocalStorageToFirestore() {
     console.error("Błąd przy migracji danych: ", error);
   }
   // Obsługa formularza rejestracji
-// Pobranie elementu formularza i pola błędów
 const registrationForm = document.getElementById('registration-form');
-const errorMessage = document.getElementById('error-message');
 
-// Obsługa zdarzenia "submit" dla formularza rejestracji
 registrationForm.addEventListener('submit', async (e) => {
-  e.preventDefault(); // Zapobiega odświeżeniu strony po wysłaniu formularza
-  
+  e.preventDefault();
+
   const username = document.getElementById('register-username').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value.trim();
 
-  // Wyczyszczenie poprzedniego komunikatu o błędzie
-  errorMessage.textContent = '';
-
   try {
-    // Rejestracja użytkownika w Firebase
     const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-
-    // Aktualizacja profilu użytkownika
     await userCredential.user.updateProfile({ displayName: username });
-
-    alert('Rejestracja zakończona sukcesem! Witamy, ' + username + '!');
-    registrationForm.reset(); // Resetuje formularz po udanej rejestracji
+    alert('Rejestracja zakończona sukcesem!');
+    registrationForm.reset();
   } catch (error) {
-    // Wyświetlenie błędu w elemencie HTML
-    errorMessage.textContent = 'Błąd rejestracji: ' + error.message;
-    console.error('Błąd rejestracji:', error);
+    alert('Błąd rejestracji: ' + error.message);
   }
 });
 }
