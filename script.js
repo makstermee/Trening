@@ -726,6 +726,14 @@ async function signUp() {
   } catch (error) {
     document.getElementById('register-error').textContent = error.message;
   }
+function showLogin() {
+  document.getElementById('login-form').classList.remove('hidden');
+  document.getElementById('register-form').classList.add('hidden');
+}
+
+function showRegister() {
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('register-form').classList.remove('hidden');
 }
 // 2) Rejestracja nowego użytkownika
 async function signUp() {
