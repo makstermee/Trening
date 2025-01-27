@@ -65,6 +65,17 @@ body {
   color: red;
   font-weight: bold;
 }
+.hidden {
+  display: none;
+}
+
+#login-section {
+  text-align: center;
+}
+
+#login-section form {
+  margin: 20px 0;
+}
 
 /* PRZYCISK WYLOGOWANIA */
 .logout-btn {

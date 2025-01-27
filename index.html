@@ -28,16 +28,32 @@
   </script></head>
 <body>
   <!-- SEKCJA LOGOWANIA -->
-  <div id="login-section">
-    <h2>Logowanie</h2>
-    <input type="email" id="login-email" placeholder="Email" required />
-    <input type="password" id="login-password" placeholder="Hasło" required /><div class="button-group">
-  <button onclick="signIn()">Zaloguj</button>
-  <button onclick="signUp()">Zarejestruj</button>
-</div>
+    <div id="login-section">
+  <div class="button-group">
+    <button onclick="showLogin()">Logowanie</button>
+    <button onclick="showRegister()">Rejestracja</button>
+  </div>
 
-<p id="login-info" class="info-message"></p>
-<p id="login-error" class="error-message"></p>
+  <!-- Formularz logowania -->
+  <form id="login-form">
+    <h2>Logowanie</h2>
+    <input type="email" id="login-email" placeholder="E-mail">
+    <input type="password" id="login-password" placeholder="Hasło">
+    <button type="button" onclick="signIn()">Zaloguj się</button>
+    <p id="login-error" class="error-message"></p>
+    <p id="login-info" class="info-message"></p>
+  </form>
+
+  <!-- Formularz rejestracji -->
+  <form id="register-form" class="hidden">
+    <h2>Rejestracja</h2>
+    <input type="email" id="register-email" placeholder="E-mail">
+    <input type="password" id="register-password" placeholder="Hasło">
+    <button type="button" onclick="signUp()">Zarejestruj się</button>
+    <p id="register-error" class="error-message"></p>
+    <p id="register-info" class="info-message"></p>
+  </form>
+</div>
 
   </div>  <!-- SEKCJA PLANU TRENINGOWEGO -->  <div class="container">
     <!-- PRZYCISK WYLOGOWANIA -->

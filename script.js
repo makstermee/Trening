@@ -687,58 +687,56 @@ function deleteHistoryEntry(docId){
 /*************************************************************
   FUNKCJE LOGOWANIA Firebase
 *************************************************************/
-// 1) Zalogowanie istniejącego użytkownika
-async function signIn() {
-  console.log("signIn called");
-  
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value.trim();
-  console.log(`Attempting to sign in with email: ${email}`);
-
-  try {
-    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-    console.log("Sign in successful.");
-    document.getElementById('login-error').textContent = "";
-    document.getElementById('login-info').textContent = "Zalogowano jako: " + userCredential.user.email;
-  } catch (error) {
-    console.error("Sign in failed:", error);
-    document.getElementById('login-error').textContent = error.message;
-  }
+// Przełączanie między formularzami
+function showLogin() {
+  document.getElementById('login-form').classList.remove('hidden');
+  document.getElementById('register-form').classList.add('hidden');
 }
 
-// 2) Rejestracja nowego użytkownika
+function showRegister() {
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('register-form').classList.remove('hidden');
+}
+
+// Rejestracja użytkownika
 async function signUp() {
-  console.log("signUp called");
-  
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value.trim();
-  console.log(`Attempting to sign up with email: ${email}`);
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value.trim();
 
   try {
     const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-    console.log("Sign up successful.");
-    document.getElementById('login-error').textContent = "";
-    document.getElementById('login-info').textContent = "Utworzono konto: " + userCredential.user.email;
+    document.getElementById('register-error').textContent = "";
+    alert("Konto utworzone: " + userCredential.user.email);
+    showLogin(); // Przełącz na logowanie
   } catch (error) {
-    console.error("Sign up failed:", error);
+    document.getElementById('register-error').textContent = error.message;
+  }
+}
+
+// Logowanie użytkownika
+async function signIn() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+
+  try {
+    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+    document.getElementById('login-error').textContent = "";
+    alert("Zalogowano jako: " + userCredential.user.email);
+  } catch (error) {
     document.getElementById('login-error').textContent = error.message;
   }
 }
 
-// 3) Wylogowanie
+// Wylogowanie użytkownika
 async function signOut() {
-  console.log("signOut called");
-  
   try {
     await firebase.auth().signOut();
-    console.log("Sign out successful.");
-    document.getElementById('login-info').textContent = "Wylogowano";
+    alert("Wylogowano");
+    showLogin();
   } catch (error) {
-    console.error("Sign out failed:", error);
-    document.getElementById('login-error').textContent = error.message;
+    console.error("Błąd wylogowania: ", error.message);
   }
 }
-
 /*************************************************************
   5. MIGRACJA DANYCH Z LOCALSTORAGE DO FIRESTORE
 *************************************************************/
