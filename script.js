@@ -793,26 +793,46 @@ async function migrateLocalStorageToFirestore() {
   }
   // Obsługa formularza rejestracji
 const registrationForm = document.getElementById('registration-form');
+// Pobieranie formularza
+const registrationForm = document.getElementById('registration-form');
 
 if (!registrationForm) {
-  console.error("Formularz rejestracji nie został znaleziony!");
+  console.error("Formularz rejestracji nie został znaleziony w DOM!");
 } else {
-  console.log("Formularz rejestracji znaleziony!");
+  console.log("Formularz rejestracji został znaleziony!");
 }
 
-registrationForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  console.log("Formularz został przesłany!");
+// Obsługa zdarzenia submit
+registrationForm.addEventListener('submit', async (e) => {
+  e.preventDefault(); // Zapobiega odświeżeniu strony
+  console.log("Zdarzenie submit zostało wywołane!");
 
-  const email = document.getElementById('register-email')?.value.trim();
-  const password = document.getElementById('register-password')?.value.trim();
+  // Pobieranie danych z formularza
+  const username = document.getElementById('register-username').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value.trim();
 
+  console.log("Dane do rejestracji:", { username, email, password });
+
+  // Sprawdzanie poprawności danych
   if (!email || !password) {
-    console.error("Brak danych w formularzu rejestracji!");
+    console.error("Email lub hasło są puste!");
     return;
   }
 
-  console.log("Dane z formularza:", { email, password });
+  try {
+    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+    console.log("Użytkownik został zarejestrowany:", userCredential);
+
+    // Aktualizacja profilu użytkownika
+    await userCredential.user.updateProfile({ displayName: username });
+    alert('Rejestracja zakończona sukcesem! Witamy, ' + username + '!');
+    registrationForm.reset(); // Czyszczenie formularza
+  } catch (error) {
+    console.error("Błąd rejestracji:", error.message);
+    const errorMessage = document.getElementById('error-message');
+    errorMessage.textContent = 'Błąd rejestracji: ' + error.message;
+  }
 });
 }
 
