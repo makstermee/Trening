@@ -791,6 +791,30 @@ async function migrateLocalStorageToFirestore() {
   } catch (error) {
     console.error("Błąd przy migracji danych: ", error);
   }
+  // Obsługa formularza rejestracji
+const registrationForm = document.getElementById('registration-form');
+
+registrationForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const username = document.getElementById('register-username').value;
+  const email = document.getElementById('register-email').value;
+  const password = document.getElementById('register-password').value;
+  
+  try {
+    // Utworzenie użytkownika w Firebase Authentication
+    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+    
+    // Dodanie nazwy użytkownika do profilu
+    await userCredential.user.updateProfile({ displayName: username });
+    
+    alert('Rejestracja zakończona sukcesem!');
+    registrationForm.reset();
+  } catch (error) {
+    console.error('Błąd rejestracji:', error.message);
+    alert('Rejestracja nie powiodła się: ' + error.message);
+  }
+});
 }
 
 /*************************************************************
