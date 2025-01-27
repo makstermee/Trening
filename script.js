@@ -793,8 +793,6 @@ async function migrateLocalStorageToFirestore() {
   }
   // Obsługa formularza rejestracji
 const registrationForm = document.getElementById('registration-form');
-// Pobieranie formularza
-const registrationForm = document.getElementById('registration-form');
 
 if (!registrationForm) {
   console.error("Formularz rejestracji nie został znaleziony w DOM!");
