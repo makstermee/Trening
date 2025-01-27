@@ -752,6 +752,33 @@ async function signUp() {
     console.error("Sign up failed:", error);
     document.getElementById('login-error').textContent = error.message;
   }
+  firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    console.log("Użytkownik zalogowany: ", user.email);
+    document.getElementById('login-section').classList.add('hidden');
+    // Pokaż sekcję po zalogowaniu
+  } else {
+    console.log("Brak zalogowanego użytkownika.");
+    document.getElementById('login-section').classList.remove('hidden');
+  }
+    function resetForms() {
+  document.getElementById('login-form').reset();
+  document.getElementById('register-form').reset();
+    }
+    function handleFirebaseError(error) {
+  console.error("Błąd Firebase: ", error);
+  document.getElementById('login-error').textContent = error.message || "Wystąpił nieznany błąd.";
+    }
+    async function signOut() {
+  try {
+    await firebase.auth().signOut();
+    console.log("Wylogowano.");
+    document.getElementById('login-section').classList.remove('hidden');
+  } catch (error) {
+    console.error("Błąd przy wylogowywaniu: ", error);
+  }
+    }
+});
 }
 
 // 3) Wylogowanie
