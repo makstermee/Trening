@@ -793,41 +793,36 @@ async function migrateLocalStorageToFirestore() {
   }
   // Obsługa formularza rejestracji
 const registrationForm = document.getElementById('registration-form');
+const registrationForm = document.getElementById('registration-form');
 
-if (!registrationForm) {
-  console.error("Formularz rejestracji nie został znaleziony w DOM!");
-} else {
-  console.log("Formularz rejestracji został znaleziony!");
-}
-
-// Obsługa zdarzenia submit
 registrationForm.addEventListener('submit', async (e) => {
-  e.preventDefault(); // Zapobiega odświeżeniu strony
-  console.log("Zdarzenie submit zostało wywołane!");
+  e.preventDefault();
+  console.log("Formularz przesłany!");
 
-  // Pobieranie danych z formularza
   const username = document.getElementById('register-username').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value.trim();
 
   console.log("Dane do rejestracji:", { username, email, password });
 
-  // Sprawdzanie poprawności danych
   if (!email || !password) {
     console.error("Email lub hasło są puste!");
     return;
   }
 
   try {
+    // Próba utworzenia użytkownika
     const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-    console.log("Użytkownik został zarejestrowany:", userCredential);
+    console.log("Użytkownik utworzony:", userCredential);
 
-    // Aktualizacja profilu użytkownika
+    // Dodanie nazwy użytkownika do profilu
     await userCredential.user.updateProfile({ displayName: username });
+    console.log("Profil użytkownika zaktualizowany z nazwą:", username);
+
     alert('Rejestracja zakończona sukcesem! Witamy, ' + username + '!');
-    registrationForm.reset(); // Czyszczenie formularza
+    registrationForm.reset();
   } catch (error) {
-    console.error("Błąd rejestracji:", error.message);
+    console.error("Błąd rejestracji:", error);
     const errorMessage = document.getElementById('error-message');
     errorMessage.textContent = 'Błąd rejestracji: ' + error.message;
   }
