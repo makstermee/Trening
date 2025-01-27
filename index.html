@@ -35,20 +35,14 @@
   <button onclick="signIn()">Zaloguj</button>
 </div>
     <!-- Sekcja rejestracji -->
-<section id="registration-section">
-  <form id="registration-form">
-    <input type="text" id="register-username" placeholder="Nazwa użytkownika" required />
-    <input type="email" id="register-email" placeholder="E-mail" required />
-    <input type="password" id="register-password" placeholder="Hasło" required />
-    <button type="submit">Zarejestruj</button>
-  </form>
-  <div id="error-message" style="color: red; margin-top: 20px;"></div>
-</section>
-
-<p id="login-info" class="info-message"></p>
-<p id="login-error" class="error-message"></p>
-
-  </div>  <!-- SEKCJA PLANU TRENINGOWEGO -->  <div class="container">
+<form id="registration-form">
+  <input type="email" id="register-email" placeholder="E-mail" required />
+  <input type="password" id="register-password" placeholder="Hasło" required />
+  <button type="submit">Zarejestruj</button>
+</form>
+<div id="error-message" style="color: red; margin-top: 10px;"></div>
+    <!-- SEKCJA PLANU TRENINGOWEGO -->
+    <div class="container">
     <!-- PRZYCISK WYLOGOWANIA -->
     <button class="logout-btn" onclick="signOut()">Wyloguj</button><h1>Plan Treningowy</h1>
 
