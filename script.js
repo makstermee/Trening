@@ -792,33 +792,34 @@ async function migrateLocalStorageToFirestore() {
     console.error("Błąd przy migracji danych: ", error);
   }
   // Obsługa formularza rejestracji
+// Pobranie elementu formularza i pola błędów
 const registrationForm = document.getElementById('registration-form');
+const errorMessage = document.getElementById('error-message');
 
+// Obsługa zdarzenia "submit" dla formularza rejestracji
 registrationForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
+  e.preventDefault(); // Zapobiega odświeżeniu strony po wysłaniu formularza
+  
   const username = document.getElementById('register-username').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value.trim();
 
-  // Logowanie danych do debugowania
-  alert("Próba rejestracji:\n" + 
-        "Nazwa użytkownika: " + username + "\n" +
-        "Email: " + email);
+  // Wyczyszczenie poprzedniego komunikatu o błędzie
+  errorMessage.textContent = '';
 
   try {
+    // Rejestracja użytkownika w Firebase
     const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
 
-    // Logowanie użytkownika utworzonego w Firebase
-    alert("Użytkownik utworzony: " + userCredential.user.uid);
-
+    // Aktualizacja profilu użytkownika
     await userCredential.user.updateProfile({ displayName: username });
-    alert('Rejestracja zakończona sukcesem!');
-    registrationForm.reset();
+
+    alert('Rejestracja zakończona sukcesem! Witamy, ' + username + '!');
+    registrationForm.reset(); // Resetuje formularz po udanej rejestracji
   } catch (error) {
-    // Wyświetlanie błędu
-    alert('Błąd rejestracji: ' + error.message);
-    console.error("Błąd:", error);
+    // Wyświetlenie błędu w elemencie HTML
+    errorMessage.textContent = 'Błąd rejestracji: ' + error.message;
+    console.error('Błąd rejestracji:', error);
   }
 });
 }
