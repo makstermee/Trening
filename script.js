@@ -705,7 +705,28 @@ async function signIn() {
     document.getElementById('login-error').textContent = error.message;
   }
 }
+function showLogin() {
+  document.getElementById('login-form').classList.remove('hidden');
+  document.getElementById('register-form').classList.add('hidden');
+}
 
+function showRegister() {
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('register-form').classList.remove('hidden');
+}
+
+async function signUp() {
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value.trim();
+
+  try {
+    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+    document.getElementById('register-info').textContent = "Konto utworzone: " + userCredential.user.email;
+    document.getElementById('register-error').textContent = "";
+  } catch (error) {
+    document.getElementById('register-error').textContent = error.message;
+  }
+}
 // 2) Rejestracja nowego użytkownika
 async function signUp() {
   console.log("signUp called");
