@@ -398,7 +398,73 @@ function editCard(day, docId) {
       console.error("Błąd przy edytowaniu ćwiczenia: ", error);
     });
 }
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("monday-cards"); // Kontener dla kafelków
 
+  container.addEventListener("dragstart", (e) => {
+    if (e.target.classList.contains("exercise-card")) {
+      e.target.classList.add("dragging");
+    }
+  });
+
+  container.addEventListener("dragend", (e) => {
+    if (e.target.classList.contains("exercise-card")) {
+      e.target.classList.remove("dragging");
+    }
+  });
+
+  container.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const draggingCard = container.querySelector(".dragging");
+    const afterElement = getDragAfterElement(container, e.clientY);
+    if (afterElement == null) {
+      container.appendChild(draggingCard);
+    } else {
+      container.insertBefore(draggingCard, afterElement);
+    }
+  });
+
+  container.addEventListener("drop", () => {
+    saveNewOrder(); // Funkcja zapisująca nowy porządek
+  });
+});
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll(".exercise-card:not(.dragging)")];
+
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function saveNewOrder() {
+  const container = document.getElementById("monday-cards");
+  const cards = [...container.querySelectorAll(".exercise-card")];
+  const newOrder = cards.map(card => card.getAttribute("data-id"));
+  console.log("Nowy porządek:", newOrder);
+
+  // Zapisz nowy porządek do Firestore
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+
+  const batch = firebase.firestore().batch();
+  newOrder.forEach((cardId, index) => {
+    const cardRef = firebase.firestore().collection("users").doc(user.uid).collection("days").doc("monday").collection("exercises").doc(cardId);
+    batch.update(cardRef, { order: index });
+  });
+
+  batch.commit().then(() => {
+    console.log("Nowy porządek zapisany.");
+  }).catch((error) => {
+    console.error("Błąd zapisywania porządku:", error);
+  });
+}
 /*************************************************************
   8. ZAPIS GRUP MIĘŚNIOWYCH
 *************************************************************/
