@@ -723,46 +723,6 @@ async function signUp() {
     console.error("Sign up failed:", error);
     document.getElementById('login-error').textContent = error.message;
   }
-  // Funkcja pokazująca/ukrywająca formularz rejestracji
-function toggleRegistrationForm() {
-  const form = document.getElementById('registration-form');
-  form.classList.toggle('hidden');
-}
-
-// Funkcja do obsługi rejestracji użytkownika
-async function registerUser() {
-  const name = document.getElementById('register-name').value.trim();
-  const email = document.getElementById('register-email').value.trim();
-  const password = document.getElementById('register-password').value.trim();
-  const confirmPassword = document.getElementById('register-confirm-password').value.trim();
-
-  // Walidacja danych
-  if (!name || !email || !password || !confirmPassword) {
-    alert("Wypełnij wszystkie pola!");
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    alert("Hasła nie są zgodne!");
-    return;
-  }
-
-  try {
-    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-    const user = userCredential.user;
-
-    // Zapis imienia użytkownika w Firestore
-    await db.collection("users").doc(user.uid).set({
-      name: name,
-      email: email
-    });
-
-    alert("Rejestracja zakończona sukcesem! Możesz się teraz zalogować.");
-    toggleRegistrationForm(); // Ukryj formularz
-  } catch (error) {
-    console.error("Błąd rejestracji:", error);
-    alert("Błąd rejestracji: " + error.message);
-  }
 }
 
 // 3) Wylogowanie
