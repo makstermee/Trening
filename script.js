@@ -794,27 +794,25 @@ async function migrateLocalStorageToFirestore() {
   // Obsługa formularza rejestracji
 const registrationForm = document.getElementById('registration-form');
 
-registrationForm.addEventListener('submit', async (e) => {
+if (!registrationForm) {
+  console.error("Formularz rejestracji nie został znaleziony!");
+} else {
+  console.log("Formularz rejestracji znaleziony!");
+}
+
+registrationForm.addEventListener('submit', (e) => {
   e.preventDefault();
   console.log("Formularz został przesłany!");
 
-  const username = document.getElementById('register-username').value.trim();
-  const email = document.getElementById('register-email').value.trim();
-  const password = document.getElementById('register-password').value.trim();
+  const email = document.getElementById('register-email')?.value.trim();
+  const password = document.getElementById('register-password')?.value.trim();
 
-  console.log("Dane do rejestracji:", { username, email });
-
-  try {
-    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-    console.log("Użytkownik został zarejestrowany:", userCredential);
-
-    await userCredential.user.updateProfile({ displayName: username });
-    alert('Rejestracja zakończona sukcesem!');
-    registrationForm.reset();
-  } catch (error) {
-    console.error("Błąd rejestracji:", error);
-    alert('Błąd rejestracji: ' + error.message);
+  if (!email || !password) {
+    console.error("Brak danych w formularzu rejestracji!");
+    return;
   }
+
+  console.log("Dane z formularza:", { email, password });
 });
 }
 
