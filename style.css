@@ -65,17 +65,6 @@ body {
   color: red;
   font-weight: bold;
 }
-.hidden {
-  display: none;
-}
-
-#login-section {
-  text-align: center;
-}
-
-#login-section form {
-  margin: 20px 0;
-}
 
 /* PRZYCISK WYLOGOWANIA */
 .logout-btn {
@@ -206,19 +195,7 @@ textarea:focus {
   margin-bottom: 15px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-.exercise-card {
-  margin: 10px 0;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #fff;
-  cursor: grab;
-}
 
-.exercise-card.dragging {
-  opacity: 0.5;
-  background-color: #f0f0f0;
-}
 /* NAGŁÓWEK – klikalny, pokazuje/ukrywa detale */
 .exercise-card-header {
   font-weight: bold;
