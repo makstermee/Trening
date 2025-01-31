@@ -59,19 +59,20 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelector('.container').style.display = 'block';
       document.getElementById('login-section').style.display = 'none';
 
-      // Sprawdź, czy są dane w localStorage
+      // Sprawdź, czy są dane w localStorage (migracja)
       const hasLocalData = allDays.some(day => localStorage.getItem(`${day}-data`) || localStorage.getItem(`${day}-muscle-group`)) || localStorage.getItem("history-data");
       if (hasLocalData) {
-        // Przeprowadź migrację
         console.log("Migrating localStorage data to Firestore.");
         migrateLocalStorageToFirestore();
       }
 
-      // Ładuj dane z Firestore
+      // Dla każdego dnia: ładujemy ćwiczenia, grupy mięśniowe i konfigurujemy drag & drop
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
+        setupDragAndDropForDay(day);
       });
+
       loadHistoryFromFirestore();
     } else {
       console.log("Wylogowano lub nikt nie zalogowany");
@@ -115,7 +116,16 @@ function createNewCard(day) {
     return;
   }
 
-  const cardData = { exercise, series, reps, weight, notes };
+  // Dodajemy pole "order" z wartością Date.now() jako unikalny znacznik czasu
+  const cardData = {
+    exercise,
+    series,
+    reps,
+    weight,
+    notes,
+    order: Date.now()
+  };
+
   console.log("Card data to add:", cardData);
 
   const user = firebase.auth().currentUser;
@@ -125,7 +135,10 @@ function createNewCard(day) {
     return;
   }
 
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").add(cardData)
+  db.collection("users").doc(user.uid)
+    .collection("days").doc(day)
+    .collection("exercises")
+    .add(cardData)
     .then(() => {
       console.log("Ćwiczenie dodane pomyślnie do Firestore.");
       // Czyścimy formularz
@@ -164,7 +177,10 @@ function updateCard(day, docId) {
   const updatedData = { exercise, series, reps, weight, notes };
   console.log("Updated data:", updatedData);
 
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).update(updatedData)
+  db.collection("users").doc(user.uid)
+    .collection("days").doc(day)
+    .collection("exercises").doc(docId)
+    .update(updatedData)
     .then(() => {
       console.log("Ćwiczenie zaktualizowane pomyślnie.");
       // Czyścimy formularz
@@ -247,7 +263,12 @@ function loadCardsDataFromFirestore(day) {
     return;
   }
 
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
+  // Pobieramy dokumenty z Firestore, sortując po polu "order"
+  db.collection("users").doc(user.uid)
+    .collection("days").doc(day)
+    .collection("exercises")
+    .orderBy("order", "asc")
+    .get()
     .then(querySnapshot => {
       console.log(`Found ${querySnapshot.size} exercises for day: ${day}`);
       querySnapshot.forEach(doc => {
@@ -256,6 +277,8 @@ function loadCardsDataFromFirestore(day) {
 
         const cardDiv = document.createElement("div");
         cardDiv.classList.add("exercise-card");
+        cardDiv.setAttribute("data-id", docId);
+        cardDiv.setAttribute("draggable", "true");
 
         // Nagłówek
         const headerDiv = document.createElement("div");
@@ -303,7 +326,10 @@ function deleteCard(day, docId) {
     return;
   }
 
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).delete()
+  db.collection("users").doc(user.uid)
+    .collection("days").doc(day)
+    .collection("exercises").doc(docId)
+    .delete()
     .then(() => {
       console.log("Ćwiczenie usunięte pomyślnie.");
       loadCardsDataFromFirestore(day);
@@ -327,7 +353,9 @@ function resetCards(day) {
       return;
     }
 
-    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
+    db.collection("users").doc(user.uid)
+      .collection("days").doc(day)
+      .collection("exercises").get()
       .then(querySnapshot => {
         if (querySnapshot.empty) {
           console.log("Nie ma żadnych ćwiczeń do zresetowania.");
@@ -363,7 +391,10 @@ function editCard(day, docId) {
     return;
   }
 
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).get()
+  db.collection("users").doc(user.uid)
+    .collection("days").doc(day)
+    .collection("exercises").doc(docId)
+    .get()
     .then(doc => {
       if (!doc.exists) {
         console.log("Ćwiczenie nie istnieje.");
@@ -398,8 +429,13 @@ function editCard(day, docId) {
       console.error("Błąd przy edytowaniu ćwiczenia: ", error);
     });
 }
-document.addEventListener("DOMContentLoaded", () => {
-  const container = document.getElementById("monday-cards"); // Kontener dla kafelków
+
+/*************************************************************
+  FUNKCJA USTAWIAJĄCA DRAG & DROP DLA KONKRETNEGO DNIA
+*************************************************************/
+function setupDragAndDropForDay(day) {
+  const container = document.getElementById(`${day}-cards`);
+  if (!container) return;
 
   container.addEventListener("dragstart", (e) => {
     if (e.target.classList.contains("exercise-card")) {
@@ -425,10 +461,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   container.addEventListener("drop", () => {
-    saveNewOrder(); // Funkcja zapisująca nowy porządek
+    saveNewOrder(day);
   });
-});
+}
 
+/*************************************************************
+  FUNKCJA POMOCNICZA – ZNAJDOWANIE POZYCJI WSTAWIENIA
+*************************************************************/
 function getDragAfterElement(container, y) {
   const draggableElements = [...container.querySelectorAll(".exercise-card:not(.dragging)")];
 
@@ -443,28 +482,39 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-function saveNewOrder() {
-  const container = document.getElementById("monday-cards");
+/*************************************************************
+  ZAPIS NOWEGO PORZĄDKU DO FIRESTORE
+*************************************************************/
+function saveNewOrder(day) {
+  const container = document.getElementById(`${day}-cards`);
   const cards = [...container.querySelectorAll(".exercise-card")];
+  // Odczytujemy data-id, w którym trzymamy docId Firestore
   const newOrder = cards.map(card => card.getAttribute("data-id"));
-  console.log("Nowy porządek:", newOrder);
+  console.log(`Nowy porządek dla dnia ${day}:`, newOrder);
 
-  // Zapisz nowy porządek do Firestore
   const user = firebase.auth().currentUser;
   if (!user) return;
 
-  const batch = firebase.firestore().batch();
+  const batch = db.batch();
   newOrder.forEach((cardId, index) => {
-    const cardRef = firebase.firestore().collection("users").doc(user.uid).collection("days").doc("monday").collection("exercises").doc(cardId);
+    const cardRef = db.collection("users")
+      .doc(user.uid)
+      .collection("days")
+      .doc(day)
+      .collection("exercises")
+      .doc(cardId);
     batch.update(cardRef, { order: index });
   });
 
-  batch.commit().then(() => {
-    console.log("Nowy porządek zapisany.");
-  }).catch((error) => {
-    console.error("Błąd zapisywania porządku:", error);
-  });
+  batch.commit()
+    .then(() => {
+      console.log(`Nowy porządek dla ${day} zapisany.`);
+    })
+    .catch((error) => {
+      console.error("Błąd zapisywania porządku:", error);
+    });
 }
+
 /*************************************************************
   8. ZAPIS GRUP MIĘŚNIOWYCH
 *************************************************************/
@@ -530,7 +580,9 @@ function saveToHistory(day) {
     return;
   }
 
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
+  db.collection("users").doc(user.uid)
+    .collection("days").doc(day)
+    .collection("exercises").get()
     .then(querySnapshot => {
       const date = new Date().toLocaleDateString();
       const dayName = dayMap[day] || "Nieznany dzień";
@@ -539,6 +591,7 @@ function saveToHistory(day) {
       const batch = db.batch();
       querySnapshot.forEach(doc => {
         const card = doc.data();
+        // Jeśli którekolwiek pole nie jest puste, zapisz do historii
         if (Object.values(card).some(val => val !== "")) {
           console.log(`Saving to history: ${card.exercise}`);
           const historyRef = db.collection("users").doc(user.uid).collection("history").doc();
@@ -753,7 +806,6 @@ function deleteHistoryEntry(docId){
 /*************************************************************
   FUNKCJE LOGOWANIA Firebase
 *************************************************************/
-// Przełączanie między formularzami
 function showLogin() {
   document.getElementById('login-form').classList.remove('hidden');
   document.getElementById('register-form').classList.add('hidden');
@@ -773,7 +825,7 @@ async function signUp() {
     const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
     document.getElementById('register-error').textContent = "";
     alert("Konto utworzone: " + userCredential.user.email);
-    showLogin(); // Przełącz na logowanie
+    showLogin(); 
   } catch (error) {
     document.getElementById('register-error').textContent = error.message;
   }
@@ -803,8 +855,9 @@ async function signOut() {
     console.error("Błąd wylogowania: ", error.message);
   }
 }
+
 /*************************************************************
-  5. MIGRACJA DANYCH Z LOCALSTORAGE DO FIRESTORE
+  MIGRACJA DANYCH Z LOCALSTORAGE DO FIRESTORE
 *************************************************************/
 async function migrateLocalStorageToFirestore() {
   console.log("migrateLocalStorageToFirestore called");
@@ -835,7 +888,7 @@ async function migrateLocalStorageToFirestore() {
         console.log(`Ćwiczenie "${exercise.exercise}" dla dnia ${dayMap[day]} zostało dodane do Firestore.`);
       }
 
-      // Opcjonalnie: usuń dane z localStorage po migracji
+      // Usuwamy dane z localStorage po migracji
       localStorage.removeItem(`${day}-data`);
       localStorage.removeItem(`${day}-muscle-group`);
       console.log(`Dane z localStorage dla dnia ${dayMap[day]} zostały usunięte.`);
