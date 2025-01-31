@@ -77,10 +77,9 @@
 <!-- ===============================
      SEKCJE DNI TYGODNIA
    =============================== -->
-
 <!-- Poniedziałek -->
 <div id="monday" class="day-section hidden">
-  <h2>Poniedziałek</h2>
+  <h2>Wtorek</h2>
   <div class="muscle-group">
     <label for="monday-muscle-group">Partia mięśniowa:</label>
     <input 
@@ -91,38 +90,25 @@
     />
   </div>
 
-  <!-- Karty ćwiczeń -->
   <div class="cards-container" id="monday-cards"></div>
-<div id="monday-cards">
-  <div class="exercise-card" draggable="true" data-id="card1">
-    <div class="exercise-card-header">Ćwiczenie 1</div>
-    <div class="exercise-card-details">...</div>
-  </div>
-  <div class="exercise-card" draggable="true" data-id="card2">
-    <div class="exercise-card-header">Ćwiczenie 2</div>
-    <div class="exercise-card-details">...</div>
-  </div>
-  <!-- Więcej kafelków -->
-</div>
-  <!-- Formularz dodawania ćwiczenia -->
+
   <div class="exercise-form">
     <h3>Dodaj nowe ćwiczenie</h3>
     <label>Ćwiczenie</label>
-    <input type="text" id="monday-exercise" placeholder="np. Przysiad" />
+    <input type="text" id="monday-exercise" placeholder="np. Wyciskanie" />
 
     <label>Serie</label>
-    <input type="number" id="monday-series" placeholder="np. 4" />
+    <input type="number" id="monday-series" placeholder="np. 3" />
 
     <label>Powtórzenia</label>
-    <input type="number" id="monday-reps" placeholder="np. 12" />
+    <input type="number" id="monday-reps" placeholder="np. 10" />
 
     <label>Ciężar (kg)</label>
-    <input type="number" id="monday-weight" placeholder="np. 80" />
+    <input type="number" id="monday-weight" placeholder="np. 60" />
 
     <label>Notatki</label>
     <input type="text" id="monday-notes" placeholder="opcjonalne" />
 
-    <!-- Dwa przyciski: główny (Dodaj/Zapisz) i Anuluj -->
     <div class="button-group">
       <button onclick="addCard('monday')" id="monday-add-btn">Dodaj ćwiczenie</button>
       <button onclick="cancelEdit('monday')" id="monday-cancel-btn" class="hidden">Anuluj</button>
