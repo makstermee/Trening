@@ -28,16 +28,32 @@
   </script></head>
 <body>
   <!-- SEKCJA LOGOWANIA -->
-  <div id="login-section">
-    <h2>Logowanie</h2>
-    <input type="email" id="login-email" placeholder="Email" required />
-    <input type="password" id="login-password" placeholder="Hasło" required /><div class="button-group">
-  <button onclick="signIn()">Zaloguj</button>
-  <button onclick="signUp()">Zarejestruj</button>
-</div>
+    <div id="login-section">
+  <div class="button-group">
+    <button onclick="showLogin()">Logowanie</button>
+    <button onclick="showRegister()">Rejestracja</button>
+  </div>
 
-<p id="login-info" class="info-message"></p>
-<p id="login-error" class="error-message"></p>
+  <!-- Formularz logowania -->
+  <form id="login-form">
+    <h2>Logowanie</h2>
+    <input type="email" id="login-email" placeholder="E-mail">
+    <input type="password" id="login-password" placeholder="Hasło">
+    <button type="button" onclick="signIn()">Zaloguj się</button>
+    <p id="login-error" class="error-message"></p>
+    <p id="login-info" class="info-message"></p>
+  </form>
+
+  <!-- Formularz rejestracji -->
+  <form id="register-form" class="hidden">
+    <h2>Rejestracja</h2>
+    <input type="email" id="register-email" placeholder="E-mail">
+    <input type="password" id="register-password" placeholder="Hasło">
+    <button type="button" onclick="signUp()">Zarejestruj się</button>
+    <p id="register-error" class="error-message"></p>
+    <p id="register-info" class="info-message"></p>
+  </form>
+</div>
 
   </div>  <!-- SEKCJA PLANU TRENINGOWEGO -->  <div class="container">
     <!-- PRZYCISK WYLOGOWANIA -->
@@ -61,10 +77,9 @@
 <!-- ===============================
      SEKCJE DNI TYGODNIA
    =============================== -->
-
 <!-- Poniedziałek -->
 <div id="monday" class="day-section hidden">
-  <h2>Poniedziałek</h2>
+  <h2>Wtorek</h2>
   <div class="muscle-group">
     <label for="monday-muscle-group">Partia mięśniowa:</label>
     <input 
@@ -75,28 +90,25 @@
     />
   </div>
 
-  <!-- Karty ćwiczeń -->
   <div class="cards-container" id="monday-cards"></div>
 
-  <!-- Formularz dodawania ćwiczenia -->
   <div class="exercise-form">
     <h3>Dodaj nowe ćwiczenie</h3>
     <label>Ćwiczenie</label>
-    <input type="text" id="monday-exercise" placeholder="np. Przysiad" />
+    <input type="text" id="monday-exercise" placeholder="np. Wyciskanie" />
 
     <label>Serie</label>
-    <input type="number" id="monday-series" placeholder="np. 4" />
+    <input type="number" id="monday-series" placeholder="np. 3" />
 
     <label>Powtórzenia</label>
-    <input type="number" id="monday-reps" placeholder="np. 12" />
+    <input type="number" id="monday-reps" placeholder="np. 10" />
 
     <label>Ciężar (kg)</label>
-    <input type="number" id="monday-weight" placeholder="np. 80" />
+    <input type="number" id="monday-weight" placeholder="np. 60" />
 
     <label>Notatki</label>
     <input type="text" id="monday-notes" placeholder="opcjonalne" />
 
-    <!-- Dwa przyciski: główny (Dodaj/Zapisz) i Anuluj -->
     <div class="button-group">
       <button onclick="addCard('monday')" id="monday-add-btn">Dodaj ćwiczenie</button>
       <button onclick="cancelEdit('monday')" id="monday-cancel-btn" class="hidden">Anuluj</button>
