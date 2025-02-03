@@ -520,6 +520,135 @@ function loadMuscleGroupFromFirestore(day) {
 /*************************************************************
   9. ZAPIS (SAVE) KART DO HISTORII
 *************************************************************/
+// Globalna zmienna na historię
+let historyDataCache = [];
+let currentSortField = 'date';
+let currentSortOrder = 'asc';
+let currentPage = 1;
+const entriesPerPage = 10;
+
+// Nadpisz istniejącą funkcję loadHistoryFromFirestore lub stwórz nową wersję:
+function loadHistoryFromFirestore() {
+  console.log("loadHistoryFromFirestore (ulepszona wersja) called");
+  
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    console.log("Użytkownik nie jest zalogowany.");
+    return;
+  }
+  
+  db.collection("users").doc(user.uid).collection("history").get()
+    .then(querySnapshot => {
+      historyDataCache = [];
+      querySnapshot.forEach(doc => {
+        let entry = doc.data();
+        entry.docId = doc.id;
+        historyDataCache.push(entry);
+      });
+      updateHistoryFilters();
+    })
+    .catch(error => {
+      console.error("Błąd przy ładowaniu historii: ", error);
+    });
+}
+
+// Funkcja aktualizująca widok historii na podstawie filtrów, sortowania i paginacji
+function updateHistoryFilters() {
+  let filtered = [...historyDataCache];
+  
+  const filterDay = document.getElementById("filter-day").value;
+  const filterDate = document.getElementById("filter-date").value;
+  const searchExercise = document.getElementById("search-exercise").value.toLowerCase();
+  
+  if (filterDay) {
+    filtered = filtered.filter(item => item.day === filterDay);
+  }
+  if (filterDate) {
+    filtered = filtered.filter(item => item.date === filterDate);
+  }
+  if (searchExercise) {
+    filtered = filtered.filter(item => item.exercise.toLowerCase().includes(searchExercise));
+  }
+  
+  // Sortowanie
+  filtered.sort((a, b) => {
+    let fieldA = a[currentSortField] || '';
+    let fieldB = b[currentSortField] || '';
+    
+    // Jeśli sortujemy po wartościach liczbowych (serie, reps, weight)
+    if (["series", "reps", "weight"].includes(currentSortField)) {
+      fieldA = Number(fieldA);
+      fieldB = Number(fieldB);
+      return currentSortOrder === 'asc' ? fieldA - fieldB : fieldB - fieldA;
+    } else {
+      // Sortowanie tekstowe
+      return currentSortOrder === 'asc' 
+        ? fieldA.localeCompare(fieldB) 
+        : fieldB.localeCompare(fieldA);
+    }
+  });
+  
+  // Paginacja
+  const totalEntries = filtered.length;
+  const totalPages = Math.ceil(totalEntries / entriesPerPage);
+  if (currentPage > totalPages) currentPage = 1;
+  const startIndex = (currentPage - 1) * entriesPerPage;
+  const paginated = filtered.slice(startIndex, startIndex + entriesPerPage);
+  
+  // Aktualizacja tabeli
+  const historyBody = document.getElementById("history-table-body");
+  historyBody.innerHTML = "";
+  if (paginated.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="8" style="text-align:center;">Brak danych dla podanych filtrów</td>`;
+    historyBody.appendChild(row);
+  } else {
+    paginated.forEach(item => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${escapeHTML(item.date)}</td>
+        <td>${escapeHTML(item.day)}</td>
+        <td>${escapeHTML(item.exercise)}</td>
+        <td>${escapeHTML(item.series)}</td>
+        <td>${escapeHTML(item.reps)}</td>
+        <td>${escapeHTML(item.weight)}</td>
+        <td>${escapeHTML(item.notes)}</td>
+        <td><button class="btn-reset" onclick="deleteHistoryEntry('${item.docId}')">Usuń</button></td>
+      `;
+      historyBody.appendChild(row);
+    });
+  }
+  
+  updatePaginationControls(totalPages);
+}
+
+// Funkcja aktualizująca kontrolki paginacji
+function updatePaginationControls(totalPages) {
+  const paginationDiv = document.getElementById("pagination-controls");
+  paginationDiv.innerHTML = "";
+  if (totalPages <= 1) return;
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.className = (i === currentPage) ? "active" : "";
+    btn.onclick = () => {
+      currentPage = i;
+      updateHistoryFilters();
+    };
+    paginationDiv.appendChild(btn);
+  }
+}
+
+// Funkcja sortująca – wywoływana przy kliknięciu w nagłówek kolumny
+function sortHistory(field) {
+  if (currentSortField === field) {
+    currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+  } else {
+    currentSortField = field;
+    currentSortOrder = 'asc';
+  }
+  updateHistoryFilters();
+}
 function saveToHistory(day) {
   console.log(`saveToHistory called for day: ${day}`);
   
