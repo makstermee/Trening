@@ -517,308 +517,9 @@ function loadMuscleGroupFromFirestore(day) {
     });
 }
 
-/*************************************************************
-  9. ZAPIS (SAVE) KART DO HISTORII
-*************************************************************/
-// Globalna zmienna na historię
-let historyDataCache = [];
-let currentSortField = 'date';
-let currentSortOrder = 'asc';
-let currentPage = 1;
-const entriesPerPage = 10;
 
-// Nadpisz istniejącą funkcję loadHistoryFromFirestore lub stwórz nową wersję:
-function loadHistoryFromFirestore() {
-  console.log("loadHistoryFromFirestore (ulepszona wersja) called");
-  
-  const user = firebase.auth().currentUser;
-  if (!user) {
-    console.log("Użytkownik nie jest zalogowany.");
-    return;
-  }
-  
-  db.collection("users").doc(user.uid).collection("history").get()
-    .then(querySnapshot => {
-      historyDataCache = [];
-      querySnapshot.forEach(doc => {
-        let entry = doc.data();
-        entry.docId = doc.id;
-        historyDataCache.push(entry);
-      });
-      updateHistoryFilters();
-    })
-    .catch(error => {
-      console.error("Błąd przy ładowaniu historii: ", error);
-    });
-}
 
-// Funkcja aktualizująca widok historii na podstawie filtrów, sortowania i paginacji
-function updateHistoryFilters() {
-  let filtered = [...historyDataCache];
-  
-  const filterDay = document.getElementById("filter-day").value;
-  const filterDate = document.getElementById("filter-date").value;
-  const searchExercise = document.getElementById("search-exercise").value.toLowerCase();
-  
-  if (filterDay) {
-    filtered = filtered.filter(item => item.day === filterDay);
-  }
-  if (filterDate) {
-    filtered = filtered.filter(item => item.date === filterDate);
-  }
-  if (searchExercise) {
-    filtered = filtered.filter(item => item.exercise.toLowerCase().includes(searchExercise));
-  }
-  
-  // Sortowanie
-  filtered.sort((a, b) => {
-    let fieldA = a[currentSortField] || '';
-    let fieldB = b[currentSortField] || '';
-    
-    // Jeśli sortujemy po wartościach liczbowych (serie, reps, weight)
-    if (["series", "reps", "weight"].includes(currentSortField)) {
-      fieldA = Number(fieldA);
-      fieldB = Number(fieldB);
-      return currentSortOrder === 'asc' ? fieldA - fieldB : fieldB - fieldA;
-    } else {
-      // Sortowanie tekstowe
-      return currentSortOrder === 'asc' 
-        ? fieldA.localeCompare(fieldB) 
-        : fieldB.localeCompare(fieldA);
-    }
-  });
-  
-  // Paginacja
-  const totalEntries = filtered.length;
-  const totalPages = Math.ceil(totalEntries / entriesPerPage);
-  if (currentPage > totalPages) currentPage = 1;
-  const startIndex = (currentPage - 1) * entriesPerPage;
-  const paginated = filtered.slice(startIndex, startIndex + entriesPerPage);
-  
-  // Aktualizacja tabeli
-  const historyBody = document.getElementById("history-table-body");
-  historyBody.innerHTML = "";
-  if (paginated.length === 0) {
-    const row = document.createElement("tr");
-    row.innerHTML = `<td colspan="8" style="text-align:center;">Brak danych dla podanych filtrów</td>`;
-    historyBody.appendChild(row);
-  } else {
-    paginated.forEach(item => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${escapeHTML(item.date)}</td>
-        <td>${escapeHTML(item.day)}</td>
-        <td>${escapeHTML(item.exercise)}</td>
-        <td>${escapeHTML(item.series)}</td>
-        <td>${escapeHTML(item.reps)}</td>
-        <td>${escapeHTML(item.weight)}</td>
-        <td>${escapeHTML(item.notes)}</td>
-        <td><button class="btn-reset" onclick="deleteHistoryEntry('${item.docId}')">Usuń</button></td>
-      `;
-      historyBody.appendChild(row);
-    });
-  }
-  
-  updatePaginationControls(totalPages);
-}
 
-// Funkcja aktualizująca kontrolki paginacji
-function updatePaginationControls(totalPages) {
-  const paginationDiv = document.getElementById("pagination-controls");
-  paginationDiv.innerHTML = "";
-  if (totalPages <= 1) return;
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement("button");
-    btn.textContent = i;
-    btn.className = (i === currentPage) ? "active" : "";
-    btn.onclick = () => {
-      currentPage = i;
-      updateHistoryFilters();
-    };
-    paginationDiv.appendChild(btn);
-  }
-}
-
-// Funkcja sortująca – wywoływana przy kliknięciu w nagłówek kolumny
-function sortHistory(field) {
-  if (currentSortField === field) {
-    currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
-  } else {
-    currentSortField = field;
-    currentSortOrder = 'asc';
-  }
-  updateHistoryFilters();
-}
-function saveToHistory(day) {
-  console.log(`saveToHistory called for day: ${day}`);
-  
-  const user = firebase.auth().currentUser;
-  if (!user) {
-    alert("Musisz być zalogowany, aby zapisywać dane do historii.");
-    console.log("No user is logged in.");
-    return;
-  }
-
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
-    .then(querySnapshot => {
-      const date = new Date().toLocaleDateString();
-      const dayName = dayMap[day] || "Nieznany dzień";
-      console.log(`Saving exercises for ${dayName} on ${date}`);
-
-      const batch = db.batch();
-      querySnapshot.forEach(doc => {
-        const card = doc.data();
-        if (Object.values(card).some(val => val !== "")) {
-          console.log(`Saving to history: ${card.exercise}`);
-          const historyRef = db.collection("users").doc(user.uid).collection("history").doc();
-          batch.set(historyRef, {
-            date,
-            day: dayName,
-            exercise: card.exercise,
-            series: card.series,
-            reps: card.reps,
-            weight: card.weight,
-            notes: card.notes
-          });
-        }
-      });
-
-      return batch.commit();
-    })
-    .then(() => {
-      console.log("Dane zostały zapisane do historii.");
-      alert("Dane zostały zapisane do historii!");
-      loadHistoryFromFirestore();
-    })
-    .catch(error => {
-      console.error("Błąd przy zapisywaniu do historii: ", error);
-    });
-}
-
-/*************************************************************
-  10. FILTROWANIE HISTORII
-*************************************************************/
-function showDatesForDay() {
-  console.log("showDatesForDay called");
-  
-  const selectedDay = document.getElementById("filter-day").value;
-  const dateFilter = document.getElementById("date-filter");
-  const historyBody = document.getElementById("history-table-body");
-
-  if (!selectedDay) {
-    dateFilter.classList.add("hidden");
-    historyBody.innerHTML = "";
-    console.log("No day selected, hiding date filter and clearing history.");
-    return;
-  }
-
-  const user = firebase.auth().currentUser;
-  if (!user) {
-    console.log("Użytkownik nie jest zalogowany.");
-    return;
-  }
-
-  db.collection("users").doc(user.uid).collection("history")
-    .where("day", "==", selectedDay)
-    .get()
-    .then(querySnapshot => {
-      const uniqueDates = [...new Set(
-        querySnapshot.docs.map(doc => doc.data().date)
-      )];
-      console.log(`Found unique dates: ${uniqueDates}`);
-
-      if (uniqueDates.length === 0) {
-        dateFilter.classList.add("hidden");
-        historyBody.innerHTML = "";
-        console.log("No unique dates found, hiding date filter and clearing history.");
-        return;
-      }
-
-      dateFilter.classList.remove("hidden");
-      const dateSelect = document.getElementById("filter-date");
-      dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
-      uniqueDates.forEach(d => {
-        const opt = document.createElement("option");
-        opt.value = d;
-        opt.textContent = d;
-        dateSelect.appendChild(opt);
-      });
-      historyBody.innerHTML = "";
-      console.log("Populated date filter with unique dates.");
-    })
-    .catch(error => {
-      console.error("Błąd przy filtrowaniu historii: ", error);
-    });
-}
-
-function loadHistoryForDate() {
-  console.log("loadHistoryForDate called");
-  
-  const selectedDay = document.getElementById("filter-day").value;
-  const selectedDate= document.getElementById("filter-date").value;
-  const historyBody = document.getElementById("history-table-body");
-
-  if (!selectedDate) {
-    historyBody.innerHTML = "";
-    console.log("No date selected, clearing history table.");
-    return;
-  }
-
-  const user = firebase.auth().currentUser;
-  if (!user) {
-    console.log("Użytkownik nie jest zalogowany.");
-    return;
-  }
-
-  db.collection("users").doc(user.uid).collection("history")
-    .where("day", "==", selectedDay)
-    .where("date", "==", selectedDate)
-    .get()
-    .then(querySnapshot => {
-      historyBody.innerHTML = "";
-      if (querySnapshot.empty) {
-        const emptyRow = document.createElement("tr");
-        emptyRow.innerHTML = `
-          <td colspan="8" style="text-align:center;color:#999;">Brak danych dla wybranej daty</td>`;
-        historyBody.appendChild(emptyRow);
-        console.log("No history data found for selected date.");
-        return;
-      }
-
-      querySnapshot.forEach(doc => {
-        const entry = doc.data();
-        const docId = doc.id;
-        const row= document.createElement("tr");
-        row.innerHTML=`
-          <td>${escapeHTML(entry.date)}</td>
-          <td>${escapeHTML(entry.day)}</td>
-          <td>${escapeHTML(entry.exercise)}</td>
-          <td>${escapeHTML(entry.series)}</td>
-          <td>${escapeHTML(entry.reps)}</td>
-          <td>${escapeHTML(entry.weight)}</td>
-          <td>${escapeHTML(entry.notes)}</td>
-          <td><button class="btn-reset" onclick="deleteHistoryEntry('${docId}')">Usuń</button></td>
-        `;
-        historyBody.appendChild(row);
-      });
-      console.log("Loaded history data for selected date.");
-    })
-    .catch(error => {
-      console.error("Błąd przy ładowaniu historii: ", error);
-    });
-}
-
-/*************************************************************
-  USUWANIE WPISÓW Z HISTORII
-*************************************************************/
-function loadHistoryFromFirestore(){
-  console.log("loadHistoryFromFirestore called");
-  
-  const historyBody= document.getElementById("history-table-body");
-  if(!historyBody) {
-    console.log("History table body not found.");
-    return;
-  }
   historyBody.innerHTML='';
   
   const user = firebase.auth().currentUser;
@@ -873,12 +574,195 @@ function deleteHistoryEntry(docId){
     .then(() => {
       console.log("Wpis historii usunięty pomyślnie.");
       loadHistoryFromFirestore();
-    })
-    .catch(error => {
-      console.error("Błąd przy usuwaniu wpisu historii: ", error);
-    });
+
+/*************************************************************
+  1. ŁADOWANIE HISTORII
+*************************************************************/
+function loadHistory({ selectedDay = null, selectedDate = null } = {}) {
+    console.log("loadHistory called", { selectedDay, selectedDate });
+
+    const historyBody = document.getElementById("history-table-body");
+    historyBody.innerHTML = "";
+
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        console.log("Użytkownik nie jest zalogowany.");
+        return;
+    }
+
+    let query = db.collection("users").doc(user.uid).collection("history");
+
+    if (selectedDay) query = query.where("day", "==", selectedDay);
+    if (selectedDate) query = query.where("date", "==", selectedDate);
+
+    query.get()
+        .then(querySnapshot => {
+            if (querySnapshot.empty) {
+                historyBody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#999;">Brak danych</td></tr>`;
+                console.log("No history data found.");
+                return;
+            }
+
+            querySnapshot.forEach(doc => {
+                const entry = doc.data();
+                const docId = doc.id;
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${escapeHTML(entry.date)}</td>
+                    <td>${escapeHTML(entry.day)}</td>
+                    <td>${escapeHTML(entry.exercise)}</td>
+                    <td>${escapeHTML(entry.series)}</td>
+                    <td>${escapeHTML(entry.reps)}</td>
+                    <td>${escapeHTML(entry.weight)}</td>
+                    <td>${escapeHTML(entry.notes)}</td>
+                    <td><button class="btn-reset" onclick="deleteHistoryEntry('${docId}')">Usuń</button></td>
+                `;
+                historyBody.appendChild(row);
+            });
+            console.log("History data loaded.");
+        })
+        .catch(error => {
+            console.error("Błąd przy ładowaniu historii: ", error);
+        });
 }
 
+/*************************************************************
+  2. FILTROWANIE DAT
+*************************************************************/
+function updateDateFilter(selectedDay) {
+    console.log("updateDateFilter called for", selectedDay);
+
+    const dateFilter = document.getElementById("date-filter");
+    const historyBody = document.getElementById("history-table-body");
+
+    if (!selectedDay) {
+        dateFilter.classList.add("hidden");
+        historyBody.innerHTML = "";
+        return;
+    }
+
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        console.log("Użytkownik nie jest zalogowany.");
+        return;
+    }
+
+    db.collection("users").doc(user.uid).collection("history")
+        .where("day", "==", selectedDay)
+        .get()
+        .then(querySnapshot => {
+            const uniqueDates = Array.from(new Set(querySnapshot.docs.map(doc => doc.data().date))).sort();
+
+            if (uniqueDates.length === 0) {
+                dateFilter.classList.add("hidden");
+                historyBody.innerHTML = "";
+                return;
+            }
+
+            dateFilter.classList.remove("hidden");
+            const dateSelect = document.getElementById("filter-date");
+            dateSelect.innerHTML = `<option value="">Wybierz datę</option>`;
+            uniqueDates.forEach(d => {
+                dateSelect.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+
+            console.log("Populated date filter with unique dates.");
+        })
+        .catch(error => {
+            console.error("Błąd przy filtrowaniu historii: ", error);
+        });
+}
+
+/*************************************************************
+  3. USUWANIE WPISÓW Z HISTORII
+*************************************************************/
+function deleteHistoryEntry(docId) {
+    console.log(`deleteHistoryEntry called for docId: ${docId}`);
+
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        console.log("Użytkownik nie jest zalogowany.");
+        return;
+    }
+
+    db.collection("users").doc(user.uid).collection("history").doc(docId).delete()
+        .then(() => {
+            console.log("Wpis historii usunięty pomyślnie.");
+            setTimeout(() => {
+                loadHistory();
+            }, 500);
+        })
+        .catch(error => {
+            console.error("Błąd przy usuwaniu wpisu historii: ", error);
+        });
+}
+
+/*************************************************************
+  4. ZAPISYWANIE DO HISTORII
+*************************************************************/
+function saveHistoryToFirestore() {
+    console.log("saveHistoryToFirestore called");
+
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        console.log("Użytkownik nie jest zalogowany.");
+        return;
+    }
+
+    const today = new Date();
+    const date = today.toISOString().split("T")[0]; // YYYY-MM-DD
+    const dayName = getDayName(today.getDay());
+
+    db.collection("users").doc(user.uid).collection("history")
+        .add({
+            date,
+            day: dayName,
+            exercise: "Przykładowe ćwiczenie",
+            series: 3,
+            reps: 12,
+            weight: 50,
+            notes: "Brak uwag"
+        })
+        .then(() => {
+            console.log("Dane zapisane do historii.");
+            setTimeout(() => {
+                loadHistory();
+            }, 500);
+        })
+        .catch(error => {
+            console.error("Błąd przy zapisie do historii: ", error);
+        });
+}
+
+/*************************************************************
+  5. AUTOMATYCZNE ŁADOWANIE HISTORII PO ZALOGOWANIU
+*************************************************************/
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        loadHistory();
+    }
+});
+
+/*************************************************************
+  6. FUNKCJA ESCAPE HTML (ZABEZPIECZENIE PRZED XSS)
+*************************************************************/
+function escapeHTML(str) {
+    if (!str) return "";
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+/*************************************************************
+  7. POMOCNICZA FUNKCJA DO NAZW DNI TYGODNIA
+*************************************************************/
+function getDayName(dayIndex) {
+    const days = ["Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"];
+    return days[dayIndex];
+}
 /*************************************************************
   FUNKCJE LOGOWANIA Firebase
 *************************************************************/
