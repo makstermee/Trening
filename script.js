@@ -528,24 +528,58 @@ function closePublicProfile() {
     setTimeout(() => overlay.classList.add('hidden'), 300);
 }
 
+// NOWA, POPRAWIONA FUNKCJA GIVEKUDOS
 function giveKudos() {
     if(!viewingUserId) return;
     const currentUser = firebase.auth().currentUser;
-    if(viewingUserId === currentUser.uid) return alert("Nie możesz dać lajka sam sobie! 😉");
     
-    // Prosty increment (w prawdziwej appce warto sprawdzać czy user już nie dał lajka)
-    const docRef = db.collection("publicUsers").doc(viewingUserId);
-    docRef.update({
-        likes: firebase.firestore.FieldValue.increment(1)
-    }).then(() => {
-        // Zaktualizuj UI lokalnie
-        const countEl = document.getElementById('pub-kudos-count');
-        countEl.textContent = parseInt(countEl.textContent) + 1;
-        // Efekt animacji przycisku
-        const btn = document.getElementById('btn-give-kudos');
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> DZIĘKI!';
-        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!'; }, 2000);
-    }).catch(err => console.log(err));
+    // 1. Nie można dać lajka sobie
+    if(viewingUserId === currentUser.uid) {
+        alert("Nie możesz dać lajka sam sobie! 😉");
+        return;
+    }
+    
+    // 2. Sprawdź czy już dano lajka DZISIAJ
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
+    
+    const interactionRef = db.collection("users").doc(currentUser.uid)
+                             .collection("givenKudos").doc(viewingUserId);
+
+    interactionRef.get().then(docSnap => {
+        if (docSnap.exists && docSnap.data().date === todayStr) {
+            alert("Już przybiłeś dzisiaj piątkę temu użytkownikowi! Wróć jutro. 👋");
+            return;
+        }
+
+        // 3. Zapisz lajka (Batch: licznik + blokada na dziś)
+        const batch = db.batch();
+        const publicRef = db.collection("publicUsers").doc(viewingUserId);
+        
+        batch.update(publicRef, { likes: firebase.firestore.FieldValue.increment(1) });
+        batch.set(interactionRef, { date: todayStr });
+
+        batch.commit().then(() => {
+            // UI Update po sukcesie
+            const countEl = document.getElementById('pub-kudos-count');
+            if(countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
+            
+            const btn = document.getElementById('btn-give-kudos');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> DZIĘKI!';
+            btn.style.background = 'var(--accent-color)'; // Zielony
+            
+            setTimeout(() => { 
+                btn.innerHTML = '<i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!';
+                btn.style.background = ''; // Powrót do oryginału (złoty)
+            }, 2000);
+        }).catch(err => {
+            console.error(err);
+            alert("Błąd połączenia. Spróbuj ponownie.");
+        });
+    }).catch(err => {
+        console.error(err);
+        alert("Wystąpił błąd sprawdzania historii.");
+    });
 }
 
 
