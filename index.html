@@ -160,10 +160,10 @@
     </div>
 
     <nav class="bottom-nav">
-        <button class="nav-item active" onclick="selectDay('monday'); switchBottomNav(this)">
+        <button class="nav-item active" onclick="switchMode('plan'); switchBottomNav(this)">
             <i class="fa-solid fa-calendar-day"></i><span>Plan</span>
         </button>
-        <button class="nav-item" onclick="selectDay('history'); switchBottomNav(this)">
+        <button class="nav-item" onclick="switchMode('history'); switchBottomNav(this)">
             <i class="fa-solid fa-clock-rotate-left"></i><span>Historia</span>
         </button>
         <button class="nav-item" onclick="signOut()">
@@ -175,23 +175,12 @@
 
   <script src="script.js"></script>
   <script>
-    // UI Helpery w HTML (dla wygody)
+    // UI Helpery w HTML
     function switchAuthTab(tab) {
         const lf = document.getElementById('login-form'), rf = document.getElementById('register-form');
         const bl = document.getElementById('tab-login'), br = document.getElementById('tab-register');
         if (tab === 'login') { lf.classList.remove('hidden'); rf.classList.add('hidden'); bl.classList.add('active'); br.classList.remove('active'); }
         else { lf.classList.add('hidden'); rf.classList.remove('hidden'); bl.classList.remove('active'); br.classList.add('active'); }
-    }
-    function selectDay(dayValue) {
-        document.getElementById('day-selector').value = dayValue;
-        showSection();
-        document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
-        const pills = document.querySelectorAll('.pill'), days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-        const idx = days.indexOf(dayValue);
-        if (idx !== -1 && pills[idx]) pills[idx].classList.add('active');
-        
-        const fab = document.getElementById('fab-add');
-        if(fab) fab.style.display = (dayValue === 'history') ? 'none' : 'flex';
     }
     function switchBottomNav(el) {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
