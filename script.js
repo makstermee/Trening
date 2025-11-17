@@ -1,5 +1,5 @@
 /*************************************************************
-  ZMIENNE GLOBALNE
+  ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
 const dayMap = {
   monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa",
@@ -11,10 +11,14 @@ let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
 
+// NOWE ZMIENNE DO NAWIGACJI
+let currentMode = 'plan'; // 'plan' lub 'history'
+let currentSelectedDay = 'monday'; // Aktualnie wybrany dzień (np. 'monday')
+
 const db = firebase.firestore();
 
 /*************************************************************
-  1. INICJALIZACJA I NAWIGACJA
+  1. INICJALIZACJA
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelector('.container').style.display = 'none';
@@ -24,11 +28,15 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelector('.container').style.display = 'block';
       document.getElementById('login-section').style.display = 'none';
       
+      // Załaduj dane planów
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
-      selectDay('monday');
+      
+      // Domyślny start: Plan, Poniedziałek
+      currentMode = 'plan';
+      selectDay('monday'); 
       checkActiveWorkout();
     } else {
       document.querySelector('.container').style.display = 'none';
@@ -37,22 +45,85 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+/*************************************************************
+  2. NAWIGACJA I TRYBY (PLAN / HISTORIA)
+*************************************************************/
+
+// Funkcja wywoływana przez dolny pasek nawigacji
+function switchMode(mode) {
+    currentMode = mode;
+    const historySection = document.getElementById('history');
+    const fab = document.getElementById('fab-add');
+
+    if (mode === 'history') {
+        // Ukryj sekcje planów
+        document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
+        // Pokaż sekcję historii
+        historySection.classList.remove('hidden');
+        // Ukryj przycisk dodawania
+        fab.style.display = 'none';
+        
+        // Załaduj historię (od razu filtrując po wybranym dniu z paska)
+        loadHistoryFromFirestore(currentSelectedDay);
+    } else {
+        // Tryb PLAN
+        historySection.classList.add('hidden');
+        fab.style.display = 'flex';
+        // Pokaż odpowiedni dzień planu
+        showPlanSection(currentSelectedDay);
+    }
+    updateHeaderTitle();
+}
+
+// Funkcja wywoływana przez kliknięcie w dzień tygodnia (pigułkę)
+function selectDay(dayValue) {
+    currentSelectedDay = dayValue;
+    document.getElementById('day-selector').value = dayValue; // dla kompatybilności
+
+    // Aktualizacja wizualna pigułek
+    document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+    const pills = document.querySelectorAll('.pill');
+    const idx = allDays.indexOf(dayValue);
+    if (idx !== -1 && pills[idx]) pills[idx].classList.add('active');
+
+    // Logika zależna od trybu
+    if (currentMode === 'plan') {
+        showPlanSection(dayValue);
+    } else {
+        // Jeśli jesteśmy w historii, to kliknięcie dnia filtruje historię
+        loadHistoryFromFirestore(dayValue);
+    }
+    updateHeaderTitle();
+}
+
+function showPlanSection(dayValue) {
+    document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
+    const toShow = document.getElementById(dayValue);
+    if (toShow) toShow.classList.remove("hidden");
+    updateActionButtons(dayValue);
+}
+
+function updateHeaderTitle() {
+    const polishName = dayMap[currentSelectedDay] || '';
+    const titleEl = document.getElementById('current-day-display');
+    
+    // Jeśli licznik nie działa, aktualizuj tytuł
+    if (document.getElementById('workout-timer').classList.contains('hidden')) {
+        if (currentMode === 'plan') {
+            titleEl.textContent = `Plan: ${polishName}`;
+        } else {
+            titleEl.textContent = `Historia: ${polishName}`;
+        }
+    }
+}
+
+// Funkcja pomocnicza (wymagana przez HTML select, ale teraz sterowana przez selectDay)
 function showSection() {
-  const sections = document.querySelectorAll(".day-section");
-  sections.forEach(sec => sec.classList.add("hidden"));
-  const selected = document.getElementById("day-selector").value;
-  const toShow = document.getElementById(selected);
-  if (toShow) toShow.classList.remove("hidden");
-  
-  const fab = document.getElementById('fab-add');
-  if(fab) fab.style.display = (selected === 'history') ? 'none' : 'flex';
-  
-  if(selected === 'history') loadHistoryFromFirestore();
-  else updateActionButtons(selected);
+    // Zostawiamy pustą lub przekierowujemy
 }
 
 /*************************************************************
-  2. LOGIKA TRENINGU (ZAPIS I TIMER)
+  3. LOGIKA TRENINGU (TIMER, START/STOP)
 *************************************************************/
 function startWorkout(day) {
     const now = Date.now();
@@ -81,12 +152,13 @@ function checkActiveWorkout() {
             timerEl.textContent = `${hh}:${mm}:${ss}`;
         }, 1000);
 
-        updateActionButtons(activeData.day);
+        if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     } else {
         titleEl.style.display = 'block';
         timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
-        updateActionButtons(document.getElementById('day-selector').value);
+        updateHeaderTitle(); // Przywróć tytuł
+        if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     }
 }
 
@@ -96,12 +168,16 @@ function updateActionButtons(currentViewDay) {
     if(!container) return;
 
     container.innerHTML = '';
+    
+    // Przyciski tylko w trybie planu
+    if(currentMode !== 'plan') return;
+
     if (activeData && activeData.day === currentViewDay) {
         container.innerHTML = `
             <button class="btn-finish-workout" onclick="finishWorkout('${currentViewDay}')">
                 <i class="fa-solid fa-flag-checkered"></i> ZAKOŃCZ TRENING
             </button>`;
-    } else if (!activeData && currentViewDay !== 'history') {
+    } else if (!activeData) {
         container.innerHTML = `
             <button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')">
                 <i class="fa-solid fa-play"></i> START TRENINGU
@@ -115,23 +191,19 @@ async function finishWorkout(day) {
     if(!confirm("Zakończyć trening i zapisać wyniki?")) return;
 
     const user = firebase.auth().currentUser;
-    const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const duration = document.getElementById('workout-timer').textContent;
     
-    // Pobierz ćwiczenia i zbuduj listę wykonanych
     const qs = await db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get();
     const batch = db.batch();
     let exercisesDone = [];
 
     qs.forEach(doc => {
         const data = doc.data();
-        // Zapisujemy jeśli są logi (currentLogs)
         if (data.currentLogs && data.currentLogs.length > 0) {
             exercisesDone.push({
                 name: data.exercise,
-                sets: data.currentLogs // Zapis tablicy
+                sets: data.currentLogs
             });
-            // Czyścimy logi
             batch.update(doc.ref, { currentLogs: firebase.firestore.FieldValue.delete() });
         }
     });
@@ -142,7 +214,8 @@ async function finishWorkout(day) {
         batch.set(historyRef, {
             dateIso: now.toISOString(),
             displayDate: now.toLocaleDateString(),
-            dayName: dayMap[day],
+            dayName: dayMap[day], // Nazwa polska
+            dayKey: day,          // Klucz do filtrowania (np. 'monday')
             duration: duration,
             details: exercisesDone
         });
@@ -159,43 +232,31 @@ async function finishWorkout(day) {
 }
 
 /*************************************************************
-  3. LOGGER I RENDEROWANIE KART
+  4. ZARZĄDZANIE KARTAMI I LOGGEREM
 *************************************************************/
 function addLog(day, docId) {
     const weightInp = document.getElementById(`log-w-${docId}`);
     const repsInp = document.getElementById(`log-r-${docId}`);
     const w = weightInp.value;
     const r = repsInp.value;
-
     if (!w || !r) return;
-
+    
     const user = firebase.auth().currentUser;
     const docRef = db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId);
-
-    // NOWOŚĆ: ID to timestamp, co pozwala na duplikaty wartości
-    const newLog = { 
-        weight: w, 
-        reps: r, 
-        id: Date.now() 
-    };
-
+    
+    // Dodajemy unikalne ID (timestamp) by pozwolić na duplikaty wartości
+    const newLog = { weight: w, reps: r, id: Date.now() };
+    
     docRef.update({
         currentLogs: firebase.firestore.FieldValue.arrayUnion(newLog)
-    }).then(() => {
-        loadCardsDataFromFirestore(day);
-    });
+    }).then(() => loadCardsDataFromFirestore(day));
 }
 
 function removeLog(day, docId, weight, reps, logId) {
     const user = firebase.auth().currentUser;
     const docRef = db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId);
     
-    // Musimy usunąć dokładnie ten obiekt z ID
-    const logToRemove = { 
-        weight: weight, 
-        reps: reps, 
-        id: Number(logId) 
-    };
+    const logToRemove = { weight: weight, reps: reps, id: Number(logId) };
     
     docRef.update({
         currentLogs: firebase.firestore.FieldValue.arrayRemove(logToRemove)
@@ -206,7 +267,6 @@ function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
     container.innerHTML = "";
-    
     const user = firebase.auth().currentUser;
     if(!user) return;
 
@@ -226,9 +286,8 @@ function renderAccordionCard(container, day, doc) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     
-    // Chipsy z seriami
     let logsHtml = logs.map(l => {
-        const logId = l.id || 0; // Fallback dla starych logów
+        const logId = l.id || 0; 
         return `<div class="log-chip">
             <span>${l.weight}kg x ${l.reps}</span>
             <i class="fa-solid fa-xmark remove-log" onclick="removeLog('${day}', '${id}', '${l.weight}', '${l.reps}', ${logId})"></i>
@@ -252,9 +311,7 @@ function renderAccordionCard(container, day, doc) {
                 <div class="plan-box"><span class="plan-label">CEL POWT</span><div class="plan-val">${data.reps}</div></div>
                 <div class="plan-box"><span class="plan-label">CEL KG</span><div class="plan-val">${data.weight || '-'}</div></div>
             </div>
-            
-            ${data.notes ? `<div class="notes-box">Notatka: "${escapeHTML(data.notes)}"</div>` : ''}
-            
+            ${data.notes ? `<div class="notes-box">"${escapeHTML(data.notes)}"</div>` : ''}
             <div class="logger-section">
                 <div class="logger-title">Wykonane Serie</div>
                 <div class="logger-input-row">
@@ -264,7 +321,6 @@ function renderAccordionCard(container, day, doc) {
                 </div>
                 <div class="logs-list">${logsHtml}</div>
             </div>
-
             <div class="card-actions">
                 <button class="btn-icon btn-edit" onclick="triggerEdit('${day}', '${id}')"><i class="fa-solid fa-pen"></i> Edytuj</button>
                 <button class="btn-icon btn-delete" onclick="deleteCard('${day}', '${id}')"><i class="fa-solid fa-trash"></i> Usuń</button>
@@ -275,41 +331,56 @@ function renderAccordionCard(container, day, doc) {
 }
 
 window.toggleCard = function(header) {
-    // Ignoruj kliknięcia w elementy aktywne
     if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.classList.contains('remove-log')) return;
     header.parentElement.classList.toggle('open');
 };
 
 /*************************************************************
-  4. HISTORIA (KARTY)
+  5. HISTORIA (FILTROWANA)
 *************************************************************/
-function loadHistoryFromFirestore() {
+function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
     
     const user = firebase.auth().currentUser;
+    // Pobieramy historię (limit 50)
     db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
     .then(qs => {
         container.innerHTML = "";
-        if (qs.empty) {
-            container.innerHTML = '<p style="text-align:center; color:#666; margin-top:20px">Brak historii treningów.</p>';
+        let docs = [];
+        qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
+
+        // Jeśli mamy filtr (np. 'monday'), filtrujemy wyniki w JS
+        if (dayFilterKey) {
+            const polishName = dayMap[dayFilterKey];
+            docs = docs.filter(doc => {
+                // Sprawdź nowe pole dayKey LUB stare dayName
+                return doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName || doc.data.day === polishName;
+            });
+        }
+
+        if (docs.length === 0) {
+            const msg = dayFilterKey ? ` w dniu: ${dayMap[dayFilterKey]}` : '';
+            container.innerHTML = `<p style="text-align:center; color:#666; margin-top:20px">Brak historii${msg}.</p>`;
             return;
         }
-        qs.forEach(doc => renderHistoryCard(container, doc));
+
+        docs.forEach(item => renderHistoryCard(container, item));
     })
     .catch(err => {
-        // Fallback jeśli brak indeksu
+        console.log("Błąd pobierania historii:", err);
+        // Fallback bez sortowania w razie błędu indeksu
         db.collection("users").doc(user.uid).collection("history").limit(50).get()
         .then(qs => {
              container.innerHTML = "";
-             qs.forEach(doc => renderHistoryCard(container, doc));
+             qs.forEach(d => renderHistoryCard(container, {data:d.data(), id:d.id}));
         });
     });
 }
 
-function renderHistoryCard(container, doc) {
-    const data = doc.data();
-    const id = doc.id;
+function renderHistoryCard(container, item) {
+    const data = item.data;
+    const id = item.id;
     
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
@@ -326,7 +397,7 @@ function renderHistoryCard(container, doc) {
             </div>`;
         }).join('');
     } else if (data.exercise) {
-        detailsHtml = `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(data.exercise)}</div><div class="hex-logs">Zapis archiwalny</div></div>`;
+        detailsHtml = `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(data.exercise)}</div><div class="hex-logs">Archiwum</div></div>`;
     }
 
     const dateDisplay = data.displayDate || data.date || '???';
@@ -375,10 +446,10 @@ window.deleteHistoryEntry = function(e, docId) {
 }
 
 /*************************************************************
-  POZOSTAŁE FUNKCJE (MODAL, AUTH, ETC)
+  POZOSTAŁE FUNKCJE (MODAL, AUTH...)
 *************************************************************/
 function openAddModal(day = null) {
-    if(!day) day = document.getElementById('day-selector').value;
+    if(!day) day = currentSelectedDay;
     currentModalDay = day;
     document.getElementById('modal-exercise').value = "";
     document.getElementById('modal-series').value = "";
@@ -460,8 +531,7 @@ function saveMuscleGroups() {
   if (!user) return;
   allDays.forEach(day => {
     const inp = document.getElementById(`${day}-muscle-group`);
-    if (!inp) return;
-    db.collection("users").doc(user.uid).collection("days").doc(day).set({ muscleGroup: inp.value.trim() }, { merge: true });
+    if (inp) db.collection("users").doc(user.uid).collection("days").doc(day).set({ muscleGroup: inp.value.trim() }, { merge: true });
   });
 }
 
