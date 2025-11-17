@@ -58,8 +58,7 @@
             <span id="current-day-display">Plan Treningowy</span>
             <span id="workout-timer" class="hidden">00:00:00</span>
         </div>
-        <button class="logout-btn-icon" onclick="signOut()"><i class="fa-solid fa-power-off"></i></button>
-    </header>
+        </header>
 
     <select id="day-selector" onchange="showSection()" style="display:none;">
         <option value="monday">Poniedziałek</option>
@@ -72,7 +71,7 @@
         <option value="history">Historia</option>
     </select>
 
-    <div class="days-scroll-wrapper">
+    <div class="days-scroll-wrapper" id="days-nav-container">
         <div class="days-pills">
             <button class="pill active" onclick="selectDay('monday')">Pon</button>
             <button class="pill" onclick="selectDay('tuesday')">Wt</button>
@@ -90,37 +89,31 @@
             <div class="cards-container" id="monday-cards"></div>
             <div class="bottom-actions" id="monday-actions"></div>
         </div>
-
         <div id="tuesday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="tuesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="tuesday-cards"></div>
             <div class="bottom-actions" id="tuesday-actions"></div>
         </div>
-        
         <div id="wednesday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="wednesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="wednesday-cards"></div>
             <div class="bottom-actions" id="wednesday-actions"></div>
         </div>
-
         <div id="thursday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="thursday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="thursday-cards"></div>
             <div class="bottom-actions" id="thursday-actions"></div>
         </div>
-
         <div id="friday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="friday-cards"></div>
             <div class="bottom-actions" id="friday-actions"></div>
         </div>
-
         <div id="saturday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="saturday-cards"></div>
             <div class="bottom-actions" id="saturday-actions"></div>
         </div>
-
         <div id="sunday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="sunday-cards"></div>
@@ -129,11 +122,59 @@
 
         <div id="history" class="day-section hidden">
             <h2 class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> Historia</h2>
-            
             <div id="history-list" class="history-list-container">
                 <p style="text-align:center; color:#666;">Ładowanie...</p>
             </div>
         </div>
+
+        <div id="profile" class="day-section hidden">
+            <div class="profile-header-card">
+                <div class="profile-avatar" id="profile-avatar">U</div>
+                <h3 id="profile-email">user@example.com</h3>
+                <p class="member-since" id="profile-joined">Członek klubu GymPro</p>
+            </div>
+
+            <div class="profile-stats-row">
+                <div class="stat-box">
+                    <i class="fa-solid fa-dumbbell"></i>
+                    <span class="stat-val" id="total-workouts">0</span>
+                    <span class="stat-label">Treningi</span>
+                </div>
+                <div class="stat-box">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span class="stat-val" id="last-workout-date">-</span>
+                    <span class="stat-label">Ostatni</span>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4><i class="fa-solid fa-user-gear"></i> Ustawienia Konta</h4>
+                
+                <div class="input-group profile-input">
+                    <input type="text" id="new-username" placeholder="Nowa nazwa użytkownika">
+                    <button class="btn-small" onclick="updateUsername()">Zmień</button>
+                </div>
+                
+                <div class="input-group profile-input">
+                    <input type="password" id="new-password" placeholder="Nowe hasło">
+                    <button class="btn-small" onclick="changePassword()">Zmień</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4><i class="fa-solid fa-database"></i> Dane</h4>
+                <button class="btn-outline full-width" onclick="exportData()">
+                    <i class="fa-solid fa-download"></i> Pobierz kopię danych (JSON)
+                </button>
+            </div>
+
+            <button class="btn-logout-big" onclick="signOut()">
+                <i class="fa-solid fa-right-from-bracket"></i> Wyloguj się
+            </button>
+            
+            <p class="app-version">GymPro v2.0</p>
+        </div>
+
     </div>
 
     <button id="fab-add" class="fab-add" onclick="openAddModal()">
@@ -166,8 +207,8 @@
         <button class="nav-item" onclick="switchMode('history'); switchBottomNav(this)">
             <i class="fa-solid fa-clock-rotate-left"></i><span>Historia</span>
         </button>
-        <button class="nav-item" onclick="signOut()">
-             <i class="fa-solid fa-right-from-bracket"></i><span>Wyloguj</span>
+        <button class="nav-item" onclick="switchMode('profile'); switchBottomNav(this)">
+            <i class="fa-solid fa-user"></i><span>Profil</span>
         </button>
     </nav>
 
@@ -175,7 +216,6 @@
 
   <script src="script.js"></script>
   <script>
-    // UI Helpery w HTML
     function switchAuthTab(tab) {
         const lf = document.getElementById('login-form'), rf = document.getElementById('register-form');
         const bl = document.getElementById('tab-login'), br = document.getElementById('tab-register');
