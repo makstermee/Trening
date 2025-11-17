@@ -58,7 +58,7 @@
             <span id="current-day-display">Plan Treningowy</span>
             <span id="workout-timer" class="hidden">00:00:00</span>
         </div>
-        </header>
+    </header>
 
     <select id="day-selector" onchange="showSection()" style="display:none;">
         <option value="monday">Poniedziałek</option>
@@ -148,13 +148,11 @@
             </div>
 
             <div class="settings-group">
-                <h4><i class="fa-solid fa-user-gear"></i> Ustawienia Konta</h4>
-                
+                <h4><i class="fa-solid fa-user-gear"></i> Ustawienia</h4>
                 <div class="input-group profile-input">
                     <input type="text" id="new-username" placeholder="Nowa nazwa użytkownika">
                     <button class="btn-small" onclick="updateUsername()">Zmień</button>
                 </div>
-                
                 <div class="input-group profile-input">
                     <input type="password" id="new-password" placeholder="Nowe hasło">
                     <button class="btn-small" onclick="changePassword()">Zmień</button>
@@ -164,15 +162,22 @@
             <div class="settings-group">
                 <h4><i class="fa-solid fa-database"></i> Dane</h4>
                 <button class="btn-outline full-width" onclick="exportData()">
-                    <i class="fa-solid fa-download"></i> Pobierz kopię danych (JSON)
+                    <i class="fa-solid fa-download"></i> Kopia zapasowa (JSON)
+                </button>
+            </div>
+
+            <div class="settings-group danger-zone">
+                <h4 style="color: var(--danger-color);"><i class="fa-solid fa-triangle-exclamation"></i> Strefa Niebezpieczna</h4>
+                <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Tej operacji nie można cofnąć.</p>
+                <button class="btn-hard-reset" onclick="hardResetProfile()">
+                    <i class="fa-solid fa-skull"></i> USUŃ WSZYSTKIE DANE
                 </button>
             </div>
 
             <button class="btn-logout-big" onclick="signOut()">
                 <i class="fa-solid fa-right-from-bracket"></i> Wyloguj się
             </button>
-            
-            <p class="app-version">GymPro v2.0</p>
+            <p class="app-version">GymPro v2.1</p>
         </div>
 
     </div>
