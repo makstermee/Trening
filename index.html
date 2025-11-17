@@ -1,327 +1,233 @@
-/*************************************************************
-  ZMIENNE GLOBALNE
-*************************************************************/
-const dayMap = {
-  monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa",
-  thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela"
-};
-const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
-
-let editInfo = { day: null, docId: null };
-// Nowa zmienna dla modala
-let currentModalDay = null;
-
-const db = firebase.firestore();
-
-/*************************************************************
-  1. INICJALIZACJA I NAWIGACJA
-*************************************************************/
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelector('.container').style.display = 'none';
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>GymPro Tracker</title>
   
-  firebase.auth().onAuthStateChanged(user => {
-    if (user) {
-      document.querySelector('.container').style.display = 'block';
-      document.getElementById('login-section').style.display = 'none';
-      
-      // Ładowanie danych
-      allDays.forEach(day => {
-        loadCardsDataFromFirestore(day);
-        loadMuscleGroupFromFirestore(day);
-      });
-      selectDay('monday'); // Start
-    } else {
-      document.querySelector('.container').style.display = 'none';
-      document.getElementById('login-section').style.display = 'flex';
-    }
-  });
-});
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 
-function showSection() {
-  const sections = document.querySelectorAll(".day-section");
-  sections.forEach(sec => sec.classList.add("hidden"));
-  const selected = document.getElementById("day-selector").value;
-  const toShow = document.getElementById(selected);
-  if (toShow) toShow.classList.remove("hidden");
-  
-  // Ukryj FAB w historii
-  const fab = document.getElementById('fab-add');
-  if(fab) fab.style.display = (selected === 'history') ? 'none' : 'flex';
-  
-  if(selected === 'history') loadHistoryFromFirestore();
-}
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
-/*************************************************************
-  2. NOWA LOGIKA MODALA (DODAWANIE)
-*************************************************************/
-function openAddModal(day = null) {
-    // Jeśli nie podano dnia, bierzemy aktualnie wybrany
-    if(!day) day = document.getElementById('day-selector').value;
-    currentModalDay = day;
-    
-    // Reset pól
-    document.getElementById('modal-exercise').value = "";
-    document.getElementById('modal-series').value = "";
-    document.getElementById('modal-reps').value = "";
-    document.getElementById('modal-weight').value = "";
-    document.getElementById('modal-notes').value = "";
-    
-    document.getElementById('modal-title').innerText = "Dodaj ćwiczenie";
-    document.getElementById('modal-save-btn').innerText = "DODAJ";
-    
-    editInfo = { day: null, docId: null }; // Reset trybu edycji
-    
-    // Pokaż modal
-    const overlay = document.getElementById('modal-overlay');
-    overlay.classList.remove('hidden');
-    // Timeout dla animacji CSS
-    setTimeout(() => overlay.classList.add('active'), 10);
-}
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
+      authDomain: "plan-treningowy-a9d00.firebaseapp.com",
+      projectId: "plan-treningowy-a9d00",
+      storageBucket: "plan-treningowy-a9d00.firebasestorage.app",
+      messagingSenderId: "1087845341451",
+      appId: "1:1087845341451:web:08201e588c56d73013aa0e",
+      measurementId: "G-EY88TE8L7H"
+    };
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+  </script>
+</head>
+<body>
 
-function closeAddModal() {
-    const overlay = document.getElementById('modal-overlay');
-    overlay.classList.remove('active');
-    setTimeout(() => overlay.classList.add('hidden'), 300);
-}
+  <div id="login-section">
+    <div class="login-card">
+        <div class="brand-logo"><i class="fa-solid fa-dumbbell"></i> GymPro</div>
+        <div class="auth-tabs">
+            <button id="tab-login" class="active" onclick="switchAuthTab('login')">Logowanie</button>
+            <button id="tab-register" onclick="switchAuthTab('register')">Rejestracja</button>
+        </div>
+        <form id="login-form">
+            <div class="input-group"><i class="fa-solid fa-envelope"></i><input type="email" id="login-email" placeholder="E-mail" required></div>
+            <div class="input-group"><i class="fa-solid fa-lock"></i><input type="password" id="login-password" placeholder="Hasło" required></div>
+            <button type="button" class="btn-primary btn-block" onclick="signIn()">WEJDŹ</button>
+            <p id="login-error" class="error-message"></p>
+        </form>
+        <form id="register-form" class="hidden">
+            <div class="input-group"><i class="fa-solid fa-envelope"></i><input type="email" id="register-email" placeholder="E-mail" required></div>
+            <div class="input-group"><i class="fa-solid fa-lock"></i><input type="password" id="register-password" placeholder="Hasło (min. 6 znaków)" required></div>
+            <button type="button" class="btn-accent btn-block" onclick="signUp()">DOŁĄCZ</button>
+            <p id="register-error" class="error-message"></p>
+        </form>
+    </div>
+  </div>
 
-// Funkcja wywoływana przyciskiem "ZAPISZ" w modalu
-function saveFromModal() {
-    const day = currentModalDay;
-    const exercise = document.getElementById('modal-exercise').value.trim();
-    const series = document.getElementById('modal-series').value;
-    const reps = document.getElementById('modal-reps').value;
-    const weight = document.getElementById('modal-weight').value;
-    const notes = document.getElementById('modal-notes').value;
+  <div class="container">
+    <header class="app-header">
+        <div class="header-title"><span id="current-day-display">Plan Treningowy</span></div>
+        <button class="logout-btn-icon" onclick="signOut()"><i class="fa-solid fa-power-off"></i></button>
+    </header>
 
-    if(!exercise && !series) {
-        alert("Wpisz chociaż nazwę ćwiczenia.");
-        return;
-    }
+    <select id="day-selector" onchange="showSection()" style="display:none;">
+        <option value="monday">Poniedziałek</option>
+        <option value="tuesday">Wtorek</option>
+        <option value="wednesday">Środa</option>
+        <option value="thursday">Czwartek</option>
+        <option value="friday">Piątek</option>
+        <option value="saturday">Sobota</option>
+        <option value="sunday">Niedziela</option>
+        <option value="history">Historia</option>
+    </select>
 
-    const data = { exercise, series, reps, weight, notes };
+    <div class="days-scroll-wrapper">
+        <div class="days-pills">
+            <button class="pill active" onclick="selectDay('monday')">Pon</button>
+            <button class="pill" onclick="selectDay('tuesday')">Wt</button>
+            <button class="pill" onclick="selectDay('wednesday')">Śr</button>
+            <button class="pill" onclick="selectDay('thursday')">Czw</button>
+            <button class="pill" onclick="selectDay('friday')">Pt</button>
+            <button class="pill" onclick="selectDay('saturday')">Sob</button>
+            <button class="pill" onclick="selectDay('sunday')">Nd</button>
+        </div>
+    </div>
 
-    if(editInfo.docId) {
-        // Edycja
-        updateCardInFirestore(day, editInfo.docId, data);
-    } else {
-        // Nowe
-        addCardToFirestore(day, data);
-    }
-    closeAddModal();
-}
+    <div class="content-area">
+        <div id="monday" class="day-section">
+            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="monday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
+            <div class="cards-container" id="monday-cards"></div> <div class="empty-state" id="monday-empty" style="display:none;">Brak ćwiczeń. Kliknij + aby dodać.</div>
+            
+            <div class="bottom-actions">
+                <button class="btn-save-all" onclick="saveToHistory('monday')"><i class="fa-solid fa-check"></i> Zakończ Trening</button>
+                <button class="btn-reset-all" onclick="resetCards('monday')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
 
-/*************************************************************
-  3. FIREBASE CRUD (Dodawanie/Edycja/Usuwanie)
-*************************************************************/
-function addCardToFirestore(day, data) {
-    const user = firebase.auth().currentUser;
-    if(!user) return;
-    
-    // Dajemy order = Date.now() żeby nowe były na dole (proste sortowanie)
-    data.order = Date.now();
+        <div id="tuesday" class="day-section hidden">
+            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="tuesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
+            <div class="cards-container" id="tuesday-cards"></div>
+            <div class="bottom-actions"><button class="btn-save-all" onclick="saveToHistory('tuesday')"><i class="fa-solid fa-check"></i> Zakończ</button><button class="btn-reset-all" onclick="resetCards('tuesday')"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
+        
+        <div id="wednesday" class="day-section hidden">
+            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="wednesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
+            <div class="cards-container" id="wednesday-cards"></div>
+            <div class="bottom-actions"><button class="btn-save-all" onclick="saveToHistory('wednesday')"><i class="fa-solid fa-check"></i> Zakończ</button><button class="btn-reset-all" onclick="resetCards('wednesday')"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
 
-    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").add(data)
-    .then(() => loadCardsDataFromFirestore(day));
-}
+        <div id="thursday" class="day-section hidden">
+            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="thursday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
+            <div class="cards-container" id="thursday-cards"></div>
+            <div class="bottom-actions"><button class="btn-save-all" onclick="saveToHistory('thursday')"><i class="fa-solid fa-check"></i> Zakończ</button><button class="btn-reset-all" onclick="resetCards('thursday')"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
 
-function updateCardInFirestore(day, docId, data) {
-    const user = firebase.auth().currentUser;
-    if(!user) return;
-    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).update(data)
-    .then(() => loadCardsDataFromFirestore(day));
-}
+        <div id="friday" class="day-section hidden">
+            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
+            <div class="cards-container" id="friday-cards"></div>
+            <div class="bottom-actions"><button class="btn-save-all" onclick="saveToHistory('friday')"><i class="fa-solid fa-check"></i> Zakończ</button><button class="btn-reset-all" onclick="resetCards('friday')"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
 
-function deleteCard(day, docId) {
-    if(!confirm("Usunąć to ćwiczenie?")) return;
-    const user = firebase.auth().currentUser;
-    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).delete()
-    .then(() => loadCardsDataFromFirestore(day));
-}
+        <div id="saturday" class="day-section hidden">
+            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
+            <div class="cards-container" id="saturday-cards"></div>
+            <div class="bottom-actions"><button class="btn-save-all" onclick="saveToHistory('saturday')"><i class="fa-solid fa-check"></i> Zakończ</button><button class="btn-reset-all" onclick="resetCards('saturday')"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
 
-function resetCards(day) {
-    if(!confirm("Zresetować cały trening?")) return;
-    const user = firebase.auth().currentUser;
-    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
-    .then(qs => {
-        const batch = db.batch();
-        qs.forEach(doc => batch.delete(doc.ref));
-        return batch.commit();
-    }).then(() => loadCardsDataFromFirestore(day));
-}
+        <div id="sunday" class="day-section hidden">
+            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
+            <div class="cards-container" id="sunday-cards"></div>
+            <div class="bottom-actions"><button class="btn-save-all" onclick="saveToHistory('sunday')"><i class="fa-solid fa-check"></i> Zakończ</button><button class="btn-reset-all" onclick="resetCards('sunday')"><i class="fa-solid fa-trash"></i></button></div>
+        </div>
 
-/*************************************************************
-  4. RENDEROWANIE KART (AKORDEON)
-*************************************************************/
-function loadCardsDataFromFirestore(day) {
-    const container = document.getElementById(`${day}-cards`);
-    if(!container) return;
-    container.innerHTML = "";
-    
-    const user = firebase.auth().currentUser;
-    if(!user) return;
-
-    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises")
-    .orderBy("order", "asc") // Sortowanie
-    .get()
-    .then(qs => {
-        if(qs.empty) {
-            // Opcjonalnie pokaż komunikat "Pusto"
-            return;
-        }
-        qs.forEach(doc => {
-            renderAccordionCard(container, day, doc);
-        });
-    });
-}
-
-function renderAccordionCard(container, day, doc) {
-    const data = doc.data();
-    const id = doc.id;
-    
-    const card = document.createElement('div');
-    card.className = 'exercise-card';
-    
-    // Tworzymy HTML Akordeonu
-    card.innerHTML = `
-        <div class="exercise-card-header" onclick="toggleCard(this)">
-            <div class="header-left">
-                <i class="fa-solid fa-bars drag-handle"></i>
-                <div>
-                    <div class="ex-title">${escapeHTML(data.exercise)}</div>
-                    <div class="ex-summary">${escapeHTML(data.series)}s x ${escapeHTML(data.reps)}r @ ${escapeHTML(data.weight)}kg</div>
+        <div id="history" class="day-section hidden">
+            <h2 class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> Historia</h2>
+            <div class="history-filters">
+                <select id="filter-day" onchange="showDatesForDay()" class="styled-select">
+                    <option value="" disabled selected>Wybierz dzień</option>
+                    <option value="Poniedziałek">Poniedziałek</option>
+                    <option value="Wtorek">Wtorek</option>
+                    <option value="Środa">Środa</option>
+                    <option value="Czwartek">Czwartek</option>
+                    <option value="Piątek">Piątek</option>
+                    <option value="Sobota">Sobota</option>
+                    <option value="Niedziela">Niedziela</option>
+                </select>
+                <div id="date-filter" class="hidden">
+                    <select id="filter-date" onchange="loadHistoryForDate()" class="styled-select"></select>
                 </div>
             </div>
-            <i class="fa-solid fa-chevron-down expand-icon"></i>
-        </div>
-        <div class="exercise-card-details">
-            <div class="details-grid">
-                <div class="detail-item"><span class="detail-label">SERIE</span><div class="detail-val">${data.series || '-'}</div></div>
-                <div class="detail-item"><span class="detail-label">POWT</span><div class="detail-val">${data.reps || '-'}</div></div>
-                <div class="detail-item"><span class="detail-label">CIĘŻAR</span><div class="detail-val">${data.weight || '-'}</div></div>
-            </div>
-            ${data.notes ? `<div class="notes-box">"${escapeHTML(data.notes)}"</div>` : ''}
-            
-            <div class="card-actions">
-                <button class="btn-icon btn-edit" onclick="triggerEdit('${day}', '${id}')">
-                    <i class="fa-solid fa-pen"></i> Edytuj
-                </button>
-                <button class="btn-icon btn-delete" onclick="deleteCard('${day}', '${id}')">
-                    <i class="fa-solid fa-trash"></i> Usuń
-                </button>
+            <div class="table-wrapper">
+                <table>
+                    <tbody id="history-table-body"></tbody>
+                </table>
             </div>
         </div>
-    `;
-    container.appendChild(card);
-}
+    </div>
 
-// Funkcja rozwijania karty
-window.toggleCard = function(header) {
-    header.parentElement.classList.toggle('open');
-};
+    <button id="fab-add" class="fab-add" onclick="openAddModal()">
+        <i class="fa-solid fa-plus"></i>
+    </button>
 
-// Funkcja uruchamiająca edycję (otwiera modal z danymi)
-window.triggerEdit = function(day, docId) {
-    const user = firebase.auth().currentUser;
-    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId).get()
-    .then(doc => {
-        if(doc.exists) {
-            const d = doc.data();
-            // Wypełnij modal
-            document.getElementById('modal-exercise').value = d.exercise;
-            document.getElementById('modal-series').value = d.series;
-            document.getElementById('modal-reps').value = d.reps;
-            document.getElementById('modal-weight').value = d.weight;
-            document.getElementById('modal-notes').value = d.notes;
-            
-            document.getElementById('modal-title').innerText = "Edytuj ćwiczenie";
-            document.getElementById('modal-save-btn').innerText = "ZAPISZ ZMIANY";
-            
-            // Ustaw tryb edycji
-            editInfo = { day: day, docId: docId };
-            currentModalDay = day;
-            
-            // Otwórz modal
-            const overlay = document.getElementById('modal-overlay');
-            overlay.classList.remove('hidden');
-            setTimeout(() => overlay.classList.add('active'), 10);
-        }
-    });
-};
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Dodaj ćwiczenie</h3>
+                <button onclick="closeAddModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="modal-exercise" placeholder="Nazwa ćwiczenia" class="input-modal main-input">
+                <div class="modal-row">
+                    <div class="input-wrapper">
+                        <label>Serie</label>
+                        <input type="number" id="modal-series" placeholder="3">
+                    </div>
+                    <div class="input-wrapper">
+                        <label>Powt.</label>
+                        <input type="number" id="modal-reps" placeholder="10">
+                    </div>
+                    <div class="input-wrapper">
+                        <label>Kg</label>
+                        <input type="number" id="modal-weight" placeholder="0">
+                    </div>
+                </div>
+                <input type="text" id="modal-notes" placeholder="Notatki (opcjonalne)" class="input-modal">
+                <button id="modal-save-btn" class="btn-primary btn-modal-save" onclick="saveFromModal()">ZAPISZ</button>
+            </div>
+        </div>
+    </div>
 
-/*************************************************************
-  5. POZOSTAŁE FUNKCJE (Historia, Muscle, Auth) - BEZ ZMIAN
-*************************************************************/
-function saveMuscleGroups() {
-  const user = firebase.auth().currentUser;
-  if (!user) return;
-  allDays.forEach(day => {
-    const inp = document.getElementById(`${day}-muscle-group`);
-    if (!inp) return;
-    db.collection("users").doc(user.uid).collection("days").doc(day).set({ muscleGroup: inp.value.trim() }, { merge: true });
-  });
-}
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="selectDay('monday'); switchBottomNav(this)">
+            <i class="fa-solid fa-calendar-day"></i><span>Plan</span>
+        </button>
+        <button class="nav-item" onclick="selectDay('history'); switchBottomNav(this)">
+            <i class="fa-solid fa-clock-rotate-left"></i><span>Historia</span>
+        </button>
+        <button class="nav-item" onclick="signOut()">
+             <i class="fa-solid fa-right-from-bracket"></i><span>Wyloguj</span>
+        </button>
+    </nav>
 
-function loadMuscleGroupFromFirestore(day) {
-  const inp = document.getElementById(`${day}-muscle-group`);
-  const user = firebase.auth().currentUser;
-  if (!user || !inp) return;
-  db.collection("users").doc(user.uid).collection("days").doc(day).get()
-    .then(doc => { if (doc.exists) inp.value = doc.data().muscleGroup || ""; });
-}
+  </div>
 
-function saveToHistory(day) {
-  const user = firebase.auth().currentUser;
-  db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get()
-    .then(qs => {
-      const batch = db.batch();
-      const date = new Date().toLocaleDateString();
-      qs.forEach(doc => {
-        const c = doc.data();
-        if (c.exercise) {
-          const ref = db.collection("users").doc(user.uid).collection("history").doc();
-          batch.set(ref, {
-            date, day: dayMap[day], exercise: c.exercise, series: c.series, reps: c.reps, weight: c.weight, notes: c.notes
-          });
-        }
-      });
-      return batch.commit();
-    })
-    .then(() => alert("Zapisano w historii!"));
-}
-
-function loadHistoryFromFirestore(){
-    const tbody = document.getElementById("history-table-body");
-    tbody.innerHTML = "";
-    const user = firebase.auth().currentUser;
-    db.collection("users").doc(user.uid).collection("history").orderBy("date", "desc").limit(50).get()
-    .then(qs => {
-        qs.forEach(doc => {
-            const d = doc.data();
-            tbody.innerHTML += `<tr>
-                <td>${d.date}<br><small>${d.day}</small></td>
-                <td>${d.exercise}</td>
-                <td>${d.series}x${d.reps} @ ${d.weight}</td>
-            </tr>`;
-        });
-    });
-}
-
-// Auth Functions
-async function signIn() {
-    const e = document.getElementById('login-email').value;
-    const p = document.getElementById('login-password').value;
-    try { await firebase.auth().signInWithEmailAndPassword(e,p); } 
-    catch(err) { document.getElementById('login-error').innerText = err.message; }
-}
-async function signUp() {
-    const e = document.getElementById('register-email').value;
-    const p = document.getElementById('register-password').value;
-    try { await firebase.auth().createUserWithEmailAndPassword(e,p); switchAuthTab('login'); alert("Sukces! Zaloguj się."); }
-    catch(err) { document.getElementById('register-error').innerText = err.message; }
-}
-async function signOut() { await firebase.auth().signOut(); location.reload(); }
-
-function escapeHTML(str){
-  if(!str) return "";
-  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+  <script src="script.js"></script>
+  <script>
+    // SKRYPT UI (Obsługa zakładek i nawigacji)
+    function switchAuthTab(tab) {
+        const lf = document.getElementById('login-form'), rf = document.getElementById('register-form');
+        const bl = document.getElementById('tab-login'), br = document.getElementById('tab-register');
+        if (tab === 'login') { lf.classList.remove('hidden'); rf.classList.add('hidden'); bl.classList.add('active'); br.classList.remove('active'); }
+        else { lf.classList.add('hidden'); rf.classList.remove('hidden'); bl.classList.remove('active'); br.classList.add('active'); }
+    }
+    function selectDay(dayValue) {
+        document.getElementById('day-selector').value = dayValue;
+        showSection();
+        document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+        const pills = document.querySelectorAll('.pill'), days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+        const idx = days.indexOf(dayValue);
+        if (idx !== -1 && pills[idx]) pills[idx].classList.add('active');
+        
+        const names = {'monday':'Poniedziałek','tuesday':'Wtorek','wednesday':'Środa','thursday':'Czwartek','friday':'Piątek','saturday':'Sobota','sunday':'Niedziela','history':'Historia'};
+        document.getElementById('current-day-display').textContent = names[dayValue] || 'Plan';
+        
+        // Pokaż/Ukryj FAB (nie chcemy go w historii)
+        const fab = document.getElementById('fab-add');
+        if(dayValue === 'history') fab.style.display = 'none';
+        else fab.style.display = 'flex';
+    }
+    function switchBottomNav(el) {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+    }
+  </script>
+</body>
+</html>
