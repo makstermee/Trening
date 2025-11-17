@@ -19,13 +19,9 @@ body {
     overflow-x: hidden;
 }
 
-/* --- STYLE PROFILU (NOWE) --- */
+/* PROFIL */
 .profile-header-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 25px;
-    margin-top: 10px;
+    display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; margin-top: 10px;
 }
 .profile-avatar {
     width: 80px; height: 80px;
@@ -39,44 +35,29 @@ body {
 .profile-header-card h3 { margin: 0; font-size: 1.3rem; }
 .member-since { color: var(--text-secondary); font-size: 0.9rem; margin-top: 5px; }
 
-.profile-stats-row {
-    display: flex; gap: 15px; margin-bottom: 25px;
-}
+.profile-stats-row { display: flex; gap: 15px; margin-bottom: 25px; }
 .stat-box {
-    flex: 1;
-    background: var(--surface-color);
-    border: 1px solid #333;
-    border-radius: 16px;
-    padding: 15px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 1; background: var(--surface-color); border: 1px solid #333;
+    border-radius: 16px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .stat-box i { font-size: 1.2rem; color: var(--primary-color); margin-bottom: 5px; }
 .stat-val { font-size: 1.5rem; font-weight: 800; }
 .stat-label { font-size: 0.8rem; color: var(--text-secondary); }
 
 .settings-group {
-    background: var(--surface-color);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 20px;
-    border: 1px solid #333;
+    background: var(--surface-color); border-radius: 16px; padding: 20px;
+    margin-bottom: 20px; border: 1px solid #333;
 }
 .settings-group h4 { margin: 0 0 15px 0; font-size: 1rem; color: var(--text-secondary); display: flex; align-items: center; gap: 10px; }
+.danger-zone { border: 1px solid rgba(255, 69, 58, 0.3); background: rgba(255, 69, 58, 0.05); }
 
-.profile-input {
-    display: flex; gap: 10px; margin-bottom: 10px; padding: 0; border: none;
-}
-.profile-input input {
-    flex: 1; background: var(--bg-color); border: 1px solid #333; color: white;
-    padding: 12px; border-radius: 10px; outline: none;
-}
-.btn-small {
-    background: var(--primary-color); color: white; border: none;
-    padding: 0 15px; border-radius: 10px; font-weight: 600; cursor: pointer;
-}
+.profile-input { display: flex; gap: 10px; margin-bottom: 10px; padding: 0; border: none; }
+.profile-input input { flex: 1; background: var(--bg-color); border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; outline: none; }
+
+.btn-small { background: var(--primary-color); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: 600; cursor: pointer; }
 .btn-logout-big {
-    width: 100%; background: rgba(255, 69, 58, 0.15); border: 1px solid var(--danger-color);
-    color: var(--danger-color); padding: 15px; border-radius: 16px;
+    width: 100%; background: var(--surface-color); border: 1px solid #444;
+    color: var(--text-secondary); padding: 15px; border-radius: 16px;
     font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px;
     display: flex; align-items: center; justify-content: center; gap: 10px;
 }
@@ -84,18 +65,17 @@ body {
     background: transparent; border: 1px solid var(--text-secondary); color: var(--text-primary);
     padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer;
 }
+.btn-hard-reset {
+    width: 100%; background: var(--danger-color); border: none; color: white;
+    padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+}
 .full-width { width: 100%; display: flex; justify-content: center; gap: 10px; align-items: center;}
 .app-version { text-align: center; color: #444; font-size: 0.8rem; margin-top: 20px; }
 
-
-/* --- RESZTA STYLÓW (TIMER, LOGGER, KARTY - BEZ ZMIAN) --- */
-#workout-timer {
-    font-family: 'Courier New', monospace; font-size: 1.2rem; color: var(--accent-color);
-    font-weight: 700; background: rgba(48, 209, 88, 0.1); padding: 4px 8px; border-radius: 8px;
-    animation: pulse 2s infinite;
-}
+/* --- COMMON --- */
+#workout-timer { font-family: 'Courier New', monospace; font-size: 1.2rem; color: var(--accent-color); font-weight: 700; background: rgba(48, 209, 88, 0.1); padding: 4px 8px; border-radius: 8px; animation: pulse 2s infinite; }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
 .logger-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #333; }
 .logger-title { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
 .logger-input-row { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -105,7 +85,6 @@ body {
 .log-chip { background: #333; color: var(--text-primary); padding: 5px 10px; border-radius: 15px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
 .log-chip span { font-weight: 700; color: var(--accent-color); }
 .log-chip .remove-log { color: var(--danger-color); cursor: pointer; font-size: 1rem; }
-
 .history-list-container { display: flex; flex-direction: column; gap: 15px; }
 .history-card { background: var(--surface-color); border-radius: 16px; overflow: hidden; border: 1px solid #333; transition: transform 0.2s; }
 .history-card:active { transform: scale(0.99); }
@@ -123,7 +102,6 @@ body {
 .history-exercise-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .hex-name { font-weight: 600; color: var(--primary-color); font-size: 0.95rem; margin-bottom: 4px; }
 .hex-logs { font-size: 0.85rem; color: #ccc; line-height: 1.4; }
-
 .fab-add { position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px; background: var(--primary-color); border-radius: 50%; border: none; color: white; font-size: 24px; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4); z-index: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
 .fab-add:active { transform: scale(0.9); }
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
@@ -140,7 +118,6 @@ body {
 .input-wrapper { flex: 1; text-align: center; }
 .input-wrapper label { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px; }
 .btn-modal-save { width: 100%; margin-top: 20px; padding: 16px; background: var(--primary-color); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 1rem; }
-
 .exercise-card { background: var(--surface-color); margin-bottom: 10px; border-radius: 12px; overflow: hidden; transition: all 0.2s; }
 .exercise-card-header { padding: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #242426; }
 .header-left { display: flex; align-items: center; gap: 15px; }
@@ -152,7 +129,6 @@ body {
 .exercise-card.open .exercise-card-details { display: block; }
 .exercise-card-details { display: none; padding: 15px; border-top: 1px solid #333; animation: slideDown 0.2s; }
 @keyframes slideDown { from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
-
 .plan-vs-real-grid { display: flex; gap: 15px; margin-bottom: 15px; }
 .plan-box { flex: 1; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; }
 .plan-label { font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 4px; }
@@ -162,7 +138,6 @@ body {
 .btn-icon { padding: 8px 12px; border-radius: 8px; border: none; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 .btn-edit { background: #3a3a3c; color: var(--primary-color); }
 .btn-delete { background: rgba(255, 69, 58, 0.15); color: var(--danger-color); }
-
 .app-header { display: flex; justify-content: space-between; padding: 15px 20px; background: var(--surface-color); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
 .header-title { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
 .logout-btn-icon { background: none; border: none; color: var(--danger-color); font-size: 1.2rem; }
@@ -174,16 +149,13 @@ body {
 .muscle-header i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
 .muscle-header input { width: 100%; background: var(--surface-color); border: none; padding: 15px 15px 15px 45px; border-radius: 12px; color: white; font-size: 1rem; }
 .content-area { padding: 0 20px; }
-
 .bottom-actions { display: flex; gap: 10px; margin-top: 30px; padding-bottom: 20px; flex-direction: column; }
 .btn-start-workout { width: 100%; background: var(--accent-color); color: #000; padding: 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(48, 209, 88, 0.3); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
 .btn-finish-workout { width: 100%; background: var(--danger-color); color: #fff; padding: 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 1.1rem; cursor: pointer; }
-
 .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(28,28,30,0.95); backdrop-filter: blur(10px); border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0 25px 0; z-index: 900; }
 .nav-item { background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; gap: 4px; }
 .nav-item.active { color: var(--primary-color); }
 .nav-item i { font-size: 1.4rem; }
-
 #login-section { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
 .login-card { background: var(--surface-color); width: 100%; max-width: 350px; padding: 30px; border-radius: 24px; }
 .brand-logo { text-align: center; font-size: 2rem; margin-bottom: 20px; color: var(--primary-color); }
