@@ -88,40 +88,33 @@
         <div id="monday" class="day-section">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="monday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="monday-cards"></div>
-            <div class="bottom-actions" id="monday-actions">
-                </div>
+            <div class="bottom-actions" id="monday-actions"></div>
         </div>
-
         <div id="tuesday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="tuesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="tuesday-cards"></div>
             <div class="bottom-actions" id="tuesday-actions"></div>
         </div>
-        
         <div id="wednesday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="wednesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="wednesday-cards"></div>
             <div class="bottom-actions" id="wednesday-actions"></div>
         </div>
-
         <div id="thursday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="thursday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="thursday-cards"></div>
             <div class="bottom-actions" id="thursday-actions"></div>
         </div>
-
         <div id="friday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="friday-cards"></div>
             <div class="bottom-actions" id="friday-actions"></div>
         </div>
-
         <div id="saturday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="saturday-cards"></div>
             <div class="bottom-actions" id="saturday-actions"></div>
         </div>
-
         <div id="sunday" class="day-section hidden">
             <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
             <div class="cards-container" id="sunday-cards"></div>
@@ -130,32 +123,20 @@
 
         <div id="history" class="day-section hidden">
             <h2 class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> Historia</h2>
-            <div class="history-filters">
-                <select id="filter-day" onchange="showDatesForDay()" class="styled-select">
-                    <option value="" disabled selected>Wybierz dzień</option>
-                    <option value="Poniedziałek">Poniedziałek</option>
-                    <option value="Wtorek">Wtorek</option>
-                    <option value="Środa">Środa</option>
-                    <option value="Czwartek">Czwartek</option>
-                    <option value="Piątek">Piątek</option>
-                    <option value="Sobota">Sobota</option>
-                    <option value="Niedziela">Niedziela</option>
-                </select>
-                <div id="date-filter" class="hidden">
-                    <select id="filter-date" onchange="loadHistoryForDate()" class="styled-select"></select>
-                </div>
+            
+            <div class="history-filters" style="display:none;">
+                <select id="filter-day" class="styled-select">
+                    <option value="">Wszystkie dni</option>
+                    </select>
             </div>
-            <div class="table-wrapper">
-                <table>
-                    <tbody id="history-table-body"></tbody>
-                </table>
+
+            <div id="history-list" class="history-list-container">
+                <p style="text-align:center; color:#666; margin-top:20px;">Ładowanie historii...</p>
             </div>
         </div>
     </div>
 
-    <button id="fab-add" class="fab-add" onclick="openAddModal()">
-        <i class="fa-solid fa-plus"></i>
-    </button>
+    <button id="fab-add" class="fab-add" onclick="openAddModal()"><i class="fa-solid fa-plus"></i></button>
 
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
@@ -187,12 +168,10 @@
              <i class="fa-solid fa-right-from-bracket"></i><span>Wyloguj</span>
         </button>
     </nav>
-
   </div>
 
   <script src="script.js"></script>
   <script>
-    // UI Helpers
     function switchAuthTab(tab) {
         const lf = document.getElementById('login-form'), rf = document.getElementById('register-form');
         const bl = document.getElementById('tab-login'), br = document.getElementById('tab-register');
@@ -207,7 +186,6 @@
         const idx = days.indexOf(dayValue);
         if (idx !== -1 && pills[idx]) pills[idx].classList.add('active');
         
-        // Ukryj FAB w historii
         const fab = document.getElementById('fab-add');
         if(fab) fab.style.display = (dayValue === 'history') ? 'none' : 'flex';
     }
