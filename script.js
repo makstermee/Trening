@@ -528,57 +528,75 @@ function closePublicProfile() {
     setTimeout(() => overlay.classList.add('hidden'), 300);
 }
 
-// NOWA, POPRAWIONA FUNKCJA GIVEKUDOS
+// NOWA FUNKCJA GIVEKUDOS - NAPRAWIONA
 function giveKudos() {
+    // 1. Sprawdzenia wstępne
     if(!viewingUserId) return;
     const currentUser = firebase.auth().currentUser;
     
-    // 1. Nie można dać lajka sobie
+    // Nie można dać lajka sobie
     if(viewingUserId === currentUser.uid) {
         alert("Nie możesz dać lajka sam sobie! 😉");
         return;
     }
     
-    // 2. Sprawdź czy już dano lajka DZISIAJ
+    // 2. Ustal datę
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
     
+    // Referencja do Twojej historii lajków
     const interactionRef = db.collection("users").doc(currentUser.uid)
                              .collection("givenKudos").doc(viewingUserId);
 
+    // 3. Sprawdź czy już dałeś lajka DZISIAJ
     interactionRef.get().then(docSnap => {
+        // Jeśli dokument istnieje i data to dzisiaj -> STOP
         if (docSnap.exists && docSnap.data().date === todayStr) {
             alert("Już przybiłeś dzisiaj piątkę temu użytkownikowi! Wróć jutro. 👋");
             return;
         }
 
-        // 3. Zapisz lajka (Batch: licznik + blokada na dziś)
+        // 4. Jeśli nie -> Dodaj lajka
         const batch = db.batch();
         const publicRef = db.collection("publicUsers").doc(viewingUserId);
         
+        // Zwiększ licznik u innej osoby
         batch.update(publicRef, { likes: firebase.firestore.FieldValue.increment(1) });
+        // Zapisz blokadę u siebie
         batch.set(interactionRef, { date: todayStr });
 
         batch.commit().then(() => {
-            // UI Update po sukcesie
+            // Sukces! Zaktualizuj wygląd
             const countEl = document.getElementById('pub-kudos-count');
-            if(countEl) countEl.textContent = parseInt(countEl.textContent) + 1;
+            if(countEl) {
+                let currentVal = parseInt(countEl.textContent) || 0;
+                countEl.textContent = currentVal + 1;
+            }
             
+            // Animacja przycisku na zielono
             const btn = document.getElementById('btn-give-kudos');
+            const originalContent = btn.innerHTML; // zapamiętaj stary wygląd
+            
             btn.innerHTML = '<i class="fa-solid fa-check"></i> DZIĘKI!';
             btn.style.background = 'var(--accent-color)'; // Zielony
+            btn.style.color = '#000';
             
             setTimeout(() => { 
                 btn.innerHTML = '<i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!';
-                btn.style.background = ''; // Powrót do oryginału (złoty)
+                btn.style.background = ''; // Powrót (zcss)
+                btn.style.color = ''; 
             }, 2000);
+            
         }).catch(err => {
+            // BŁĄD ZAPISU (np. brak uprawnień)
             console.error(err);
-            alert("Błąd połączenia. Spróbuj ponownie.");
+            alert("Błąd zapisu: " + err.message + "\nSprawdź 'Firestore Rules' w konsoli Firebase.");
         });
+
     }).catch(err => {
+        // BŁĄD ODCZYTU
         console.error(err);
-        alert("Wystąpił błąd sprawdzania historii.");
+        alert("Błąd połączenia: " + err.message);
     });
 }
 
