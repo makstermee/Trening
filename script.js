@@ -11,9 +11,8 @@ let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
 
-// NOWE ZMIENNE DO NAWIGACJI
-let currentMode = 'plan'; // 'plan' lub 'history'
-let currentSelectedDay = 'monday'; // Aktualnie wybrany dzień (np. 'monday')
+let currentMode = 'plan'; // 'plan', 'history', 'profile'
+let currentSelectedDay = 'monday'; 
 
 const db = firebase.firestore();
 
@@ -28,16 +27,15 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelector('.container').style.display = 'block';
       document.getElementById('login-section').style.display = 'none';
       
-      // Załaduj dane planów
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
       
-      // Domyślny start: Plan, Poniedziałek
       currentMode = 'plan';
       selectDay('monday'); 
       checkActiveWorkout();
+      updateProfileUI(user); // Załaduj dane do profilu
     } else {
       document.querySelector('.container').style.display = 'none';
       document.getElementById('login-section').style.display = 'flex';
@@ -46,53 +44,52 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /*************************************************************
-  2. NAWIGACJA I TRYBY (PLAN / HISTORIA)
+  2. NAWIGACJA I TRYBY
 *************************************************************/
-
-// Funkcja wywoływana przez dolny pasek nawigacji
 function switchMode(mode) {
     currentMode = mode;
     const historySection = document.getElementById('history');
+    const profileSection = document.getElementById('profile');
+    const daysNav = document.getElementById('days-nav-container');
     const fab = document.getElementById('fab-add');
 
+    // Ukryj wszystko najpierw
+    document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
+    
     if (mode === 'history') {
-        // Ukryj sekcje planów
-        document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
-        // Pokaż sekcję historii
         historySection.classList.remove('hidden');
-        // Ukryj przycisk dodawania
+        daysNav.style.display = 'block'; // Pokaż dni
         fab.style.display = 'none';
-        
-        // Załaduj historię (od razu filtrując po wybranym dniu z paska)
         loadHistoryFromFirestore(currentSelectedDay);
+    } else if (mode === 'profile') {
+        profileSection.classList.remove('hidden');
+        daysNav.style.display = 'none'; // Ukryj dni w profilu
+        fab.style.display = 'none';
+        loadProfileStats(); // Odśwież statystyki
     } else {
-        // Tryb PLAN
-        historySection.classList.add('hidden');
+        // PLAN
+        daysNav.style.display = 'block';
         fab.style.display = 'flex';
-        // Pokaż odpowiedni dzień planu
         showPlanSection(currentSelectedDay);
     }
     updateHeaderTitle();
 }
 
-// Funkcja wywoływana przez kliknięcie w dzień tygodnia (pigułkę)
 function selectDay(dayValue) {
     currentSelectedDay = dayValue;
-    document.getElementById('day-selector').value = dayValue; // dla kompatybilności
+    document.getElementById('day-selector').value = dayValue; 
 
-    // Aktualizacja wizualna pigułek
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     const pills = document.querySelectorAll('.pill');
     const idx = allDays.indexOf(dayValue);
     if (idx !== -1 && pills[idx]) pills[idx].classList.add('active');
 
-    // Logika zależna od trybu
     if (currentMode === 'plan') {
         showPlanSection(dayValue);
-    } else {
-        // Jeśli jesteśmy w historii, to kliknięcie dnia filtruje historię
+    } else if (currentMode === 'history') {
         loadHistoryFromFirestore(dayValue);
     }
+    // W profilu nic nie robimy z dniem
     updateHeaderTitle();
 }
 
@@ -107,23 +104,17 @@ function updateHeaderTitle() {
     const polishName = dayMap[currentSelectedDay] || '';
     const titleEl = document.getElementById('current-day-display');
     
-    // Jeśli licznik nie działa, aktualizuj tytuł
     if (document.getElementById('workout-timer').classList.contains('hidden')) {
-        if (currentMode === 'plan') {
-            titleEl.textContent = `Plan: ${polishName}`;
-        } else {
-            titleEl.textContent = `Historia: ${polishName}`;
-        }
+        if (currentMode === 'plan') titleEl.textContent = `Plan: ${polishName}`;
+        else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
+        else if (currentMode === 'profile') titleEl.textContent = `Twój Profil`;
     }
 }
 
-// Funkcja pomocnicza (wymagana przez HTML select, ale teraz sterowana przez selectDay)
-function showSection() {
-    // Zostawiamy pustą lub przekierowujemy
-}
+function showSection() {} // Kompatybilność
 
 /*************************************************************
-  3. LOGIKA TRENINGU (TIMER, START/STOP)
+  3. LOGIKA TRENINGU
 *************************************************************/
 function startWorkout(day) {
     const now = Date.now();
@@ -157,7 +148,7 @@ function checkActiveWorkout() {
         titleEl.style.display = 'block';
         timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
-        updateHeaderTitle(); // Przywróć tytuł
+        updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     }
 }
@@ -168,8 +159,6 @@ function updateActionButtons(currentViewDay) {
     if(!container) return;
 
     container.innerHTML = '';
-    
-    // Przyciski tylko w trybie planu
     if(currentMode !== 'plan') return;
 
     if (activeData && activeData.day === currentViewDay) {
@@ -214,8 +203,8 @@ async function finishWorkout(day) {
         batch.set(historyRef, {
             dateIso: now.toISOString(),
             displayDate: now.toLocaleDateString(),
-            dayName: dayMap[day], // Nazwa polska
-            dayKey: day,          // Klucz do filtrowania (np. 'monday')
+            dayName: dayMap[day], 
+            dayKey: day,          
             duration: duration,
             details: exercisesDone
         });
@@ -232,7 +221,7 @@ async function finishWorkout(day) {
 }
 
 /*************************************************************
-  4. ZARZĄDZANIE KARTAMI I LOGGEREM
+  4. LOGGER I KARTY
 *************************************************************/
 function addLog(day, docId) {
     const weightInp = document.getElementById(`log-w-${docId}`);
@@ -243,8 +232,6 @@ function addLog(day, docId) {
     
     const user = firebase.auth().currentUser;
     const docRef = db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId);
-    
-    // Dodajemy unikalne ID (timestamp) by pozwolić na duplikaty wartości
     const newLog = { weight: w, reps: r, id: Date.now() };
     
     docRef.update({
@@ -255,7 +242,6 @@ function addLog(day, docId) {
 function removeLog(day, docId, weight, reps, logId) {
     const user = firebase.auth().currentUser;
     const docRef = db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId);
-    
     const logToRemove = { weight: weight, reps: reps, id: Number(logId) };
     
     docRef.update({
@@ -336,27 +322,22 @@ window.toggleCard = function(header) {
 };
 
 /*************************************************************
-  5. HISTORIA (FILTROWANA)
+  5. HISTORIA I PROFIL
 *************************************************************/
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
     
     const user = firebase.auth().currentUser;
-    // Pobieramy historię (limit 50)
     db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
     .then(qs => {
         container.innerHTML = "";
         let docs = [];
         qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
 
-        // Jeśli mamy filtr (np. 'monday'), filtrujemy wyniki w JS
         if (dayFilterKey) {
             const polishName = dayMap[dayFilterKey];
-            docs = docs.filter(doc => {
-                // Sprawdź nowe pole dayKey LUB stare dayName
-                return doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName || doc.data.day === polishName;
-            });
+            docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName || doc.data.day === polishName);
         }
 
         if (docs.length === 0) {
@@ -368,8 +349,7 @@ function loadHistoryFromFirestore(dayFilterKey) {
         docs.forEach(item => renderHistoryCard(container, item));
     })
     .catch(err => {
-        console.log("Błąd pobierania historii:", err);
-        // Fallback bez sortowania w razie błędu indeksu
+        // Fallback bez sortowania
         db.collection("users").doc(user.uid).collection("history").limit(50).get()
         .then(qs => {
              container.innerHTML = "";
@@ -442,11 +422,78 @@ window.deleteHistoryEntry = function(e, docId) {
     .then(() => {
         const card = e.target.closest('.history-card');
         if(card) card.remove();
+        // Odświeżamy też statystyki
+        loadProfileStats();
     });
 }
 
+// --- PROFIL ---
+function updateProfileUI(user) {
+    document.getElementById('profile-email').textContent = user.email;
+    if(user.displayName) {
+        document.getElementById('profile-email').textContent = user.displayName;
+    }
+    const initial = (user.email ? user.email[0] : 'U').toUpperCase();
+    document.getElementById('profile-avatar').textContent = initial;
+}
+
+function loadProfileStats() {
+    const user = firebase.auth().currentUser;
+    db.collection("users").doc(user.uid).collection("history").get().then(qs => {
+        const total = qs.size;
+        document.getElementById('total-workouts').textContent = total;
+        
+        if(!qs.empty) {
+            // Znajdź ostatni (dla uproszczenia bierzemy dowolny, ale lepiej sortować)
+            // Tutaj proste podejście:
+            const last = qs.docs[0].data().displayDate || qs.docs[0].data().date;
+            document.getElementById('last-workout-date').textContent = last;
+        }
+    });
+}
+
+window.changePassword = function() {
+    const newPass = document.getElementById('new-password').value;
+    if(!newPass || newPass.length < 6) return alert("Hasło musi mieć min. 6 znaków");
+    const user = firebase.auth().currentUser;
+    
+    user.updatePassword(newPass).then(() => {
+        alert("Hasło zmienione pomyślnie!");
+        document.getElementById('new-password').value = "";
+    }).catch(err => {
+        alert("Błąd: " + err.message + "\n(Może być wymagane ponowne zalogowanie)");
+    });
+}
+
+window.updateUsername = function() {
+    const newName = document.getElementById('new-username').value;
+    if(!newName) return;
+    const user = firebase.auth().currentUser;
+    
+    user.updateProfile({ displayName: newName }).then(() => {
+        alert("Nazwa zaktualizowana!");
+        updateProfileUI(user);
+    }).catch(err => alert("Błąd: " + err.message));
+}
+
+window.exportData = async function() {
+    const user = firebase.auth().currentUser;
+    // Eksport tylko historii
+    const qs = await db.collection("users").doc(user.uid).collection("history").get();
+    let data = [];
+    qs.forEach(doc => data.push(doc.data()));
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gympro_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+}
+
+
 /*************************************************************
-  POZOSTAŁE FUNKCJE (MODAL, AUTH...)
+  POZOSTAŁE FUNKCJE 
 *************************************************************/
 function openAddModal(day = null) {
     if(!day) day = currentSelectedDay;
@@ -548,16 +595,10 @@ async function signIn() {
     const p = document.getElementById('login-password').value;
     try { await firebase.auth().signInWithEmailAndPassword(e,p); } catch(err) { document.getElementById('login-error').innerText = err.message; }
 }
-
 async function signUp() {
     const e = document.getElementById('register-email').value;
     const p = document.getElementById('register-password').value;
     try { await firebase.auth().createUserWithEmailAndPassword(e,p); switchAuthTab('login'); alert("Sukces!"); } catch(err) { document.getElementById('register-error').innerText = err.message; }
 }
-
 async function signOut() { await firebase.auth().signOut(); location.reload(); }
-
-function escapeHTML(str){
-  if(!str) return "";
-  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
