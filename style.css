@@ -19,56 +19,97 @@ body {
     overflow-x: hidden;
 }
 
-/* TIMER */
+/* --- STYLE PROFILU (NOWE) --- */
+.profile-header-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 25px;
+    margin-top: 10px;
+}
+.profile-avatar {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 2.5rem; font-weight: 800; color: #000;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 20px rgba(10, 132, 255, 0.3);
+}
+.profile-header-card h3 { margin: 0; font-size: 1.3rem; }
+.member-since { color: var(--text-secondary); font-size: 0.9rem; margin-top: 5px; }
+
+.profile-stats-row {
+    display: flex; gap: 15px; margin-bottom: 25px;
+}
+.stat-box {
+    flex: 1;
+    background: var(--surface-color);
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 15px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.stat-box i { font-size: 1.2rem; color: var(--primary-color); margin-bottom: 5px; }
+.stat-val { font-size: 1.5rem; font-weight: 800; }
+.stat-label { font-size: 0.8rem; color: var(--text-secondary); }
+
+.settings-group {
+    background: var(--surface-color);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+}
+.settings-group h4 { margin: 0 0 15px 0; font-size: 1rem; color: var(--text-secondary); display: flex; align-items: center; gap: 10px; }
+
+.profile-input {
+    display: flex; gap: 10px; margin-bottom: 10px; padding: 0; border: none;
+}
+.profile-input input {
+    flex: 1; background: var(--bg-color); border: 1px solid #333; color: white;
+    padding: 12px; border-radius: 10px; outline: none;
+}
+.btn-small {
+    background: var(--primary-color); color: white; border: none;
+    padding: 0 15px; border-radius: 10px; font-weight: 600; cursor: pointer;
+}
+.btn-logout-big {
+    width: 100%; background: rgba(255, 69, 58, 0.15); border: 1px solid var(--danger-color);
+    color: var(--danger-color); padding: 15px; border-radius: 16px;
+    font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-outline {
+    background: transparent; border: 1px solid var(--text-secondary); color: var(--text-primary);
+    padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer;
+}
+.full-width { width: 100%; display: flex; justify-content: center; gap: 10px; align-items: center;}
+.app-version { text-align: center; color: #444; font-size: 0.8rem; margin-top: 20px; }
+
+
+/* --- RESZTA STYLÓW (TIMER, LOGGER, KARTY - BEZ ZMIAN) --- */
 #workout-timer {
-    font-family: 'Courier New', monospace;
-    font-size: 1.2rem;
-    color: var(--accent-color);
-    font-weight: 700;
-    background: rgba(48, 209, 88, 0.1);
-    padding: 4px 8px;
-    border-radius: 8px;
+    font-family: 'Courier New', monospace; font-size: 1.2rem; color: var(--accent-color);
+    font-weight: 700; background: rgba(48, 209, 88, 0.1); padding: 4px 8px; border-radius: 8px;
     animation: pulse 2s infinite;
 }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-/* LOGGER SERII */
-.logger-section {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed #333;
-}
+.logger-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #333; }
 .logger-title { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
 .logger-input-row { display: flex; gap: 10px; margin-bottom: 10px; }
-.logger-input-row input {
-    flex: 1; background: var(--bg-color); border: 1px solid #333; color: white;
-    padding: 8px; border-radius: 8px; text-align: center; font-weight: 600; width: 50px;
-}
-.btn-add-log {
-    background: var(--primary-color); color: white; border: none; border-radius: 8px;
-    width: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
-
+.logger-input-row input { flex: 1; background: var(--bg-color); border: 1px solid #333; color: white; padding: 8px; border-radius: 8px; text-align: center; font-weight: 600; width: 50px; }
+.btn-add-log { background: var(--primary-color); color: white; border: none; border-radius: 8px; width: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .logs-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.log-chip {
-    background: #333; color: var(--text-primary); padding: 5px 10px;
-    border-radius: 15px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
-}
+.log-chip { background: #333; color: var(--text-primary); padding: 5px 10px; border-radius: 15px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
 .log-chip span { font-weight: 700; color: var(--accent-color); }
 .log-chip .remove-log { color: var(--danger-color); cursor: pointer; font-size: 1rem; }
 
-/* HISTORIA KARTY */
 .history-list-container { display: flex; flex-direction: column; gap: 15px; }
-.history-card {
-    background: var(--surface-color); border-radius: 16px; overflow: hidden;
-    border: 1px solid #333; transition: transform 0.2s;
-}
+.history-card { background: var(--surface-color); border-radius: 16px; overflow: hidden; border: 1px solid #333; transition: transform 0.2s; }
 .history-card:active { transform: scale(0.99); }
-.history-card-header {
-    padding: 15px; display: flex; justify-content: space-between; align-items: center;
-    background: linear-gradient(90deg, rgba(48, 209, 88, 0.05), transparent);
-    cursor: pointer;
-}
+.history-card-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(90deg, rgba(48, 209, 88, 0.05), transparent); cursor: pointer; }
 .history-info h4 { margin: 0; font-size: 1.1rem; color: var(--text-primary); }
 .history-meta { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; display: flex; gap: 10px; }
 .history-actions { display: flex; align-items: center; gap: 15px; }
@@ -83,26 +124,11 @@ body {
 .hex-name { font-weight: 600; color: var(--primary-color); font-size: 0.95rem; margin-bottom: 4px; }
 .hex-logs { font-size: 0.85rem; color: #ccc; line-height: 1.4; }
 
-/* --- RESZTA ELEMENTÓW (FAB, Modal, Listy) --- */
-.fab-add {
-    position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px;
-    background: var(--primary-color); border-radius: 50%; border: none; color: white;
-    font-size: 24px; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4); z-index: 800;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: transform 0.2s;
-}
+.fab-add { position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px; background: var(--primary-color); border-radius: 50%; border: none; color: white; font-size: 24px; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4); z-index: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
 .fab-add:active { transform: scale(0.9); }
-
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
-    z-index: 1000; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .modal-overlay.active { opacity: 1; pointer-events: auto; }
-.modal-content {
-    background: var(--surface-color); width: 100%; border-radius: 20px 20px 0 0;
-    padding: 25px 20px 40px 20px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 -5px 25px rgba(0,0,0,0.5);
-}
+.modal-content { background: var(--surface-color); width: 100%; border-radius: 20px 20px 0 0; padding: 25px 20px 40px 20px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -5px 25px rgba(0,0,0,0.5); }
 .modal-overlay.active .modal-content { transform: translateY(0); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .modal-header h3 { margin: 0; font-size: 1.2rem; }
@@ -115,7 +141,6 @@ body {
 .input-wrapper label { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px; }
 .btn-modal-save { width: 100%; margin-top: 20px; padding: 16px; background: var(--primary-color); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 1rem; }
 
-/* LISTA AKORDEONOWA */
 .exercise-card { background: var(--surface-color); margin-bottom: 10px; border-radius: 12px; overflow: hidden; transition: all 0.2s; }
 .exercise-card-header { padding: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #242426; }
 .header-left { display: flex; align-items: center; gap: 15px; }
@@ -138,7 +163,6 @@ body {
 .btn-edit { background: #3a3a3c; color: var(--primary-color); }
 .btn-delete { background: rgba(255, 69, 58, 0.15); color: var(--danger-color); }
 
-/* Header/Nav */
 .app-header { display: flex; justify-content: space-between; padding: 15px 20px; background: var(--surface-color); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
 .header-title { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
 .logout-btn-icon { background: none; border: none; color: var(--danger-color); font-size: 1.2rem; }
@@ -160,7 +184,6 @@ body {
 .nav-item.active { color: var(--primary-color); }
 .nav-item i { font-size: 1.4rem; }
 
-/* Login */
 #login-section { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
 .login-card { background: var(--surface-color); width: 100%; max-width: 350px; padding: 30px; border-radius: 24px; }
 .brand-logo { text-align: center; font-size: 2rem; margin-bottom: 20px; color: var(--primary-color); }
