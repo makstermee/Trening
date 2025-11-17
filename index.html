@@ -62,12 +62,6 @@
 
     <select id="day-selector" onchange="showSection()" style="display:none;">
         <option value="monday">Poniedziałek</option>
-        <option value="tuesday">Wtorek</option>
-        <option value="wednesday">Środa</option>
-        <option value="thursday">Czwartek</option>
-        <option value="friday">Piątek</option>
-        <option value="saturday">Sobota</option>
-        <option value="sunday">Niedziela</option>
         <option value="history">Historia</option>
     </select>
 
@@ -84,46 +78,23 @@
     </div>
 
     <div class="content-area">
-        <div id="monday" class="day-section">
-            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="monday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
-            <div class="cards-container" id="monday-cards"></div>
-            <div class="bottom-actions" id="monday-actions"></div>
-        </div>
-        <div id="tuesday" class="day-section hidden">
-            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="tuesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
-            <div class="cards-container" id="tuesday-cards"></div>
-            <div class="bottom-actions" id="tuesday-actions"></div>
-        </div>
-        <div id="wednesday" class="day-section hidden">
-            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="wednesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
-            <div class="cards-container" id="wednesday-cards"></div>
-            <div class="bottom-actions" id="wednesday-actions"></div>
-        </div>
-        <div id="thursday" class="day-section hidden">
-            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="thursday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
-            <div class="cards-container" id="thursday-cards"></div>
-            <div class="bottom-actions" id="thursday-actions"></div>
-        </div>
-        <div id="friday" class="day-section hidden">
-            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
-            <div class="cards-container" id="friday-cards"></div>
-            <div class="bottom-actions" id="friday-actions"></div>
-        </div>
-        <div id="saturday" class="day-section hidden">
-            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
-            <div class="cards-container" id="saturday-cards"></div>
-            <div class="bottom-actions" id="saturday-actions"></div>
-        </div>
-        <div id="sunday" class="day-section hidden">
-            <div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div>
-            <div class="cards-container" id="sunday-cards"></div>
-            <div class="bottom-actions" id="sunday-actions"></div>
-        </div>
+        <div id="monday" class="day-section"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="monday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="monday-cards"></div><div class="bottom-actions" id="monday-actions"></div></div>
+        <div id="tuesday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="tuesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="tuesday-cards"></div><div class="bottom-actions" id="tuesday-actions"></div></div>
+        <div id="wednesday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="wednesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="wednesday-cards"></div><div class="bottom-actions" id="wednesday-actions"></div></div>
+        <div id="thursday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="thursday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="thursday-cards"></div><div class="bottom-actions" id="thursday-actions"></div></div>
+        <div id="friday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="friday-cards"></div><div class="bottom-actions" id="friday-actions"></div></div>
+        <div id="saturday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="saturday-cards"></div><div class="bottom-actions" id="saturday-actions"></div></div>
+        <div id="sunday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="sunday-cards"></div><div class="bottom-actions" id="sunday-actions"></div></div>
 
         <div id="history" class="day-section hidden">
             <h2 class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> Historia</h2>
-            <div id="history-list" class="history-list-container">
-                <p style="text-align:center; color:#666;">Ładowanie...</p>
+            <div id="history-list" class="history-list-container"><p style="text-align:center; color:#666;">Ładowanie...</p></div>
+        </div>
+
+        <div id="community" class="day-section hidden">
+            <h2 class="history-title"><i class="fa-solid fa-users"></i> Społeczność</h2>
+            <div id="community-list" class="community-grid">
+                <p style="text-align:center; color:#666;">Szukam innych użytkowników...</p>
             </div>
         </div>
 
@@ -131,67 +102,39 @@
             <div class="profile-header-card">
                 <div class="profile-avatar" id="profile-avatar">U</div>
                 <h3 id="profile-email">user@example.com</h3>
-                <p class="member-since" id="profile-joined">Członek klubu GymPro</p>
+                <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="profile-kudos">0</span> Kudos</div>
             </div>
 
             <div class="profile-stats-row">
-                <div class="stat-box">
-                    <i class="fa-solid fa-dumbbell"></i>
-                    <span class="stat-val" id="total-workouts">0</span>
-                    <span class="stat-label">Treningi</span>
-                </div>
-                <div class="stat-box">
-                    <i class="fa-solid fa-calendar-check"></i>
-                    <span class="stat-val" id="last-workout-date">-</span>
-                    <span class="stat-label">Ostatni</span>
-                </div>
+                <div class="stat-box"><i class="fa-solid fa-dumbbell"></i><span class="stat-val" id="total-workouts">0</span><span class="stat-label">Treningi</span></div>
+                <div class="stat-box"><i class="fa-solid fa-calendar-check"></i><span class="stat-val" id="last-workout-date">-</span><span class="stat-label">Ostatni</span></div>
             </div>
 
             <div class="settings-group">
                 <h4><i class="fa-solid fa-user-gear"></i> Ustawienia</h4>
-                <div class="input-group profile-input">
-                    <input type="text" id="new-username" placeholder="Nowa nazwa użytkownika">
-                    <button class="btn-small" onclick="updateUsername()">Zmień</button>
-                </div>
-                <div class="input-group profile-input">
-                    <input type="password" id="new-password" placeholder="Nowe hasło">
-                    <button class="btn-small" onclick="changePassword()">Zmień</button>
-                </div>
+                <div class="input-group profile-input"><input type="text" id="new-username" placeholder="Twoja nazwa publiczna"><button class="btn-small" onclick="updateUsername()">Zmień</button></div>
+                <div class="input-group profile-input"><input type="password" id="new-password" placeholder="Nowe hasło"><button class="btn-small" onclick="changePassword()">Zmień</button></div>
             </div>
 
             <div class="settings-group">
                 <h4><i class="fa-solid fa-database"></i> Dane</h4>
-                <button class="btn-outline full-width" onclick="exportData()">
-                    <i class="fa-solid fa-download"></i> Kopia zapasowa (JSON)
-                </button>
+                <button class="btn-outline full-width" onclick="exportData()"><i class="fa-solid fa-download"></i> Kopia zapasowa (JSON)</button>
             </div>
-
+            
             <div class="settings-group danger-zone">
                 <h4 style="color: var(--danger-color);"><i class="fa-solid fa-triangle-exclamation"></i> Strefa Niebezpieczna</h4>
-                <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Tej operacji nie można cofnąć.</p>
-                <button class="btn-hard-reset" onclick="hardResetProfile()">
-                    <i class="fa-solid fa-skull"></i> USUŃ WSZYSTKIE DANE
-                </button>
+                <button class="btn-hard-reset" onclick="hardResetProfile()"><i class="fa-solid fa-skull"></i> USUŃ KONTO</button>
             </div>
 
-            <button class="btn-logout-big" onclick="signOut()">
-                <i class="fa-solid fa-right-from-bracket"></i> Wyloguj się
-            </button>
-            <p class="app-version">GymPro v2.1</p>
+            <button class="btn-logout-big" onclick="signOut()"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj się</button>
         </div>
-
     </div>
 
-    <button id="fab-add" class="fab-add" onclick="openAddModal()">
-        <i class="fa-solid fa-plus"></i>
-    </button>
+    <button id="fab-add" class="fab-add" onclick="openAddModal()"><i class="fa-solid fa-plus"></i></button>
 
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Dodaj ćwiczenie</h3>
-                <button onclick="closeAddModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <div class="modal-header"><h3 id="modal-title">Dodaj ćwiczenie</h3><button onclick="closeAddModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
                 <input type="text" id="modal-exercise" placeholder="Nazwa ćwiczenia" class="input-modal main-input">
                 <div class="modal-row">
@@ -205,12 +148,34 @@
         </div>
     </div>
 
+    <div id="public-profile-overlay" class="modal-overlay hidden">
+        <div class="modal-content public-profile-content">
+            <button onclick="closePublicProfile()" class="btn-close-abs"><i class="fa-solid fa-xmark"></i></button>
+            <div class="profile-header-card">
+                <div class="profile-avatar" id="pub-avatar">?</div>
+                <h3 id="pub-name">Użytkownik</h3>
+                <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="pub-kudos-count">0</span></div>
+            </div>
+            <div class="profile-stats-row">
+                <div class="stat-box"><i class="fa-solid fa-dumbbell"></i><span class="stat-val" id="pub-total">0</span><span class="stat-label">Treningi</span></div>
+                <div class="stat-box"><i class="fa-solid fa-calendar-check"></i><span class="stat-val" id="pub-last">-</span><span class="stat-label">Ostatni</span></div>
+            </div>
+            <button id="btn-give-kudos" class="btn-kudos" onclick="giveKudos()">
+                <i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!
+            </button>
+            <p style="text-align:center; font-size:0.8rem; color:#666; margin-top:15px;">Tylko podsumowania są publiczne.</p>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchMode('plan'); switchBottomNav(this)">
             <i class="fa-solid fa-calendar-day"></i><span>Plan</span>
         </button>
         <button class="nav-item" onclick="switchMode('history'); switchBottomNav(this)">
             <i class="fa-solid fa-clock-rotate-left"></i><span>Historia</span>
+        </button>
+        <button class="nav-item" onclick="switchMode('community'); switchBottomNav(this)">
+            <i class="fa-solid fa-users"></i><span>Ludzie</span>
         </button>
         <button class="nav-item" onclick="switchMode('profile'); switchBottomNav(this)">
             <i class="fa-solid fa-user"></i><span>Profil</span>
