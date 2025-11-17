@@ -1,5 +1,5 @@
 /*************************************************************
-  ZMIENNE GLOBALNE I KONFIGURACJA
+  ZMIENNE GLOBALNE
 *************************************************************/
 const dayMap = {
   monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa",
@@ -11,7 +11,7 @@ let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
 
-let currentMode = 'plan'; // 'plan', 'history', 'profile'
+let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
 
 const db = firebase.firestore();
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentMode = 'plan';
       selectDay('monday'); 
       checkActiveWorkout();
-      updateProfileUI(user); // Załaduj dane do profilu
+      updateProfileUI(user);
     } else {
       document.querySelector('.container').style.display = 'none';
       document.getElementById('login-section').style.display = 'flex';
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /*************************************************************
-  2. NAWIGACJA I TRYBY
+  2. NAWIGACJA
 *************************************************************/
 function switchMode(mode) {
     currentMode = mode;
@@ -53,19 +53,18 @@ function switchMode(mode) {
     const daysNav = document.getElementById('days-nav-container');
     const fab = document.getElementById('fab-add');
 
-    // Ukryj wszystko najpierw
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
     if (mode === 'history') {
         historySection.classList.remove('hidden');
-        daysNav.style.display = 'block'; // Pokaż dni
+        daysNav.style.display = 'block'; 
         fab.style.display = 'none';
         loadHistoryFromFirestore(currentSelectedDay);
     } else if (mode === 'profile') {
         profileSection.classList.remove('hidden');
-        daysNav.style.display = 'none'; // Ukryj dni w profilu
+        daysNav.style.display = 'none'; 
         fab.style.display = 'none';
-        loadProfileStats(); // Odśwież statystyki
+        loadProfileStats(); 
     } else {
         // PLAN
         daysNav.style.display = 'block';
@@ -89,7 +88,6 @@ function selectDay(dayValue) {
     } else if (currentMode === 'history') {
         loadHistoryFromFirestore(dayValue);
     }
-    // W profilu nic nie robimy z dniem
     updateHeaderTitle();
 }
 
@@ -111,10 +109,10 @@ function updateHeaderTitle() {
     }
 }
 
-function showSection() {} // Kompatybilność
+function showSection() {} 
 
 /*************************************************************
-  3. LOGIKA TRENINGU
+  3. TRENING
 *************************************************************/
 function startWorkout(day) {
     const now = Date.now();
@@ -322,7 +320,7 @@ window.toggleCard = function(header) {
 };
 
 /*************************************************************
-  5. HISTORIA I PROFIL
+  5. HISTORIA
 *************************************************************/
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
@@ -349,7 +347,6 @@ function loadHistoryFromFirestore(dayFilterKey) {
         docs.forEach(item => renderHistoryCard(container, item));
     })
     .catch(err => {
-        // Fallback bez sortowania
         db.collection("users").doc(user.uid).collection("history").limit(50).get()
         .then(qs => {
              container.innerHTML = "";
@@ -422,7 +419,6 @@ window.deleteHistoryEntry = function(e, docId) {
     .then(() => {
         const card = e.target.closest('.history-card');
         if(card) card.remove();
-        // Odświeżamy też statystyki
         loadProfileStats();
     });
 }
@@ -444,8 +440,6 @@ function loadProfileStats() {
         document.getElementById('total-workouts').textContent = total;
         
         if(!qs.empty) {
-            // Znajdź ostatni (dla uproszczenia bierzemy dowolny, ale lepiej sortować)
-            // Tutaj proste podejście:
             const last = qs.docs[0].data().displayDate || qs.docs[0].data().date;
             document.getElementById('last-workout-date').textContent = last;
         }
@@ -478,7 +472,6 @@ window.updateUsername = function() {
 
 window.exportData = async function() {
     const user = firebase.auth().currentUser;
-    // Eksport tylko historii
     const qs = await db.collection("users").doc(user.uid).collection("history").get();
     let data = [];
     qs.forEach(doc => data.push(doc.data()));
@@ -491,9 +484,41 @@ window.exportData = async function() {
     a.click();
 }
 
+// NOWA FUNKCJA: TWARDY RESET
+window.hardResetProfile = async function() {
+    if (!confirm("⚠️ UWAGA! ⚠️\n\nCzy na pewno chcesz wyczyścić CAŁE konto?\n\nStracisz wszystkie plany treningowe, historię i statystyki. Tej operacji nie da się cofnąć.")) return;
+    if (!confirm("Potwierdź ostatecznie: USUŃ WSZYSTKIE DANE.")) return;
+
+    const user = firebase.auth().currentUser;
+    
+    try {
+        const promises = [];
+        
+        // 1. Usuń historię
+        const historySnap = await db.collection("users").doc(user.uid).collection("history").get();
+        historySnap.forEach(doc => promises.push(doc.ref.delete()));
+
+        // 2. Usuń plany (iteracja po dniach)
+        for (const day of allDays) {
+            const exercisesSnap = await db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").get();
+            exercisesSnap.forEach(doc => promises.push(doc.ref.delete()));
+            
+            // Usuń dokument dnia (muscle group)
+            promises.push(db.collection("users").doc(user.uid).collection("days").doc(day).delete());
+        }
+
+        await Promise.all(promises);
+        
+        alert("Konto zostało pomyślnie wyczyszczone. Aplikacja zostanie przeładowana.");
+        location.reload();
+
+    } catch (e) {
+        alert("Wystąpił błąd podczas czyszczenia: " + e.message);
+    }
+}
 
 /*************************************************************
-  POZOSTAŁE FUNKCJE 
+  POZOSTAŁE (MODAL, AUTH...)
 *************************************************************/
 function openAddModal(day = null) {
     if(!day) day = currentSelectedDay;
