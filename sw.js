@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gympro-v1';
+const CACHE_NAME = 'gympro-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,6 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap'
 ];
 
-// Instalacja i cache'owanie plików
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -18,7 +17,6 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Pobieranie danych (korzystanie z cache gdy brak internetu)
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((response) => {
