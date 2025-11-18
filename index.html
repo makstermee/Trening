@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  
   <title>GymPro Tracker</title>
+  
   <meta name="theme-color" content="#0a84ff">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -56,6 +56,10 @@
   </div>
 
   <div class="container">
+    <div id="install-banner" class="install-banner hidden">
+        <p>Już teraz zainstaluj aplikację!</p>
+        <button id="install-btn" onclick="installApp()"><i class="fa-solid fa-download"></i> Zainstaluj</button>
+    </div>
     <header class="app-header">
         <div class="header-title">
             <span id="current-day-display">Plan Treningowy</span>
@@ -201,7 +205,7 @@
         el.classList.add('active');
     }
     
-    // REJESTRACJA SERVICE WORKERA (To robi aplikację)
+    // REJESTRACJA SERVICE WORKERA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
@@ -210,5 +214,5 @@
       });
     }
   </script>
-  </body>
+</body>
 </html>
