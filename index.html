@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>GymPro Tracker</title>
   
+  <title>GymPro Tracker</title>
+  <meta name="theme-color" content="#0a84ff">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -185,6 +188,7 @@
   </div>
 
   <script src="script.js"></script>
+  
   <script>
     function switchAuthTab(tab) {
         const lf = document.getElementById('login-form'), rf = document.getElementById('register-form');
@@ -196,6 +200,15 @@
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
     }
+    
+    // REJESTRACJA SERVICE WORKERA (To robi aplikację)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('SW zarejestrowany!', reg))
+        .catch(err => console.log('Błąd SW:', err));
+      });
+    }
   </script>
-</body>
+  </body>
 </html>
