@@ -617,3 +617,58 @@ async function signIn(){ const e=document.getElementById('login-email').value, p
 async function signUp(){ const e=document.getElementById('register-email').value, p=document.getElementById('register-password').value; try{ await firebase.auth().createUserWithEmailAndPassword(e,p); switchAuthTab('login'); alert("Sukces!"); }catch(err){ document.getElementById('register-error').innerText=err.message; } }
 async function signOut(){ await firebase.auth().signOut(); location.reload(); }
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/*************************************************************
+  8. LOGIKA INSTALACJI PWA (DODANE)
+*************************************************************/
+let deferredPrompt;
+const installBanner = document.getElementById('install-banner');
+const installButton = document.getElementById('install-btn');
+
+// 1. Przechwyć natywny prompt przeglądarki
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Zapobiegnij domyślnemu wyświetleniu (teraz my kontrolujemy prompt)
+  e.preventDefault(); 
+  
+  // Zapisz obiekt promptu (posłuży nam do uruchomienia instalacji na kliknięcie)
+  deferredPrompt = e; 
+  
+  // Pokaż nasz własny, widoczny baner/przycisk
+  installBanner.classList.remove('hidden'); 
+});
+
+// 2. Uruchom instalację, gdy użytkownik kliknie nasz przycisk
+window.installApp = function() {
+  if (deferredPrompt) {
+    // Uruchom natywny prompt, który przechwyciliśmy
+    deferredPrompt.prompt(); 
+    
+    // Obsługa wyboru użytkownika
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('Użytkownik zaakceptował instalację PWA');
+      } else {
+        console.log('Użytkownik odrzucił instalację PWA');
+      }
+      // Po zakończeniu wyboru ukryj baner
+      deferredPrompt = null;
+      installBanner.classList.add('hidden');
+    });
+  } else {
+    // Jeśli prompt nie jest dostępny (np. już zainstalowane), ukryj baner
+    installBanner.classList.add('hidden');
+    alert("Instalacja jest już możliwa z menu przeglądarki lub aplikacja jest zainstalowana.");
+  }
+};
+
+// Ukryj baner, jeśli aplikacja jest już zainstalowana
+window.addEventListener('appinstalled', (e) => {
+  installBanner.classList.add('hidden');
+});
+
+// Dodatkowy check dla iOS, gdzie 'beforeinstallprompt' nie działa: 
+// na iOS musimy polegać na instrukcjach 'Dodaj do ekranu początk.'
+if (!('beforeinstallprompt' in window) && (navigator.userAgent.match(/iPhone|iPad|iPod/i))) {
+    // Ukryj baner, ale poinformuj, że na iOS działa to inaczej
+    installBanner.querySelector('p').textContent = "Zainstaluj przez Udostępnij > Do ekranu początk.";
+}
