@@ -253,16 +253,21 @@ function removeLog(day, docId, weight, reps, logId) {
     .then(() => loadCardsDataFromFirestore(day));
 }
 
+// --- TUTAJ BYŁA POPRAWKA ---
 function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
-    container.innerHTML = "";
+    // USUNIĘTO STĄD: container.innerHTML = "";
+    
     const user = firebase.auth().currentUser;
     if(!user) return;
 
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises")
     .orderBy("order", "asc").get()
     .then(qs => {
+        // DODANO TUTAJ: Czyścimy dopiero, gdy mamy pewność, że dane przyszły
+        container.innerHTML = "";
+        
         if(qs.empty) return;
         qs.forEach(doc => renderAccordionCard(container, day, doc));
     });
