@@ -34,8 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
       selectDay('monday'); 
       checkActiveWorkout();
       updateProfileUI(user);
-      
-      // Synchronizuj statystyki przy starcie
       loadProfileStats();
     } else {
       document.querySelector('.container').style.display = 'none';
@@ -108,9 +106,16 @@ function showPlanSection(dayValue) {
 function updateHeaderTitle() {
     const polishName = dayMap[currentSelectedDay] || '';
     const titleEl = document.getElementById('current-day-display');
+    const shareBtn = document.getElementById('btn-share-day'); 
     
     if (document.getElementById('workout-timer').classList.contains('hidden')) {
-        if (currentMode === 'plan') titleEl.textContent = `Plan: ${polishName}`;
+        // Domyślnie ukryj przycisk udostępniania
+        if(shareBtn) shareBtn.classList.add('hidden');
+
+        if (currentMode === 'plan') {
+            titleEl.textContent = `Plan: ${polishName}`;
+            if(shareBtn) shareBtn.classList.remove('hidden'); // Pokaż tylko w planie
+        }
         else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
         else if (currentMode === 'community') titleEl.textContent = `Społeczność`;
         else if (currentMode === 'profile') titleEl.textContent = `Twój Profil`;
@@ -134,9 +139,11 @@ function checkActiveWorkout() {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const titleEl = document.getElementById('current-day-display');
     const timerEl = document.getElementById('workout-timer');
+    const shareBtn = document.getElementById('btn-share-day');
     
     if (activeData) {
         titleEl.style.display = 'none';
+        if(shareBtn) shareBtn.style.display = 'none'; // Ukryj udostępnianie podczas treningu
         timerEl.classList.remove('hidden');
         
         if (timerInterval) clearInterval(timerInterval);
@@ -152,6 +159,7 @@ function checkActiveWorkout() {
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     } else {
         titleEl.style.display = 'block';
+        if(shareBtn) shareBtn.style.display = ''; // Przywróć domyślne
         timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         updateHeaderTitle(); 
@@ -215,7 +223,6 @@ async function finishWorkout(day) {
         await batch.commit();
         alert("Zapisano w historii! 🎉");
         
-        // WAŻNE: Aktualizuj statystyki w profilu i publicznym profilu
         loadProfileStats(); 
     } else {
         alert("Brak wykonanych serii. Trening zakończony bez zapisu.");
@@ -253,11 +260,9 @@ function removeLog(day, docId, weight, reps, logId) {
     .then(() => loadCardsDataFromFirestore(day));
 }
 
-// --- TUTAJ BYŁA POPRAWKA ---
 function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
-    // USUNIĘTO STĄD: container.innerHTML = "";
     
     const user = firebase.auth().currentUser;
     if(!user) return;
@@ -265,8 +270,8 @@ function loadCardsDataFromFirestore(day) {
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises")
     .orderBy("order", "asc").get()
     .then(qs => {
-        // DODANO TUTAJ: Czyścimy dopiero, gdy mamy pewność, że dane przyszły
-        container.innerHTML = "";
+        // NAPRAWIONY BŁĄD DUPLIKOWANIA
+        container.innerHTML = ""; 
         
         if(qs.empty) return;
         qs.forEach(doc => renderAccordionCard(container, day, doc));
@@ -392,7 +397,7 @@ window.deleteHistoryEntry = function(e, docId) {
 }
 
 /*************************************************************
-  6. PROFIL (PRYWATNY) I SYNCHRONIZACJA PUBLICZNA
+  6. PROFIL I SPOŁECZNOŚĆ
 *************************************************************/
 function updateProfileUI(user) {
     document.getElementById('profile-email').textContent = user.displayName || user.email;
@@ -403,34 +408,29 @@ function updateProfileUI(user) {
 function loadProfileStats() {
     const user = firebase.auth().currentUser;
     
-    // 1. Pobierz prywatną historię
     db.collection("users").doc(user.uid).collection("history").get().then(qs => {
         const total = qs.size;
         let last = '-';
         if(!qs.empty) last = qs.docs[0].data().displayDate || qs.docs[0].data().date;
 
-        // Aktualizacja UI
         document.getElementById('total-workouts').textContent = total;
         document.getElementById('last-workout-date').textContent = last;
 
-        // 2. Pobierz "Kudos" z profilu publicznego
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let kudos = 0;
             if(doc.exists) kudos = doc.data().likes || 0;
             document.getElementById('profile-kudos').textContent = kudos;
             
-            // 3. PUBLIKUJ PROFIL (Synchronizacja przy każdym ładowaniu statystyk)
             publishProfileStats(user, total, last, kudos);
         });
     });
 }
 
-// Funkcja zapisująca dane publiczne
 function publishProfileStats(user, total, last, existingKudos) {
     const publicRef = db.collection("publicUsers").doc(user.uid);
     publicRef.set({
         displayName: user.displayName || user.email.split('@')[0],
-        email: user.email, // Opcjonalne, można ukryć
+        email: user.email,
         totalWorkouts: total,
         lastWorkout: last,
         likes: existingKudos || 0,
@@ -450,7 +450,7 @@ window.updateUsername = function() {
     user.updateProfile({ displayName: newName }).then(() => {
         alert("Zmieniono!");
         updateProfileUI(user);
-        loadProfileStats(); // Wymusi synchronizację nowej nazwy
+        loadProfileStats(); 
     }).catch(err => alert("Błąd: "+err.message));
 }
 window.exportData = async function() {
@@ -473,16 +473,12 @@ window.hardResetProfile = async function() {
             eSnap.forEach(doc => promises.push(doc.ref.delete()));
             promises.push(db.collection("users").doc(user.uid).collection("days").doc(day).delete());
         }
-        // Usuń też publiczny profil
         promises.push(db.collection("publicUsers").doc(user.uid).delete());
         await Promise.all(promises);
         alert("Wyczyszczono."); location.reload();
     } catch (e) { alert("Błąd: " + e.message); }
 }
 
-/*************************************************************
-  7. SPOŁECZNOŚĆ (LOGIKA)
-*************************************************************/
 function loadCommunity() {
     const container = document.getElementById("community-list");
     container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
@@ -494,9 +490,6 @@ function loadCommunity() {
         
         qs.forEach(doc => {
             const d = doc.data();
-            // Nie pokazuj siebie na liście (opcjonalnie)
-            // if(d.uid === firebase.auth().currentUser.uid) return;
-            
             const card = document.createElement('div');
             card.className = 'user-card';
             card.innerHTML = `
@@ -521,6 +514,9 @@ function openPublicProfile(userData) {
     document.getElementById('pub-last').textContent = userData.lastWorkout || '-';
     document.getElementById('pub-kudos-count').textContent = userData.likes || 0;
     
+    // NOWE: Załaduj plany tego użytkownika
+    loadSharedPlansForUser(userData.uid);
+
     const overlay = document.getElementById('public-profile-overlay');
     overlay.classList.remove('hidden');
     setTimeout(() => overlay.classList.add('active'), 10);
@@ -533,78 +529,121 @@ function closePublicProfile() {
     setTimeout(() => overlay.classList.add('hidden'), 300);
 }
 
-// NOWA FUNKCJA GIVEKUDOS - NAPRAWIONA
 function giveKudos() {
-    // 1. Sprawdzenia wstępne
     if(!viewingUserId) return;
     const currentUser = firebase.auth().currentUser;
+    if(viewingUserId === currentUser.uid) { alert("Nie możesz dać lajka sam sobie! 😉"); return; }
     
-    // Nie można dać lajka sobie
-    if(viewingUserId === currentUser.uid) {
-        alert("Nie możesz dać lajka sam sobie! 😉");
-        return;
-    }
-    
-    // 2. Ustal datę
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
+    const todayStr = now.toISOString().split('T')[0]; 
     
-    // Referencja do Twojej historii lajków
-    const interactionRef = db.collection("users").doc(currentUser.uid)
-                             .collection("givenKudos").doc(viewingUserId);
+    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
 
-    // 3. Sprawdź czy już dałeś lajka DZISIAJ
     interactionRef.get().then(docSnap => {
-        // Jeśli dokument istnieje i data to dzisiaj -> STOP
         if (docSnap.exists && docSnap.data().date === todayStr) {
             alert("Już przybiłeś dzisiaj piątkę temu użytkownikowi! Wróć jutro. 👋");
             return;
         }
 
-        // 4. Jeśli nie -> Dodaj lajka
         const batch = db.batch();
         const publicRef = db.collection("publicUsers").doc(viewingUserId);
         
-        // Zwiększ licznik u innej osoby
         batch.update(publicRef, { likes: firebase.firestore.FieldValue.increment(1) });
-        // Zapisz blokadę u siebie
         batch.set(interactionRef, { date: todayStr });
 
         batch.commit().then(() => {
-            // Sukces! Zaktualizuj wygląd
             const countEl = document.getElementById('pub-kudos-count');
             if(countEl) {
                 let currentVal = parseInt(countEl.textContent) || 0;
                 countEl.textContent = currentVal + 1;
             }
-            
-            // Animacja przycisku na zielono
             const btn = document.getElementById('btn-give-kudos');
-            const originalContent = btn.innerHTML; // zapamiętaj stary wygląd
-            
             btn.innerHTML = '<i class="fa-solid fa-check"></i> DZIĘKI!';
-            btn.style.background = 'var(--accent-color)'; // Zielony
+            btn.style.background = 'var(--accent-color)'; 
             btn.style.color = '#000';
-            
             setTimeout(() => { 
                 btn.innerHTML = '<i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!';
-                btn.style.background = ''; // Powrót (zcss)
+                btn.style.background = ''; 
                 btn.style.color = ''; 
             }, 2000);
-            
-        }).catch(err => {
-            // BŁĄD ZAPISU (np. brak uprawnień)
-            console.error(err);
-            alert("Błąd zapisu: " + err.message + "\nSprawdź 'Firestore Rules' w konsoli Firebase.");
-        });
-
-    }).catch(err => {
-        // BŁĄD ODCZYTU
-        console.error(err);
-        alert("Błąd połączenia: " + err.message);
+        }).catch(err => { console.error(err); alert("Błąd zapisu."); });
     });
 }
 
+/*************************************************************
+  7. NOWE: UDOSTĘPNIANIE PLANÓW (SOCIAL)
+*************************************************************/
+async function shareCurrentDay() {
+    if (currentMode !== 'plan') return;
+    const day = currentSelectedDay;
+    const polishName = dayMap[day];
+
+    if (!confirm(`Czy chcesz udostępnić publicznie swój plan na: ${polishName}?`)) return;
+
+    const user = firebase.auth().currentUser;
+    
+    const snapshot = await db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").orderBy("order").get();
+    
+    if (snapshot.empty) {
+        alert("Ten dzień jest pusty! Dodaj ćwiczenia zanim udostępnisz.");
+        return;
+    }
+
+    let cleanExercises = [];
+    snapshot.forEach(doc => {
+        const d = doc.data();
+        cleanExercises.push({
+            exercise: d.exercise,
+            series: d.series,
+            reps: d.reps,
+            muscleGroup: document.getElementById(`${day}-muscle-group`).value || "Ogólny"
+        });
+    });
+
+    await db.collection("publicUsers").doc(user.uid).collection("sharedPlans").doc(day).set({
+        dayKey: day,
+        dayName: polishName,
+        exercises: cleanExercises,
+        updatedAt: new Date().toISOString()
+    });
+
+    alert(`Plan na ${polishName} został opublikowany w Twoim profilu!`);
+}
+
+function loadSharedPlansForUser(targetUid) {
+    const container = document.getElementById('public-plans-list');
+    container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam plany...</p>';
+
+    db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get()
+    .then(qs => {
+        container.innerHTML = "";
+        if (qs.empty) {
+            container.innerHTML = '<p style="text-align:center; font-size:0.8rem; color:#666;">Brak udostępnionych planów.</p>';
+            return;
+        }
+
+        qs.forEach(doc => {
+            const data = doc.data();
+            const planItem = document.createElement('div');
+            planItem.className = 'shared-plan-item';
+            planItem.style.cssText = 'background:#242426; margin-bottom:8px; border-radius:8px; padding:10px; font-size:0.9rem;';
+            
+            const exercisesList = data.exercises.map(e => 
+                `<div style="color:#ccc; margin-top:4px; padding-left:10px; border-left:2px solid var(--primary-color);">
+                    <strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r)</span>
+                 </div>`
+            ).join('');
+
+            planItem.innerHTML = `
+                <div style="font-weight:bold; color:white; margin-bottom:5px;">
+                    ${data.dayName} <span style="color:var(--accent-color); font-size:0.8em; font-weight:normal;">(${data.exercises.length} ćw.)</span>
+                </div>
+                <div>${exercisesList}</div>
+            `;
+            container.appendChild(planItem);
+        });
+    });
+}
 
 /*************************************************************
   POZOSTAŁE FUNKCJE (MODAL, AUTH...)
@@ -624,56 +663,35 @@ async function signOut(){ await firebase.auth().signOut(); location.reload(); }
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 /*************************************************************
-  8. LOGIKA INSTALACJI PWA (DODANE)
+  8. LOGIKA INSTALACJI PWA
 *************************************************************/
 let deferredPrompt;
 const installBanner = document.getElementById('install-banner');
 const installButton = document.getElementById('install-btn');
 
-// 1. Przechwyć natywny prompt przeglądarki
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Zapobiegnij domyślnemu wyświetleniu (teraz my kontrolujemy prompt)
   e.preventDefault(); 
-  
-  // Zapisz obiekt promptu (posłuży nam do uruchomienia instalacji na kliknięcie)
   deferredPrompt = e; 
-  
-  // Pokaż nasz własny, widoczny baner/przycisk
   installBanner.classList.remove('hidden'); 
 });
 
-// 2. Uruchom instalację, gdy użytkownik kliknie nasz przycisk
 window.installApp = function() {
   if (deferredPrompt) {
-    // Uruchom natywny prompt, który przechwyciliśmy
     deferredPrompt.prompt(); 
-    
-    // Obsługa wyboru użytkownika
     deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('Użytkownik zaakceptował instalację PWA');
-      } else {
-        console.log('Użytkownik odrzucił instalację PWA');
-      }
-      // Po zakończeniu wyboru ukryj baner
       deferredPrompt = null;
       installBanner.classList.add('hidden');
     });
   } else {
-    // Jeśli prompt nie jest dostępny (np. już zainstalowane), ukryj baner
     installBanner.classList.add('hidden');
     alert("Instalacja jest już możliwa z menu przeglądarki lub aplikacja jest zainstalowana.");
   }
 };
 
-// Ukryj baner, jeśli aplikacja jest już zainstalowana
 window.addEventListener('appinstalled', (e) => {
   installBanner.classList.add('hidden');
 });
 
-// Dodatkowy check dla iOS, gdzie 'beforeinstallprompt' nie działa: 
-// na iOS musimy polegać na instrukcjach 'Dodaj do ekranu początk.'
 if (!('beforeinstallprompt' in window) && (navigator.userAgent.match(/iPhone|iPad|iPod/i))) {
-    // Ukryj baner, ale poinformuj, że na iOS działa to inaczej
     installBanner.querySelector('p').textContent = "Zainstaluj przez Udostępnij > Do ekranu początk.";
 }
