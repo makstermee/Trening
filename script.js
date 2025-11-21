@@ -270,8 +270,7 @@ function loadCardsDataFromFirestore(day) {
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises")
     .orderBy("order", "asc").get()
     .then(qs => {
-        // NAPRAWIONY BŁĄD DUPLIKOWANIA
-        container.innerHTML = ""; 
+        container.innerHTML = ""; // Naprawa duplikowania
         
         if(qs.empty) return;
         qs.forEach(doc => renderAccordionCard(container, day, doc));
@@ -392,7 +391,7 @@ window.deleteHistoryEntry = function(e, docId) {
     db.collection("users").doc(user.uid).collection("history").doc(docId).delete()
     .then(() => {
         e.target.closest('.history-card').remove();
-        loadProfileStats(); // Aktualizuj statystyki po usunięciu
+        loadProfileStats(); 
     });
 }
 
@@ -514,8 +513,7 @@ function openPublicProfile(userData) {
     document.getElementById('pub-last').textContent = userData.lastWorkout || '-';
     document.getElementById('pub-kudos-count').textContent = userData.likes || 0;
     
-    // NOWE: Załaduj plany tego użytkownika
-    loadSharedPlansForUser(userData.uid);
+    loadSharedPlansForUser(userData.uid); // Ładowanie planów
 
     const overlay = document.getElementById('public-profile-overlay');
     overlay.classList.remove('hidden');
@@ -571,7 +569,7 @@ function giveKudos() {
 }
 
 /*************************************************************
-  7. NOWE: UDOSTĘPNIANIE PLANÓW (SOCIAL)
+  7. NOWE: UDOSTĘPNIANIE PLANÓW (Z CIĘŻAREM I SORTOWANIEM)
 *************************************************************/
 async function shareCurrentDay() {
     if (currentMode !== 'plan') return;
@@ -596,6 +594,7 @@ async function shareCurrentDay() {
             exercise: d.exercise,
             series: d.series,
             reps: d.reps,
+            weight: d.weight || null, // DODANO: Ciężar
             muscleGroup: document.getElementById(`${day}-muscle-group`).value || "Ogólny"
         });
     });
@@ -607,12 +606,18 @@ async function shareCurrentDay() {
         updatedAt: new Date().toISOString()
     });
 
-    alert(`Plan na ${polishName} został opublikowany w Twoim profilu!`);
+    alert(`Plan na ${polishName} został zaktualizowany w Twoim profilu!`);
+    
+    if(viewingUserId === user.uid) {
+        loadSharedPlansForUser(user.uid);
+    }
 }
 
 function loadSharedPlansForUser(targetUid) {
     const container = document.getElementById('public-plans-list');
     container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam plany...</p>';
+    const currentUser = firebase.auth().currentUser;
+    const isMyProfile = (currentUser && currentUser.uid === targetUid); // Sprawdź czy to mój profil
 
     db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get()
     .then(qs => {
@@ -622,26 +627,61 @@ function loadSharedPlansForUser(targetUid) {
             return;
         }
 
-        qs.forEach(doc => {
-            const data = doc.data();
+        // 1. Sortowanie dni (Pon -> Niedz)
+        let plans = [];
+        qs.forEach(doc => plans.push(doc.data()));
+        
+        plans.sort((a, b) => {
+            return allDays.indexOf(a.dayKey) - allDays.indexOf(b.dayKey);
+        });
+
+        // 2. Wyświetlanie
+        plans.forEach(data => {
             const planItem = document.createElement('div');
             planItem.className = 'shared-plan-item';
-            planItem.style.cssText = 'background:#242426; margin-bottom:8px; border-radius:8px; padding:10px; font-size:0.9rem;';
+            planItem.style.cssText = 'background:#242426; margin-bottom:8px; border-radius:8px; padding:10px; font-size:0.9rem; position:relative;';
             
-            const exercisesList = data.exercises.map(e => 
-                `<div style="color:#ccc; margin-top:4px; padding-left:10px; border-left:2px solid var(--primary-color);">
-                    <strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r)</span>
-                 </div>`
-            ).join('');
+            const exercisesList = data.exercises.map(e => {
+                const weightText = e.weight ? ` • ${e.weight}kg` : '';
+                return `<div style="color:#ccc; margin-top:4px; padding-left:10px; border-left:2px solid var(--primary-color);">
+                    <strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r${weightText})</span>
+                 </div>`;
+            }).join('');
+
+            // Kosz na śmieci (tylko dla właściciela)
+            let deleteBtnHtml = '';
+            if (isMyProfile) {
+                deleteBtnHtml = `
+                <button onclick="deleteSharedPlan('${data.dayKey}')" style="position:absolute; top:10px; right:10px; background:none; border:none; color:#ff453a; cursor:pointer;">
+                    <i class="fa-solid fa-trash"></i>
+                </button>`;
+            }
 
             planItem.innerHTML = `
-                <div style="font-weight:bold; color:white; margin-bottom:5px;">
+                <div style="font-weight:bold; color:white; margin-bottom:5px; padding-right:30px;">
                     ${data.dayName} <span style="color:var(--accent-color); font-size:0.8em; font-weight:normal;">(${data.exercises.length} ćw.)</span>
                 </div>
+                ${deleteBtnHtml}
                 <div>${exercisesList}</div>
             `;
             container.appendChild(planItem);
         });
+    });
+}
+
+// NOWE: Funkcja usuwania planu publicznego
+function deleteSharedPlan(dayKey) {
+    if(!confirm("Czy na pewno chcesz przestać udostępniać ten dzień? Zniknie on z Twojego profilu publicznego.")) return;
+    
+    const user = firebase.auth().currentUser;
+    
+    db.collection("publicUsers").doc(user.uid).collection("sharedPlans").doc(dayKey).delete()
+    .then(() => {
+        alert("Usunięto z publicznych!");
+        loadSharedPlansForUser(user.uid);
+    })
+    .catch(err => {
+        alert("Błąd: " + err.message);
     });
 }
 
