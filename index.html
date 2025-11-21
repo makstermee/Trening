@@ -225,11 +225,41 @@
         el.classList.add('active');
     }
     
+    // --- KLUCZOWY FRAGMENT KODU PWA (AUTO-ODŚWIEŻANIE) ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('SW zarejestrowany!', reg))
-        .catch(err => console.log('Błąd SW:', err));
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('SW zarejestrowany!', reg);
+
+            // Jeśli SW jest w stanie "waiting", a my chcemy go aktywować:
+            if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+
+            // Słuchaj na aktualizacje
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                if (installingWorker) {
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed') {
+                            if (navigator.serviceWorker.controller) {
+                                console.log('Nowa treść jest dostępna; proszę odświeżyć.');
+                            } else {
+                                console.log('Treść zcacheowana do użytku offline.');
+                            }
+                        }
+                    };
+                }
+            };
+        }).catch(err => console.log('Błąd SW:', err));
+
+        // --- NAJWAŻNIEJSZA LOGIKA: WYMUSZENIE RELOAD ---
+        let refreshing;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload(); 
+        });
       });
     }
   </script>
