@@ -9,7 +9,10 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap'
 ];
 
+// 1. Instalacja - AGRESYWNA (skipWaiting)
 self.addEventListener('install', (e) => {
+  self.skipWaiting(); 
+  
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
@@ -17,6 +20,12 @@ self.addEventListener('install', (e) => {
   );
 });
 
+// 2. Aktywacja - PRZEJĘCIE KONTROLI (clients.claim)
+self.addEventListener('activate', (e) => {
+  e.waitUntil(clients.claim());
+});
+
+// 3. Pobieranie (Cache First)
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((response) => {
