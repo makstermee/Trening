@@ -10,7 +10,7 @@ let timerInterval = null;
 
 let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
-let viewingUserId = null; // ID użytkownika, którego profil oglądamy
+let viewingUserId = null; 
 
 const db = firebase.firestore();
 
@@ -109,12 +109,11 @@ function updateHeaderTitle() {
     const shareBtn = document.getElementById('btn-share-day'); 
     
     if (document.getElementById('workout-timer').classList.contains('hidden')) {
-        // Domyślnie ukryj przycisk udostępniania
         if(shareBtn) shareBtn.classList.add('hidden');
 
         if (currentMode === 'plan') {
             titleEl.textContent = `Plan: ${polishName}`;
-            if(shareBtn) shareBtn.classList.remove('hidden'); // Pokaż tylko w planie
+            if(shareBtn) shareBtn.classList.remove('hidden'); 
         }
         else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
         else if (currentMode === 'community') titleEl.textContent = `Społeczność`;
@@ -143,7 +142,7 @@ function checkActiveWorkout() {
     
     if (activeData) {
         titleEl.style.display = 'none';
-        if(shareBtn) shareBtn.style.display = 'none'; // Ukryj udostępnianie podczas treningu
+        if(shareBtn) shareBtn.style.display = 'none'; 
         timerEl.classList.remove('hidden');
         
         if (timerInterval) clearInterval(timerInterval);
@@ -159,7 +158,7 @@ function checkActiveWorkout() {
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     } else {
         titleEl.style.display = 'block';
-        if(shareBtn) shareBtn.style.display = ''; // Przywróć domyślne
+        if(shareBtn) shareBtn.style.display = ''; 
         timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         updateHeaderTitle(); 
@@ -270,7 +269,7 @@ function loadCardsDataFromFirestore(day) {
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises")
     .orderBy("order", "asc").get()
     .then(qs => {
-        container.innerHTML = ""; // Naprawa duplikowania
+        container.innerHTML = ""; 
         
         if(qs.empty) return;
         qs.forEach(doc => renderAccordionCard(container, day, doc));
@@ -513,7 +512,7 @@ function openPublicProfile(userData) {
     document.getElementById('pub-last').textContent = userData.lastWorkout || '-';
     document.getElementById('pub-kudos-count').textContent = userData.likes || 0;
     
-    loadSharedPlansForUser(userData.uid); // Ładowanie planów
+    loadSharedPlansForUser(userData.uid); 
 
     const overlay = document.getElementById('public-profile-overlay');
     overlay.classList.remove('hidden');
@@ -569,7 +568,7 @@ function giveKudos() {
 }
 
 /*************************************************************
-  7. NOWE: UDOSTĘPNIANIE PLANÓW (Z CIĘŻAREM I SORTOWANIEM)
+  7. SOCIAL: UDOSTĘPNIANIE, SORTOWANIE, USUWANIE
 *************************************************************/
 async function shareCurrentDay() {
     if (currentMode !== 'plan') return;
@@ -594,7 +593,7 @@ async function shareCurrentDay() {
             exercise: d.exercise,
             series: d.series,
             reps: d.reps,
-            weight: d.weight || null, // DODANO: Ciężar
+            weight: d.weight || null, 
             muscleGroup: document.getElementById(`${day}-muscle-group`).value || "Ogólny"
         });
     });
@@ -617,7 +616,7 @@ function loadSharedPlansForUser(targetUid) {
     const container = document.getElementById('public-plans-list');
     container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam plany...</p>';
     const currentUser = firebase.auth().currentUser;
-    const isMyProfile = (currentUser && currentUser.uid === targetUid); // Sprawdź czy to mój profil
+    const isMyProfile = (currentUser && currentUser.uid === targetUid); 
 
     db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get()
     .then(qs => {
@@ -627,7 +626,6 @@ function loadSharedPlansForUser(targetUid) {
             return;
         }
 
-        // 1. Sortowanie dni (Pon -> Niedz)
         let plans = [];
         qs.forEach(doc => plans.push(doc.data()));
         
@@ -635,7 +633,6 @@ function loadSharedPlansForUser(targetUid) {
             return allDays.indexOf(a.dayKey) - allDays.indexOf(b.dayKey);
         });
 
-        // 2. Wyświetlanie
         plans.forEach(data => {
             const planItem = document.createElement('div');
             planItem.className = 'shared-plan-item';
@@ -648,7 +645,6 @@ function loadSharedPlansForUser(targetUid) {
                  </div>`;
             }).join('');
 
-            // Kosz na śmieci (tylko dla właściciela)
             let deleteBtnHtml = '';
             if (isMyProfile) {
                 deleteBtnHtml = `
@@ -669,7 +665,6 @@ function loadSharedPlansForUser(targetUid) {
     });
 }
 
-// NOWE: Funkcja usuwania planu publicznego
 function deleteSharedPlan(dayKey) {
     if(!confirm("Czy na pewno chcesz przestać udostępniać ten dzień? Zniknie on z Twojego profilu publicznego.")) return;
     
@@ -703,11 +698,10 @@ async function signOut(){ await firebase.auth().signOut(); location.reload(); }
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 /*************************************************************
-  8. LOGIKA INSTALACJI PWA
+  8. PWA & FORCE UPDATE
 *************************************************************/
 let deferredPrompt;
 const installBanner = document.getElementById('install-banner');
-const installButton = document.getElementById('install-btn');
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault(); 
@@ -734,4 +728,43 @@ window.addEventListener('appinstalled', (e) => {
 
 if (!('beforeinstallprompt' in window) && (navigator.userAgent.match(/iPhone|iPad|iPod/i))) {
     installBanner.querySelector('p').textContent = "Zainstaluj przez Udostępnij > Do ekranu początk.";
+}
+
+// --- NOWE: FUNKCJA WYMUSZAJĄCA AKTUALIZACJĘ ---
+async function forceAppUpdate(btnElement) {
+    if (!navigator.onLine) {
+        alert("Jesteś offline! Podłącz internet, aby zaktualizować.");
+        return;
+    }
+
+    if (!confirm("To wymusi pobranie najnowszej wersji aplikacji z serwera. Strona zostanie przeładowana. Kontynuować?")) return;
+
+    if(btnElement) {
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aktualizuję...';
+        btnElement.disabled = true;
+    }
+
+    try {
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+            }
+        }
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(key => caches.delete(key)));
+        }
+        setTimeout(() => {
+            alert("Gotowe! Aplikacja jest aktualna. Witaj w nowej wersji! 🚀");
+            window.location.reload(true); 
+        }, 1000);
+    } catch (error) {
+        console.error("Błąd aktualizacji:", error);
+        alert("Coś poszło nie tak. Spróbuj odświeżyć ręcznie.");
+        if(btnElement) {
+            btnElement.innerHTML = '<i class="fa-solid fa-rotate"></i> SPRAWDŹ I ZAKTUALIZUJ';
+            btnElement.disabled = false;
+        }
+    }
 }
