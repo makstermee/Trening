@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gympro-v5'; // Zmieniono na v5
+const CACHE_NAME = 'gympro-v6'; 
 const ASSETS = [
   './',
   './index.html',
