@@ -225,12 +225,12 @@
         el.classList.add('active');
     }
     
-    // --- KOD PWA Z WYMUSZENIEM AKTUALIZACJI (?v=6) ---
+    // --- NOWA REJESTRACJA (ZMIENIONA NAZWA PLIKU!) ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        // TUTAJ JEST ZMIANA: sw.js?v=6
-        navigator.serviceWorker.register('sw.js?v=6').then(reg => {
-            console.log('SW zarejestrowany!', reg);
+        // TU JEST ZMIANA: 'service-worker.js' zamiast 'sw.js'
+        navigator.serviceWorker.register('service-worker.js').then(reg => {
+            console.log('Nowy SW zarejestrowany!', reg);
 
             if (reg.waiting) {
                 reg.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -242,7 +242,8 @@
                     installingWorker.onstatechange = () => {
                         if (installingWorker.state === 'installed') {
                             if (navigator.serviceWorker.controller) {
-                                console.log('Nowa treść jest dostępna; proszę odświeżyć.');
+                                console.log('Aktualizacja gotowa. Odświeżam...');
+                                window.location.reload();
                             }
                         }
                     };
