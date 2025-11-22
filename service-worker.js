@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gympro-v6'; 
+const CACHE_NAME = 'gympro-v8-final'; 
 const ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,7 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap'
 ];
 
-// 1. Instalacja - AGRESYWNA (skipWaiting)
+// 1. Instalacja - AGRESYWNA
 self.addEventListener('install', (e) => {
   self.skipWaiting(); 
   
@@ -20,12 +20,22 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// 2. Aktywacja - PRZEJĘCIE KONTROLI (clients.claim)
+// 2. Aktywacja - PRZEJĘCIE KONTROLI I CZYSZCZENIE STAREGO
 self.addEventListener('activate', (e) => {
-  e.waitUntil(clients.claim());
+  e.waitUntil(
+    caches.keys().then((keyList) => {
+      return Promise.all(keyList.map((key) => {
+        if (key !== CACHE_NAME) {
+          console.log('Usuwanie starego cache:', key);
+          return caches.delete(key);
+        }
+      }));
+    })
+    .then(() => self.clients.claim())
+  );
 });
 
-// 3. Pobieranie (Cache First)
+// 3. Pobieranie
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((response) => {
