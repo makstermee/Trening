@@ -26,12 +26,10 @@ const db = firebase.firestore();
   1. INICJALIZACJA I RANGI
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
-  // Ukrywamy kontener na start, żeby sprawdzić logowanie
   document.querySelector('.container').style.display = 'none';
   
   firebase.auth().onAuthStateChanged(user => {
     if (user) {
-      // Użytkownik zalogowany
       document.querySelector('.container').style.display = 'block';
       document.getElementById('login-section').style.display = 'none';
       
@@ -47,7 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
       loadProfileStats();
       checkNotificationsCount(); 
     } else {
-      // Użytkownik wylogowany
       document.querySelector('.container').style.display = 'none';
       document.getElementById('login-section').style.display = 'flex';
     }
@@ -69,16 +66,18 @@ function getRankName(points) {
 }
 
 /*************************************************************
-  2. NAWIGACJA
+  2. NAWIGACJA (ZAKTUALIZOWANA O ZASADY)
 *************************************************************/
 function switchMode(mode) {
     currentMode = mode;
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
+    const rulesSection = document.getElementById('rules');
     const profileSection = document.getElementById('profile');
     const daysNav = document.getElementById('days-nav-container');
     const fab = document.getElementById('fab-add');
 
+    // Ukryj wszystkie sekcje
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
     if (mode === 'history') {
@@ -89,11 +88,16 @@ function switchMode(mode) {
         communitySection.classList.remove('hidden');
         daysNav.style.display = 'none'; fab.style.display = 'none';
         loadCommunity();
+    } else if (mode === 'rules') {
+        // NOWY TRYB: ZASADY
+        rulesSection.classList.remove('hidden');
+        daysNav.style.display = 'none'; fab.style.display = 'none';
     } else if (mode === 'profile') {
         profileSection.classList.remove('hidden');
         daysNav.style.display = 'none'; fab.style.display = 'none';
         loadProfileStats(); 
     } else {
+        // TRYB PLANU
         daysNav.style.display = 'block'; fab.style.display = 'flex';
         showPlanSection(currentSelectedDay);
     }
@@ -130,12 +134,14 @@ function updateHeaderTitle() {
     
     if (document.getElementById('workout-timer').classList.contains('hidden')) {
         if(shareBtn) shareBtn.classList.add('hidden');
+        
         if (currentMode === 'plan') {
             titleEl.textContent = `Plan: ${polishName}`;
             if(shareBtn && currentSelectedDay !== 'challenge') shareBtn.classList.remove('hidden'); 
         }
         else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
         else if (currentMode === 'community') titleEl.textContent = `Społeczność`;
+        else if (currentMode === 'rules') titleEl.textContent = `Zasady i Rangi`; // NOWY TYTUŁ
         else if (currentMode === 'profile') titleEl.textContent = `Twój Profil`;
     }
 }
@@ -668,182 +674,6 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
-function loadHistoryFromFirestore(dayFilterKey) {
-    const container = document.getElementById("history-list");
-    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
-    const user = firebase.auth().currentUser;
-    db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
-    .then(qs => {
-        container.innerHTML = "";
-        let docs = [];
-        qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
-        if (dayFilterKey) {
-            const polishName = dayMap[dayFilterKey];
-            docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName);
-        }
-        if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
-        docs.forEach(item => renderHistoryCard(container, item));
-    });
-}
-function renderHistoryCard(container, item) {
-    const data = item.data;
-    const id = item.id;
-    const card = document.createElement('div');
-    card.className = `history-card ${data.isChallenge ? 'gold-border' : ''}`;
-    
-    let authorHtml = '';
-    if (data.isChallenge && data.originalAuthorName) {
-        authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
-    }
-
-    let detailsHtml = '';
-    if (data.details && Array.isArray(data.details)) {
-        detailsHtml = data.details.map(ex => {
-            let logsStr = (Array.isArray(ex.sets)) ? ex.sets.map((s, i) => `<span>S${i+1}: ${s.weight}kg x ${s.reps}</span>`).join(', ') : (ex.logs || 'Brak');
-            return `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(ex.name)}</div><div class="hex-logs">${logsStr}</div></div>`;
-        }).join('');
-    }
-
-    card.innerHTML = `
-        <div class="history-card-header" onclick="toggleHistoryCard(this)">
-            <div class="history-info">
-                ${authorHtml}
-                <h4>${data.dayName||'Trening'}</h4>
-                <div class="history-meta"><span>${data.displayDate||data.dateIso.split('T')[0]}</span><span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span></div>
-            </div>
-            <div class="history-actions"><button class="history-delete-btn" onclick="deleteHistoryEntry(event, '${id}')"><i class="fa-solid fa-trash"></i></button><i class="fa-solid fa-chevron-down history-toggle-icon"></i></div>
-        </div>
-        <div class="history-card-details">${detailsHtml || '<p>Brak szczegółów</p>'}</div>
-    `;
-    container.appendChild(card);
-}
-window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
-window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(firebase.auth().currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
-
-function loadCommunity() {
-    const container = document.getElementById("community-list");
-    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
-    db.collection("publicUsers").orderBy("totalPoints", "desc").limit(20).get().then(qs => {
-        container.innerHTML = "";
-        qs.forEach(doc => {
-            const d = doc.data();
-            const card = document.createElement('div');
-            card.className = 'user-card';
-            card.innerHTML = `
-                <div class="user-card-avatar">${d.displayName ? d.displayName[0].toUpperCase() : '?'}</div>
-                <div class="user-card-name">${escapeHTML(d.displayName)}</div>
-                <div class="user-card-stats">
-                    <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
-                    <div>${d.totalPoints || 0} pkt</div>
-                </div>`;
-            card.onclick = () => openPublicProfile(d);
-            container.appendChild(card);
-        });
-    });
-}
-function openPublicProfile(u) {
-    viewingUserId = u.uid;
-    document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
-    document.getElementById('pub-name').textContent = u.displayName;
-    document.getElementById('pub-total').textContent = u.totalWorkouts;
-    document.getElementById('pub-last').textContent = u.lastWorkout || '-';
-    document.getElementById('pub-kudos-count').innerHTML = `${u.totalPoints||0} <br><span style='font-size:0.6rem;color:#ffd700'>${getRankName(u.totalPoints||0)}</span>`;
-    loadSharedPlansForUser(u.uid); 
-    const o = document.getElementById('public-profile-overlay');
-    o.classList.remove('hidden'); setTimeout(()=>o.classList.add('active'),10);
-}
-function closePublicProfile() { viewingUserId=null; const o=document.getElementById('public-profile-overlay'); o.classList.remove('active'); setTimeout(()=>o.classList.add('hidden'),300); }
-
-function loadSharedPlansForUser(targetUid) {
-    const container = document.getElementById('public-plans-list');
-    container.innerHTML = '<p>Sprawdzam...</p>';
-    const currentUser = firebase.auth().currentUser;
-    const isMyProfile = (currentUser && currentUser.uid === targetUid); 
-
-    db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
-        const uData = uDoc.data();
-        const pts = uData ? (uData.totalPoints || 0) : 0;
-        const rank = getRankName(pts);
-
-        let rankHtml = `<div style="text-align:center; margin-bottom:15px; padding:10px; background:#1a1a1a; border-radius:8px; border:1px solid #333;">
-            <div style="color:#888; font-size:0.7rem; letter-spacing:1px;">STANOWISKO</div>
-            <div style="color:#ffd700; font-weight:bold; font-size:1.1rem; margin:5px 0;">${rank}</div>
-            <div style="color:#666; font-size:0.8rem;">${pts} pkt</div>
-        </div>`;
-
-        db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get().then(qs => {
-            container.innerHTML = rankHtml;
-            if(qs.empty) { container.innerHTML += "<p style='text-align:center;color:#666;font-size:0.8rem;'>Brak planów na szychcie.</p>"; return; }
-            qs.forEach(doc => {
-                const data = doc.data();
-                const planItem = document.createElement('div');
-                planItem.className = 'shared-plan-item';
-                planItem.style.cssText = 'background:#242426; margin-bottom:10px; padding:10px; border:1px solid #333; border-radius:8px;';
-                const exList = data.exercises.map(e => `<div style="color:#ccc; margin-top:6px; padding-left:10px; border-left:2px solid var(--primary-color);"><strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r)</span></div>`).join('');
-                
-                let btn = '';
-                if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
-                else btn = `<button onclick='startChallenge("${data.dayKey}", ${JSON.stringify(JSON.stringify(data.exercises))}, "${targetUid}")' style="width:100%;margin-top:10px;background:#ffd700;color:black;border:none;padding:8px;font-weight:bold;border-radius:4px;cursor:pointer;">PODEJMIJ WYZWANIE</button>`;
-
-                planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
-                container.appendChild(planItem);
-            });
-        });
-    });
-}
-function deleteSharedPlan(k) { if(confirm("Usunąć?")) db.collection("publicUsers").doc(firebase.auth().currentUser.uid).collection("sharedPlans").doc(k).delete().then(()=>loadSharedPlansForUser(firebase.auth().currentUser.uid)); }
-async function shareCurrentDay() {
-    const d = currentSelectedDay;
-    if(!confirm("Udostępnić ten dzień?")) return;
-    const u = firebase.auth().currentUser;
-    const s = await db.collection("users").doc(u.uid).collection("days").doc(d).collection("exercises").orderBy("order").get();
-    let ex=[]; s.forEach(doc=>ex.push(doc.data()));
-    if(ex.length===0) return alert("Pusto!");
-    await db.collection("publicUsers").doc(u.uid).collection("sharedPlans").doc(d).set({ dayKey:d, dayName:dayMap[d], exercises:ex });
-    alert("Opublikowano na Szychcie!");
-}
-
-function openAddModal(){ currentModalDay=currentSelectedDay; document.getElementById('modal-overlay').classList.remove('hidden'); }
-function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
-function saveFromModal(){ 
-    const ex=document.getElementById('modal-exercise').value; 
-    const s=document.getElementById('modal-series').value; 
-    const r=document.getElementById('modal-reps').value; 
-    if(!ex) return; 
-    const d={exercise:ex,series:s,reps:r,order:Date.now()}; 
-    const u=firebase.auth().currentUser;
-    if(editInfo.docId) db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").doc(editInfo.docId).update(d);
-    else db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").add(d);
-    closeAddModal(); loadCardsDataFromFirestore(currentModalDay);
-}
-window.triggerEdit=function(day,id){ editInfo={day,docId:id}; currentModalDay=day; openAddModal(); }
-function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(firebase.auth().currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
-function saveMuscleGroups(){ const v=event.target.value; const u=firebase.auth().currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
-function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(firebase.auth().currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) document.getElementById(`${d}-muscle-group`).value=doc.data().muscleGroup||""; }); }
-
-function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-async function signIn(){ try{ await firebase.auth().signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-async function signUp(){ try{ await firebase.auth().createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
-async function signOut(){ await firebase.auth().signOut(); location.reload(); }
-async function forceAppUpdate(){ 
-    if(!confirm("Aktualizować?")) return; 
-    const regs=await navigator.serviceWorker.getRegistrations(); 
-    for(let r of regs) r.unregister(); 
-    caches.keys().then(k=>k.forEach(c=>caches.delete(c))); 
-    location.reload(true); 
-}
-function giveKudos(){
-    if(!viewingUserId) return;
-    const currentUser = firebase.auth().currentUser;
-    if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
-    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
-    interactionRef.get().then(docSnap => {
-        if (docSnap.exists && docSnap.data().date === new Date().toISOString().split('T')[0]) return alert("Już przybita!");
-        db.batch().update(db.collection("publicUsers").doc(viewingUserId), { totalPoints: firebase.firestore.FieldValue.increment(1) }).set(interactionRef, { date: new Date().toISOString().split('T')[0] }).commit()
-        .then(() => alert("Piątka przybita! (+1 pkt dla Hajera)"));
-    });
-}
-
 function updateUsername() {
     const newName = document.getElementById('new-username').value;
     if(!newName) return;
@@ -890,8 +720,6 @@ function hardResetProfile() {
     if(!confirm("Ostateczne potwierdzenie. Usuwam konto?")) return;
     
     const user = firebase.auth().currentUser;
-    // Usuwamy dane z Firestore (uproszczone, usuwa główny dokument, kolekcje zostają ale są 'sierotami' w Firebase, 
-    // w produkcji użyłoby się Cloud Functions do czyszczenia rekurencyjnego).
     db.collection("users").doc(user.uid).delete().then(() => {
         db.collection("publicUsers").doc(user.uid).delete();
         user.delete().then(() => {
@@ -899,25 +727,4 @@ function hardResetProfile() {
             location.reload();
         });
     });
-}
-
-// --- OBSŁUGA MODALA ZASAD ---
-function openRulesModal() {
-    const m = document.getElementById('rules-modal');
-    if(m) {
-        m.classList.remove('hidden');
-        setTimeout(() => {
-            const content = m.querySelector('.modal-content');
-            if(content) content.style.transform = 'translateY(0)';
-        }, 10);
-    }
-}
-
-function closeRulesModal() {
-    const m = document.getElementById('rules-modal');
-    if(m) {
-        const content = m.querySelector('.modal-content');
-        if(content) content.style.transform = 'translateY(100%)';
-        setTimeout(() => m.classList.add('hidden'), 300);
-    }
 }
