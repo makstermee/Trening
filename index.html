@@ -13,13 +13,13 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    if (!localStorage.getItem('RESET_DONE_V3')) {
+    if (!localStorage.getItem('RESET_DONE_V4')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('RESET_DONE_V3', 'true');
-          console.log("Wyczyszczono cache V3.");
+          localStorage.setItem('RESET_DONE_V4', 'true');
+          console.log("Wyczyszczono cache V4.");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -31,20 +31,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
-      authDomain: "plan-treningowy-a9d00.firebaseapp.com",
-      projectId: "plan-treningowy-a9d00",
-      storageBucket: "plan-treningowy-a9d00.firebasestorage.app",
-      messagingSenderId: "1087845341451",
-      appId: "1:1087845341451:web:08201e588c56d73013aa0e",
-      measurementId: "G-EY88TE8L7H"
-    };
-    firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
-  </script>
-</head>
+  </head>
 <body>
 
   <div id="login-section">
@@ -339,6 +326,43 @@
 
   </div>
   
-  <script src="script.js?v=5"></script> 
+  <script src="script.js?v=6"></script> 
+  
+  <script>
+    function switchAuthTab(tab) {
+        const lf = document.getElementById('login-form'), rf = document.getElementById('register-form');
+        const bl = document.getElementById('tab-login'), br = document.getElementById('tab-register');
+        if (tab === 'login') { lf.classList.remove('hidden'); rf.classList.add('hidden'); bl.classList.add('active'); br.classList.remove('active'); }
+        else { lf.classList.add('hidden'); rf.classList.remove('hidden'); bl.classList.remove('active'); br.classList.add('active'); }
+    }
+    function switchBottomNav(el) {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+    }
+    
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').then(reg => {
+            if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                if (installingWorker) {
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    };
+                }
+            };
+        });
+        let refreshing;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload(); 
+        });
+      });
+    }
+  </script>
 </body>
 </html>
