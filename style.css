@@ -282,3 +282,63 @@ body {
     vertical-align: top;
     display: none; /* Domyślnie ukryta */
 }
+
+/* --- STYLE DLA KODEKSU (MODAL ZASAD) --- */
+.rule-box {
+    background: #242426;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border-left: 3px solid var(--primary-color);
+}
+.rule-box.warning {
+    border-left-color: var(--danger-color);
+    background: rgba(255, 69, 58, 0.05);
+}
+.rule-box h4 {
+    margin: 0 0 10px 0;
+    color: white;
+    font-size: 1rem;
+}
+.rule-box p {
+    color: #ccc;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
+}
+.rules-list {
+    margin: 0;
+    padding-left: 20px;
+    color: #ccc;
+    font-size: 0.85rem;
+}
+.rules-list li {
+    margin-bottom: 5px;
+}
+
+/* Tabela Rang */
+.ranks-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.rank-row {
+    display: flex;
+    justify-content: space-between;
+    background: #1a1a1a;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #888;
+}
+.rank-row .r-name {
+    color: white;
+    font-weight: bold;
+}
+.rank-row.gold {
+    border: 1px solid #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+}
+.rank-row.gold .r-name {
+    color: #ffd700;
+}
