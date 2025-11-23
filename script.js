@@ -1,6 +1,26 @@
 /*************************************************************
-  ZMIENNE GLOBALNE
+  ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
+// 1. Konfiguracja Firebase (BEZPOŚREDNIO TUTAJ DLA PEWNOŚCI)
+const firebaseConfig = {
+  apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
+  authDomain: "plan-treningowy-a9d00.firebaseapp.com",
+  projectId: "plan-treningowy-a9d00",
+  storageBucket: "plan-treningowy-a9d00.firebasestorage.app",
+  messagingSenderId: "1087845341451",
+  appId: "1:1087845341451:web:08201e588c56d73013aa0e",
+  measurementId: "G-EY88TE8L7H"
+};
+
+// Inicjalizacja Firebase (jeśli jeszcze nie jest zrobiona)
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// 2. Mapy i Zmienne
 const dayMap = { 
     monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa", 
     thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela",
@@ -20,18 +40,19 @@ let viewingUserId = null;
 let tempWorkoutResult = null; 
 let currentRatingScore = 0;   
 
-const db = firebase.firestore();
-
 /*************************************************************
   1. INICJALIZACJA I RANGI
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelector('.container').style.display = 'none';
+  const container = document.querySelector('.container');
+  const loginSec = document.getElementById('login-section');
   
-  firebase.auth().onAuthStateChanged(user => {
+  if(container) container.style.display = 'none';
+  
+  auth.onAuthStateChanged(user => {
     if (user) {
-      document.querySelector('.container').style.display = 'block';
-      document.getElementById('login-section').style.display = 'none';
+      if(container) container.style.display = 'block';
+      if(loginSec) loginSec.style.display = 'none';
       
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
@@ -45,13 +66,13 @@ document.addEventListener("DOMContentLoaded", () => {
       loadProfileStats();
       checkNotificationsCount(); 
     } else {
-      document.querySelector('.container').style.display = 'none';
-      document.getElementById('login-section').style.display = 'flex';
+      if(container) container.style.display = 'none';
+      if(loginSec) loginSec.style.display = 'flex';
     }
   });
 });
 
-// --- RANGI GÓRNICZE (TARNOWSKIE GÓRY) ---
+// --- RANGI GÓRNICZE ---
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -66,10 +87,12 @@ function getRankName(points) {
 }
 
 /*************************************************************
-  2. NAWIGACJA (ZAKTUALIZOWANA O ZASADY)
+  2. NAWIGACJA (Z NAPRAWIONYM PRZEŁĄCZANIEM)
 *************************************************************/
 function switchMode(mode) {
     currentMode = mode;
+    
+    // Pobieramy sekcje bezpiecznie (żeby nie było błędu null)
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
@@ -77,28 +100,36 @@ function switchMode(mode) {
     const daysNav = document.getElementById('days-nav-container');
     const fab = document.getElementById('fab-add');
 
-    // Ukryj wszystkie sekcje
+    // Ukryj wszystkie sekcje day-section
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    if (mode === 'history') {
+    if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
-        daysNav.style.display = 'block'; fab.style.display = 'none';
+        if(daysNav) daysNav.style.display = 'block'; 
+        if(fab) fab.style.display = 'none';
         loadHistoryFromFirestore(currentSelectedDay);
-    } else if (mode === 'community') {
+    } 
+    else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
-        daysNav.style.display = 'none'; fab.style.display = 'none';
+        if(daysNav) daysNav.style.display = 'none'; 
+        if(fab) fab.style.display = 'none';
         loadCommunity();
-    } else if (mode === 'rules') {
-        // NOWY TRYB: ZASADY
+    } 
+    else if (mode === 'rules' && rulesSection) {
         rulesSection.classList.remove('hidden');
-        daysNav.style.display = 'none'; fab.style.display = 'none';
-    } else if (mode === 'profile') {
+        if(daysNav) daysNav.style.display = 'none'; 
+        if(fab) fab.style.display = 'none';
+    } 
+    else if (mode === 'profile' && profileSection) {
         profileSection.classList.remove('hidden');
-        daysNav.style.display = 'none'; fab.style.display = 'none';
+        if(daysNav) daysNav.style.display = 'none'; 
+        if(fab) fab.style.display = 'none';
         loadProfileStats(); 
-    } else {
-        // TRYB PLANU
-        daysNav.style.display = 'block'; fab.style.display = 'flex';
+    } 
+    else {
+        // Domyślnie PLAN
+        if(daysNav) daysNav.style.display = 'block'; 
+        if(fab) fab.style.display = 'flex';
         showPlanSection(currentSelectedDay);
     }
     updateHeaderTitle();
@@ -106,13 +137,18 @@ function switchMode(mode) {
 
 function selectDay(dayValue) {
     currentSelectedDay = dayValue;
-    document.getElementById('day-selector').value = dayValue; 
+    const selector = document.getElementById('day-selector');
+    if(selector) selector.value = dayValue; 
+    
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     if(!activeData || activeData.day !== 'challenge') {
         const idx = allDays.indexOf(dayValue);
-        if (idx !== -1) document.querySelectorAll('.pill')[idx].classList.add('active');
+        if (idx !== -1) {
+            const pills = document.querySelectorAll('.pill');
+            if(pills[idx]) pills[idx].classList.add('active');
+        }
     }
 
     if (currentMode === 'plan') showPlanSection(dayValue);
@@ -131,27 +167,31 @@ function updateHeaderTitle() {
     const polishName = dayMap[currentSelectedDay] || '';
     const titleEl = document.getElementById('current-day-display');
     const shareBtn = document.getElementById('btn-share-day'); 
+    const timer = document.getElementById('workout-timer');
+
+    if (!titleEl) return;
     
-    if (document.getElementById('workout-timer').classList.contains('hidden')) {
+    // Jeśli timer jest widoczny, nie zmieniaj tytułu
+    if (timer && !timer.classList.contains('hidden')) {
         if(shareBtn) shareBtn.classList.add('hidden');
-        
-        if (currentMode === 'plan') {
-            titleEl.textContent = `Plan: ${polishName}`;
-            if(shareBtn && currentSelectedDay !== 'challenge') shareBtn.classList.remove('hidden'); 
-        }
-        else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
-        else if (currentMode === 'community') titleEl.textContent = `Społeczność`;
-        else if (currentMode === 'rules') titleEl.textContent = `Zasady i Rangi`; // NOWY TYTUŁ
-        else if (currentMode === 'profile') titleEl.textContent = `Twój Profil`;
+        return; 
     }
+
+    if(shareBtn) shareBtn.classList.add('hidden');
+
+    if (currentMode === 'plan') {
+        titleEl.textContent = `Plan: ${polishName}`;
+        if(shareBtn && currentSelectedDay !== 'challenge') shareBtn.classList.remove('hidden'); 
+    }
+    else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
+    else if (currentMode === 'community') titleEl.textContent = `Społeczność`;
+    else if (currentMode === 'rules') titleEl.textContent = `Zasady i Rangi`;
+    else if (currentMode === 'profile') titleEl.textContent = `Twój Profil`;
 }
-function showSection() {} 
 
 /*************************************************************
-  3. TRENING I WYZWANIA (CORE)
+  3. TRENING I WYZWANIA
 *************************************************************/
-
-// --- START ZWYKŁY ---
 function startWorkout(day) {
     const now = Date.now();
     const workoutData = { day: day, startTime: now, isChallenge: false };
@@ -160,12 +200,10 @@ function startWorkout(day) {
     alert("Szychta rozpoczęta! Do roboty 💪");
 }
 
-// --- START WYZWANIA (SPOŁECZNOŚCIOWE) ---
 async function startChallenge(dayKey, exercisesJson, authorUid) {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     if (user.uid === authorUid) return alert("Nie ma punktów za własne wyzwania! Ćwicz normalnie.");
 
-    // LIMIT 2+2
     const todayStr = new Date().toISOString().split('T')[0];
     const historySnap = await db.collection("users").doc(user.uid).collection("history")
         .where("dateIso", ">=", todayStr).get();
@@ -210,10 +248,13 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
 
         closePublicProfile();
+        // Przełącz na widok wyzwania
         document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
         let chDiv = document.getElementById('challenge');
         if(chDiv) chDiv.classList.remove("hidden");
-        document.getElementById('days-nav-container').style.display = 'none'; 
+        
+        const nav = document.getElementById('days-nav-container');
+        if(nav) nav.style.display = 'none'; 
         
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
@@ -224,7 +265,6 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
     }
 }
 
-// --- PODDAJĘ SIĘ ---
 async function surrenderChallenge() {
     if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt za pokonanie Cię. Na pewno?")) return;
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
@@ -239,13 +279,11 @@ async function surrenderChallenge() {
     window.location.reload();
 }
 
-// --- KONIEC TRENINGU (LOGIKA ZAPISU) ---
 async function finishWorkout(day) {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const isChallenge = activeData && activeData.isChallenge;
 
-    // WARUNEK CZASU: MINIMUM 10 MINUT DLA WYZWANIA
-    const timerText = document.getElementById('workout-timer').textContent; // HH:MM:SS
+    const timerText = document.getElementById('workout-timer').textContent; 
     const parts = timerText.split(':');
     const totalMinutes = (parseInt(parts[0]) * 60) + parseInt(parts[1]);
 
@@ -255,7 +293,7 @@ async function finishWorkout(day) {
 
     if(!confirm("Fajrant? (Zakończyć trening)")) return;
 
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     const exercisesRef = db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises");
     const qs = await exercisesRef.get();
     
@@ -282,7 +320,6 @@ async function finishWorkout(day) {
     if (isChallenge) {
         openChallengeEndModal(); 
     } else {
-        // ZWYKŁY TRENING: 2 PKT
         await saveHistoryAndPoints(2, null, 0); 
         alert("Fajrant! Trening własny zaliczony (+2 pkt).");
         localStorage.removeItem('activeWorkout');
@@ -295,13 +332,15 @@ async function finishWorkout(day) {
 *************************************************************/
 function openChallengeEndModal() {
     const container = document.getElementById('rating-buttons');
-    container.innerHTML = '';
-    for(let i=1; i<=10; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'rating-point-btn';
-        btn.textContent = i;
-        btn.onclick = () => selectRating(i, btn);
-        container.appendChild(btn);
+    if(container) {
+        container.innerHTML = '';
+        for(let i=1; i<=10; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'rating-point-btn';
+            btn.textContent = i;
+            btn.onclick = () => selectRating(i, btn);
+            container.appendChild(btn);
+        }
     }
     document.getElementById('save-decision-area').classList.add('hidden');
     document.getElementById('day-selector-area').classList.add('hidden');
@@ -321,13 +360,11 @@ function showDaySelectorForSave() {
 }
 
 async function finalizeChallenge(shouldSaveToPlan) {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     const result = tempWorkoutResult;
 
-    // 1. Zapisz Historię i moje 3 pkt
     await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
 
-    // 2. WYŚLIJ RAPORT DO AUTORA
     if(result.authorId) {
         await db.collection("challenge_reports").add({
             authorId: result.authorId,      
@@ -361,11 +398,10 @@ async function finalizeChallenge(shouldSaveToPlan) {
 }
 
 async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     const result = tempWorkoutResult;
     const batch = db.batch();
 
-    // Historia
     const historyRef = db.collection("users").doc(user.uid).collection("history").doc();
     let authorName = "Nieznany";
     if (authorId) {
@@ -381,14 +417,12 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
         pointsEarned: myPoints
     });
 
-    // Moje punkty
     const myPublicRef = db.collection("publicUsers").doc(user.uid);
     batch.set(myPublicRef, {
         totalPoints: firebase.firestore.FieldValue.increment(myPoints),
         lastWorkout: new Date().toISOString()
     }, { merge: true });
 
-    // Punkty Autora (Od razu)
     if (authorId && ratingPoints > 0) {
         const authorRef = db.collection("publicUsers").doc(authorId);
         batch.update(authorRef, {
@@ -401,7 +435,7 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
 }
 
 /*************************************************************
-  5. SYSTEM POWIADOMIEŃ (MELDUNKI)
+  5. MELDUNKI I POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
     document.getElementById('notifications-modal').classList.remove('hidden');
@@ -421,7 +455,7 @@ function switchNotifTab(tab) {
 function loadNotificationsList(tab) {
     const container = document.getElementById('notif-list-container');
     container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam...</p>';
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
 
     if (tab === 'todo') {
         db.collection("challenge_reports")
@@ -485,7 +519,7 @@ function ratePerformer(reportId) {
 }
 
 function claimBonusPoints(reportId, points) {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     const batch = db.batch();
 
     const myRef = db.collection("publicUsers").doc(user.uid);
@@ -502,7 +536,7 @@ function claimBonusPoints(reportId, points) {
 }
 
 function checkNotificationsCount() {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     if(!user) return;
     Promise.all([
         db.collection("challenge_reports").where("authorId", "==", user.uid).where("status", "==", "PENDING").get(),
@@ -510,17 +544,19 @@ function checkNotificationsCount() {
     ]).then(([res1, res2]) => {
         const count = res1.size + res2.size;
         const badge = document.getElementById('profile-notif-badge');
-        if(count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'inline-block';
-        } else {
-            badge.style.display = 'none';
+        if(badge) {
+            if(count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
     });
 }
 
 /*************************************************************
-  6. RESZTA FUNKCJI (Logi, Karty, Profil)
+  6. FUNKCJE POMOCNICZE UI
 *************************************************************/
 function checkActiveWorkout() {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
@@ -533,24 +569,29 @@ function checkActiveWorkout() {
             document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
             let chDiv = document.getElementById('challenge');
             if(chDiv) chDiv.classList.remove("hidden");
-            document.getElementById('days-nav-container').style.display = 'none'; 
+            
+            const nav = document.getElementById('days-nav-container');
+            if(nav) nav.style.display = 'none'; 
             if(shareBtn) shareBtn.style.display = 'none';
         }
-        titleEl.style.display = 'none';
-        timerEl.classList.remove('hidden');
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            const diff = Date.now() - activeData.startTime;
-            const date = new Date(diff);
-            timerEl.textContent = date.toISOString().substr(11, 8);
-        }, 1000);
+        if(titleEl) titleEl.style.display = 'none';
+        if(timerEl) {
+            timerEl.classList.remove('hidden');
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const diff = Date.now() - activeData.startTime;
+                const date = new Date(diff);
+                timerEl.textContent = date.toISOString().substr(11, 8);
+            }, 1000);
+        }
         updateActionButtons(activeData.day);
     } else {
-        titleEl.style.display = 'block';
+        if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
-        timerEl.classList.add('hidden');
+        if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
-        document.getElementById('days-nav-container').style.display = 'block';
+        const nav = document.getElementById('days-nav-container');
+        if(nav) nav.style.display = 'block';
         updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     }
@@ -574,14 +615,14 @@ function addLog(day, docId) {
     const w = document.getElementById(`log-w-${docId}`).value;
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }), weight: w })
       .then(() => loadCardsDataFromFirestore(day));
 }
 
 function removeLog(day, docId, w, r, lid) {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayRemove({ weight: w, reps: r, id: Number(lid) }) })
       .then(() => loadCardsDataFromFirestore(day));
@@ -590,7 +631,7 @@ function removeLog(day, docId, w, r, lid) {
 function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     if(!user) return;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").orderBy("order", "asc").get()
     .then(qs => {
@@ -643,22 +684,29 @@ function renderAccordionCard(container, day, doc) {
 window.toggleCard = function(h) { if(event.target.tagName!=='INPUT' && event.target.tagName!=='BUTTON' && !event.target.classList.contains('remove-log')) h.parentElement.classList.toggle('open'); };
 
 function updateProfileUI(user) {
-    document.getElementById('profile-email').textContent = user.displayName || user.email;
-    document.getElementById('profile-avatar').textContent = (user.email ? user.email[0] : 'U').toUpperCase();
+    const emailEl = document.getElementById('profile-email');
+    const avatarEl = document.getElementById('profile-avatar');
+    if(emailEl) emailEl.textContent = user.displayName || user.email;
+    if(avatarEl) avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
 }
+
 function loadProfileStats() {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("history").get().then(qs => {
         const total = qs.size;
         let last = '-';
         if(!qs.empty) last = qs.docs[0].data().displayDate || qs.docs[0].data().dateIso.split('T')[0];
-        document.getElementById('total-workouts').textContent = total;
-        document.getElementById('last-workout-date').textContent = last;
+        
+        const totEl = document.getElementById('total-workouts');
+        const lastEl = document.getElementById('last-workout-date');
+        if(totEl) totEl.textContent = total;
+        if(lastEl) lastEl.textContent = last;
         
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let pts = 0;
             if(doc.exists) pts = doc.data().totalPoints || 0;
-            document.getElementById('profile-kudos').innerHTML = `${pts} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(pts)}</span>`;
+            const kudosEl = document.getElementById('profile-kudos');
+            if(kudosEl) kudosEl.innerHTML = `${pts} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(pts)}</span>`;
             publishProfileStats(user, total, last, pts);
         });
     });
@@ -674,10 +722,192 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
+function loadHistoryFromFirestore(dayFilterKey) {
+    const container = document.getElementById("history-list");
+    if(!container) return;
+    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
+    const user = auth.currentUser;
+    db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
+    .then(qs => {
+        container.innerHTML = "";
+        let docs = [];
+        qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
+        if (dayFilterKey) {
+            const polishName = dayMap[dayFilterKey];
+            docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName);
+        }
+        if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
+        docs.forEach(item => renderHistoryCard(container, item));
+    });
+}
+function renderHistoryCard(container, item) {
+    const data = item.data;
+    const id = item.id;
+    const card = document.createElement('div');
+    card.className = `history-card ${data.isChallenge ? 'gold-border' : ''}`;
+    
+    let authorHtml = '';
+    if (data.isChallenge && data.originalAuthorName) {
+        authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
+    }
+
+    let detailsHtml = '';
+    if (data.details && Array.isArray(data.details)) {
+        detailsHtml = data.details.map(ex => {
+            let logsStr = (Array.isArray(ex.sets)) ? ex.sets.map((s, i) => `<span>S${i+1}: ${s.weight}kg x ${s.reps}</span>`).join(', ') : (ex.logs || 'Brak');
+            return `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(ex.name)}</div><div class="hex-logs">${logsStr}</div></div>`;
+        }).join('');
+    }
+
+    card.innerHTML = `
+        <div class="history-card-header" onclick="toggleHistoryCard(this)">
+            <div class="history-info">
+                ${authorHtml}
+                <h4>${data.dayName||'Trening'}</h4>
+                <div class="history-meta"><span>${data.displayDate||data.dateIso.split('T')[0]}</span><span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span></div>
+            </div>
+            <div class="history-actions"><button class="history-delete-btn" onclick="deleteHistoryEntry(event, '${id}')"><i class="fa-solid fa-trash"></i></button><i class="fa-solid fa-chevron-down history-toggle-icon"></i></div>
+        </div>
+        <div class="history-card-details">${detailsHtml || '<p>Brak szczegółów</p>'}</div>
+    `;
+    container.appendChild(card);
+}
+window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
+window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
+
+function loadCommunity() {
+    const container = document.getElementById("community-list");
+    if(!container) return;
+    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
+    db.collection("publicUsers").orderBy("totalPoints", "desc").limit(20).get().then(qs => {
+        container.innerHTML = "";
+        if(qs.empty) {
+             container.innerHTML = '<p style="text-align:center;color:#666">Brak nikogo... Bądź pierwszy!</p>';
+             return;
+        }
+        qs.forEach(doc => {
+            const d = doc.data();
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            card.innerHTML = `
+                <div class="user-card-avatar">${d.displayName ? d.displayName[0].toUpperCase() : '?'}</div>
+                <div class="user-card-name">${escapeHTML(d.displayName)}</div>
+                <div class="user-card-stats">
+                    <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
+                    <div>${d.totalPoints || 0} pkt</div>
+                </div>`;
+            card.onclick = () => openPublicProfile(d);
+            container.appendChild(card);
+        });
+    });
+}
+function openPublicProfile(u) {
+    viewingUserId = u.uid;
+    document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
+    document.getElementById('pub-name').textContent = u.displayName;
+    document.getElementById('pub-total').textContent = u.totalWorkouts;
+    document.getElementById('pub-last').textContent = u.lastWorkout || '-';
+    document.getElementById('pub-kudos-count').innerHTML = `${u.totalPoints||0} <br><span style='font-size:0.6rem;color:#ffd700'>${getRankName(u.totalPoints||0)}</span>`;
+    loadSharedPlansForUser(u.uid); 
+    const o = document.getElementById('public-profile-overlay');
+    o.classList.remove('hidden'); setTimeout(()=>o.classList.add('active'),10);
+}
+function closePublicProfile() { viewingUserId=null; const o=document.getElementById('public-profile-overlay'); o.classList.remove('active'); setTimeout(()=>o.classList.add('hidden'),300); }
+
+function loadSharedPlansForUser(targetUid) {
+    const container = document.getElementById('public-plans-list');
+    container.innerHTML = '<p>Sprawdzam...</p>';
+    const currentUser = auth.currentUser;
+    const isMyProfile = (currentUser && currentUser.uid === targetUid); 
+
+    db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
+        const uData = uDoc.data();
+        const pts = uData ? (uData.totalPoints || 0) : 0;
+        const rank = getRankName(pts);
+
+        let rankHtml = `<div style="text-align:center; margin-bottom:15px; padding:10px; background:#1a1a1a; border-radius:8px; border:1px solid #333;">
+            <div style="color:#888; font-size:0.7rem; letter-spacing:1px;">STANOWISKO</div>
+            <div style="color:#ffd700; font-weight:bold; font-size:1.1rem; margin:5px 0;">${rank}</div>
+            <div style="color:#666; font-size:0.8rem;">${pts} pkt</div>
+        </div>`;
+
+        db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get().then(qs => {
+            container.innerHTML = rankHtml;
+            if(qs.empty) { container.innerHTML += "<p style='text-align:center;color:#666;font-size:0.8rem;'>Brak planów na szychcie.</p>"; return; }
+            qs.forEach(doc => {
+                const data = doc.data();
+                const planItem = document.createElement('div');
+                planItem.className = 'shared-plan-item';
+                planItem.style.cssText = 'background:#242426; margin-bottom:10px; padding:10px; border:1px solid #333; border-radius:8px;';
+                const exList = data.exercises.map(e => `<div style="color:#ccc; margin-top:6px; padding-left:10px; border-left:2px solid var(--primary-color);"><strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r)</span></div>`).join('');
+                
+                let btn = '';
+                if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
+                else btn = `<button onclick='startChallenge("${data.dayKey}", ${JSON.stringify(JSON.stringify(data.exercises))}, "${targetUid}")' style="width:100%;margin-top:10px;background:#ffd700;color:black;border:none;padding:8px;font-weight:bold;border-radius:4px;cursor:pointer;">PODEJMIJ WYZWANIE</button>`;
+
+                planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
+                container.appendChild(planItem);
+            });
+        });
+    });
+}
+function deleteSharedPlan(k) { if(confirm("Usunąć?")) db.collection("publicUsers").doc(auth.currentUser.uid).collection("sharedPlans").doc(k).delete().then(()=>loadSharedPlansForUser(auth.currentUser.uid)); }
+async function shareCurrentDay() {
+    const d = currentSelectedDay;
+    if(!confirm("Udostępnić ten dzień?")) return;
+    const u = auth.currentUser;
+    const s = await db.collection("users").doc(u.uid).collection("days").doc(d).collection("exercises").orderBy("order").get();
+    let ex=[]; s.forEach(doc=>ex.push(doc.data()));
+    if(ex.length===0) return alert("Pusto!");
+    await db.collection("publicUsers").doc(u.uid).collection("sharedPlans").doc(d).set({ dayKey:d, dayName:dayMap[d], exercises:ex });
+    alert("Opublikowano na Szychcie!");
+}
+
+function openAddModal(){ currentModalDay=currentSelectedDay; document.getElementById('modal-overlay').classList.remove('hidden'); }
+function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
+function saveFromModal(){ 
+    const ex=document.getElementById('modal-exercise').value; 
+    const s=document.getElementById('modal-series').value; 
+    const r=document.getElementById('modal-reps').value; 
+    if(!ex) return; 
+    const d={exercise:ex,series:s,reps:r,order:Date.now()}; 
+    const u=auth.currentUser;
+    if(editInfo.docId) db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").doc(editInfo.docId).update(d);
+    else db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").add(d);
+    closeAddModal(); loadCardsDataFromFirestore(currentModalDay);
+}
+window.triggerEdit=function(day,id){ editInfo={day,docId:id}; currentModalDay=day; openAddModal(); }
+function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
+function saveMuscleGroups(){ const v=event.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
+function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) document.getElementById(`${d}-muscle-group`).value=doc.data().muscleGroup||""; }); }
+
+function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+async function signIn(){ try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
+async function signUp(){ try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
+async function signOut(){ await auth.signOut(); location.reload(); }
+async function forceAppUpdate(){ 
+    if(!confirm("Aktualizować?")) return; 
+    const regs=await navigator.serviceWorker.getRegistrations(); 
+    for(let r of regs) r.unregister(); 
+    caches.keys().then(k=>k.forEach(c=>caches.delete(c))); 
+    location.reload(true); 
+}
+function giveKudos(){
+    if(!viewingUserId) return;
+    const currentUser = auth.currentUser;
+    if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
+    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
+    interactionRef.get().then(docSnap => {
+        if (docSnap.exists && docSnap.data().date === new Date().toISOString().split('T')[0]) return alert("Już przybita!");
+        db.batch().update(db.collection("publicUsers").doc(viewingUserId), { totalPoints: firebase.firestore.FieldValue.increment(1) }).set(interactionRef, { date: new Date().toISOString().split('T')[0] }).commit()
+        .then(() => alert("Piątka przybita! (+1 pkt dla Hajera)"));
+    });
+}
+
 function updateUsername() {
     const newName = document.getElementById('new-username').value;
     if(!newName) return;
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     user.updateProfile({ displayName: newName }).then(() => {
         db.collection("publicUsers").doc(user.uid).set({ displayName: newName }, { merge: true });
         updateProfileUI(user);
@@ -688,14 +918,14 @@ function updateUsername() {
 function changePassword() {
     const newPass = document.getElementById('new-password').value;
     if(!newPass) return;
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     user.updatePassword(newPass).then(() => {
         alert("Hasło zmienione!");
     }).catch(e => alert("Zaloguj się ponownie, aby zmienić hasło. " + e.message));
 }
 
 async function exportData() {
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     const data = {};
     const daysSnap = await db.collection("users").doc(user.uid).collection("days").get();
     
@@ -719,7 +949,7 @@ function hardResetProfile() {
     if(!confirm("CZY NA PEWNO?! To usunie WSZYSTKIE Twoje dane, historię i konto. Tego nie da się cofnąć.")) return;
     if(!confirm("Ostateczne potwierdzenie. Usuwam konto?")) return;
     
-    const user = firebase.auth().currentUser;
+    const user = auth.currentUser;
     db.collection("users").doc(user.uid).delete().then(() => {
         db.collection("publicUsers").doc(user.uid).delete();
         user.delete().then(() => {
