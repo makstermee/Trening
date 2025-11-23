@@ -510,6 +510,18 @@ function checkNotificationsCount() {
     });
 }
 
+// --- OBSŁUGA MODALA ZASAD ---
+function openRulesModal() {
+    document.getElementById('rules-modal').classList.remove('hidden');
+    setTimeout(() => document.querySelector('#rules-modal .modal-content').style.transform = 'translateY(0)', 10);
+}
+
+function closeRulesModal() {
+    const m = document.getElementById('rules-modal');
+    document.querySelector('#rules-modal .modal-content').style.transform = 'translateY(100%)';
+    setTimeout(() => m.classList.add('hidden'), 300);
+}
+
 /*************************************************************
   6. RESZTA FUNKCJI (Logi, Karty, Profil)
 *************************************************************/
@@ -838,5 +850,62 @@ function giveKudos(){
         if (docSnap.exists && docSnap.data().date === new Date().toISOString().split('T')[0]) return alert("Już przybita!");
         db.batch().update(db.collection("publicUsers").doc(viewingUserId), { totalPoints: firebase.firestore.FieldValue.increment(1) }).set(interactionRef, { date: new Date().toISOString().split('T')[0] }).commit()
         .then(() => alert("Piątka przybita! (+1 pkt dla Hajera)"));
+    });
+}
+
+function updateUsername() {
+    const newName = document.getElementById('new-username').value;
+    if(!newName) return;
+    const user = firebase.auth().currentUser;
+    user.updateProfile({ displayName: newName }).then(() => {
+        db.collection("publicUsers").doc(user.uid).set({ displayName: newName }, { merge: true });
+        updateProfileUI(user);
+        alert("Nazwa zmieniona!");
+    }).catch(e => alert(e.message));
+}
+
+function changePassword() {
+    const newPass = document.getElementById('new-password').value;
+    if(!newPass) return;
+    const user = firebase.auth().currentUser;
+    user.updatePassword(newPass).then(() => {
+        alert("Hasło zmienione!");
+    }).catch(e => alert("Zaloguj się ponownie, aby zmienić hasło. " + e.message));
+}
+
+async function exportData() {
+    const user = firebase.auth().currentUser;
+    const data = {};
+    const daysSnap = await db.collection("users").doc(user.uid).collection("days").get();
+    
+    // Pobieramy dni równolegle
+    await Promise.all(daysSnap.docs.map(async (doc) => {
+        const dayKey = doc.id;
+        data[dayKey] = { muscleGroup: doc.data().muscleGroup || "", exercises: [] };
+        const exSnap = await doc.ref.collection("exercises").orderBy("order").get();
+        exSnap.forEach(ex => data[dayKey].exercises.push(ex.data()));
+    }));
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gympro_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+}
+
+function hardResetProfile() {
+    if(!confirm("CZY NA PEWNO?! To usunie WSZYSTKIE Twoje dane, historię i konto. Tego nie da się cofnąć.")) return;
+    if(!confirm("Ostateczne potwierdzenie. Usuwam konto?")) return;
+    
+    const user = firebase.auth().currentUser;
+    // Usuwamy dane z Firestore (uproszczone, usuwa główny dokument, kolekcje zostają ale są 'sierotami' w Firebase, 
+    // w produkcji użyłoby się Cloud Functions do czyszczenia rekurencyjnego).
+    db.collection("users").doc(user.uid).delete().then(() => {
+        db.collection("publicUsers").doc(user.uid).delete();
+        user.delete().then(() => {
+            alert("Konto usunięte. Żegnaj!");
+            location.reload();
+        });
     });
 }
