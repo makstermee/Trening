@@ -13,13 +13,13 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    if (!localStorage.getItem('RESET_DONE_V2')) {
+    if (!localStorage.getItem('RESET_DONE_V3')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('RESET_DONE_V2', 'true');
-          console.log("Wyczyszczono cache.");
+          localStorage.setItem('RESET_DONE_V3', 'true');
+          console.log("Wyczyszczono cache V3.");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -134,6 +134,53 @@
             </div>
         </div>
 
+        <div id="rules" class="day-section hidden">
+            <h2 class="history-title"><i class="fa-solid fa-book-open"></i> Kodeks Szychty</h2>
+            
+            <div class="rules-container">
+                <div class="rule-box">
+                    <h4>1. O co tu chodzi?</h4>
+                    <p>To nie jest zwykły dziennik. Tutaj pniemy się po szczeblach górniczej kariery. Zaczynasz na dole jako <b>Sztrajer</b> (pomocnik), a Twoim celem jest zostanie <b>Skarbnikiem</b> (Legendą Kopalni).</p>
+                </div>
+
+                <div class="rule-box">
+                    <h4>2. Wypłata (Jak zarabiać punkty?)</h4>
+                    <ul class="rules-list">
+                        <li><b>+2 pkt</b> – Za każdy Twój własny trening.</li>
+                        <li><b>+3 pkt</b> – Za ukończenie <b>Wyzwania</b> (treningu innej osoby).</li>
+                        <li><b>Premia (1-10 pkt)</b> – Po szychcie wysyłasz raport do Autora planu. Jeśli on uzna, że dobrze ćwiczyłeś, przyzna Ci premię!</li>
+                        <li><b>Zapłata dla Autora (1-10 pkt)</b> – Ty też oceniasz plan po treningu. Ile gwiazdek dasz Autorowi, tyle punktów wpadnie na jego konto.</li>
+                        <li><b>+2 pkt (Walkower)</b> – Jeśli ktoś podejmie Twoje wyzwanie, ale się podda – Ty dostajesz punkty za "pokonanie" go.</li>
+                    </ul>
+                </div>
+
+                <div class="rule-box warning">
+                    <h4>3. Żelazne Zasady BHP</h4>
+                    <ul class="rules-list">
+                        <li>⏱️ <b>Minimum 10 minut:</b> Tyle musi trwać Wyzwanie, żeby zostało zaliczone.</li>
+                        <li>🛑 <b>Limity:</b> Możesz zrobić max <b>2 Wyzwania</b> dziennie (i 2 swoje treningi). Szanuj siły!</li>
+                        <li>🤝 <b>Fair Play:</b> Nie ma punktów za robienie własnych Wyzwań.</li>
+                    </ul>
+                </div>
+
+                <div class="rule-box">
+                    <h4>4. Drabina Awansu (Rangi)</h4>
+                    <div class="ranks-table">
+                        <div class="rank-row"><span>0 - 20 pkt</span> <span class="r-name">Sztrajer 🔦</span></div>
+                        <div class="rank-row"><span>21 - 100 pkt</span> <span class="r-name">Młody Gwarek ⛏️</span></div>
+                        <div class="rank-row"><span>101 - 200 pkt</span> <span class="r-name">Hajer 👷</span></div>
+                        <div class="rank-row"><span>201 - 400 pkt</span> <span class="r-name">Hajer Przodowy 💪</span></div>
+                        <div class="rank-row"><span>401 - 600 pkt</span> <span class="r-name">Szczelmistrz 🧨</span></div>
+                        <div class="rank-row"><span>601 - 1000 pkt</span> <span class="r-name">Sztygar Zmianowy 📋</span></div>
+                        <div class="rank-row"><span>1001 - 1500 pkt</span> <span class="r-name">Sztygar Oddziałowy 🏗️</span></div>
+                        <div class="rank-row"><span>1501 - 2000 pkt</span> <span class="r-name">Nadsztygar 🎩</span></div>
+                        <div class="rank-row"><span>2001 - 3000 pkt</span> <span class="r-name">Zawiadowca 🏭</span></div>
+                        <div class="rank-row gold"><span>3000+ pkt</span> <span class="r-name">SKARBNIK 🥇</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="profile" class="day-section hidden">
             <div class="profile-header-card">
                 <div class="profile-avatar" id="profile-avatar">U</div>
@@ -146,13 +193,6 @@
                 <div class="stat-box"><i class="fa-solid fa-calendar-check"></i><span class="stat-val" id="last-workout-date">-</span><span class="stat-label">Ostatni</span></div>
             </div>
             
-            <div class="settings-group" style="margin-top:10px; border:1px solid #444;">
-                <button class="btn-outline full-width" onclick="openRulesModal()" style="border:none; text-align:left; display:flex; justify-content:space-between;">
-                    <span><i class="fa-solid fa-book-open"></i> Zasady, Punkty i Rangi</span>
-                    <i class="fa-solid fa-chevron-right"></i>
-                </button>
-            </div>
-
             <div class="settings-group">
                 <h4><i class="fa-solid fa-bell"></i> Centrum Meldunków</h4>
                 <button class="btn-outline full-width" onclick="openNotificationsModal()" style="display:flex; justify-content:space-between; align-items:center;">
@@ -279,61 +319,6 @@
         </div>
     </div>
 
-    <div id="rules-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Kodeks Szychty ⚒️</h3>
-                <button onclick="closeRulesModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <div class="rules-container" style="max-height:60vh; overflow-y:auto; padding-right:5px;">
-                
-                <div class="rule-box">
-                    <h4>1. O co tu chodzi?</h4>
-                    <p>To nie jest zwykły dziennik. Tutaj pniemy się po szczeblach górniczej kariery. Zaczynasz na dole jako <b>Sztrajer</b> (pomocnik), a Twoim celem jest zostanie <b>Skarbnikiem</b> (Legendą Kopalni).</p>
-                </div>
-
-                <div class="rule-box">
-                    <h4>2. Wypłata (Jak zarabiać punkty?)</h4>
-                    <ul class="rules-list">
-                        <li><b>+2 pkt</b> – Za każdy Twój własny trening.</li>
-                        <li><b>+3 pkt</b> – Za ukończenie <b>Wyzwania</b> (treningu innej osoby).</li>
-                        <li><b>Premia (1-10 pkt)</b> – Po szychcie wysyłasz raport do Autora planu. Jeśli on uzna, że dobrze ćwiczyłeś, przyzna Ci premię!</li>
-                        <li><b>Zapłata dla Autora (1-10 pkt)</b> – Ty też oceniasz plan po treningu. Ile gwiazdek dasz Autorowi, tyle punktów wpadnie na jego konto.</li>
-                        <li><b>+2 pkt (Walkower)</b> – Jeśli ktoś podejmie Twoje wyzwanie, ale się podda – Ty dostajesz punkty za "pokonanie" go.</li>
-                    </ul>
-                </div>
-
-                <div class="rule-box warning">
-                    <h4>3. Żelazne Zasady BHP</h4>
-                    <ul class="rules-list">
-                        <li>⏱️ <b>Minimum 10 minut:</b> Tyle musi trwać Wyzwanie, żeby zostało zaliczone.</li>
-                        <li>🛑 <b>Limity:</b> Możesz zrobić max <b>2 Wyzwania</b> dziennie (i 2 swoje treningi). Szanuj siły!</li>
-                        <li>🤝 <b>Fair Play:</b> Nie ma punktów za robienie własnych Wyzwań.</li>
-                    </ul>
-                </div>
-
-                <div class="rule-box">
-                    <h4>4. Drabina Awansu (Rangi)</h4>
-                    <div class="ranks-table">
-                        <div class="rank-row"><span>0 - 20 pkt</span> <span class="r-name">Sztrajer 🔦</span></div>
-                        <div class="rank-row"><span>21 - 100 pkt</span> <span class="r-name">Młody Gwarek ⛏️</span></div>
-                        <div class="rank-row"><span>101 - 200 pkt</span> <span class="r-name">Hajer 👷</span></div>
-                        <div class="rank-row"><span>201 - 400 pkt</span> <span class="r-name">Hajer Przodowy 💪</span></div>
-                        <div class="rank-row"><span>401 - 600 pkt</span> <span class="r-name">Szczelmistrz 🧨</span></div>
-                        <div class="rank-row"><span>601 - 1000 pkt</span> <span class="r-name">Sztygar Zmianowy 📋</span></div>
-                        <div class="rank-row"><span>1001 - 1500 pkt</span> <span class="r-name">Sztygar Oddziałowy 🏗️</span></div>
-                        <div class="rank-row"><span>1501 - 2000 pkt</span> <span class="r-name">Nadsztygar 🎩</span></div>
-                        <div class="rank-row"><span>2001 - 3000 pkt</span> <span class="r-name">Zawiadowca 🏭</span></div>
-                        <div class="rank-row gold"><span>3000+ pkt</span> <span class="r-name">SKARBNIK 🥇</span></div>
-                    </div>
-                </div>
-
-            </div>
-            <button class="btn-primary full-width" onclick="closeRulesModal()" style="margin-top:15px;">ZROZUMIANO! DO ROBOTY!</button>
-        </div>
-    </div>
-
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchMode('plan'); switchBottomNav(this)">
             <i class="fa-solid fa-calendar-day"></i><span>Plan</span>
@@ -344,51 +329,16 @@
         <button class="nav-item" onclick="switchMode('community'); switchBottomNav(this)">
             <i class="fa-solid fa-users"></i><span>Ludzie</span>
         </button>
+        <button class="nav-item" onclick="switchMode('rules'); switchBottomNav(this)">
+            <i class="fa-solid fa-circle-info"></i><span>Zasady</span>
+        </button>
         <button class="nav-item" onclick="switchMode('profile'); switchBottomNav(this)">
             <i class="fa-solid fa-user"></i><span>Profil</span>
         </button>
     </nav>
 
   </div>
-
-  <script src="script.js?v=2"></script>
   
-  <script>
-    function switchAuthTab(tab) {
-        const lf = document.getElementById('login-form'), rf = document.getElementById('register-form');
-        const bl = document.getElementById('tab-login'), br = document.getElementById('tab-register');
-        if (tab === 'login') { lf.classList.remove('hidden'); rf.classList.add('hidden'); bl.classList.add('active'); br.classList.remove('active'); }
-        else { lf.classList.add('hidden'); rf.classList.remove('hidden'); bl.classList.remove('active'); br.classList.add('active'); }
-    }
-    function switchBottomNav(el) {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
-    }
-    
-    // --- REJESTRACJA SERVICE WORKERA ---
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js').then(reg => {
-            if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-            reg.onupdatefound = () => {
-                const installingWorker = reg.installing;
-                if (installingWorker) {
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            window.location.reload();
-                        }
-                    };
-                }
-            };
-        });
-        let refreshing;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (refreshing) return;
-            refreshing = true;
-            window.location.reload(); 
-        });
-      });
-    }
-  </script>
+  <script src="script.js?v=4"></script> 
 </body>
 </html>
