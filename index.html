@@ -13,13 +13,12 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    if (!localStorage.getItem('RESET_DONE_ULTIMATE')) {
+    if (!localStorage.getItem('RESET_FINAL_V1')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('RESET_DONE_ULTIMATE', 'true');
-          console.log("Wyczyszczono cache (Ultimate Fix).");
+          localStorage.setItem('RESET_FINAL_V1', 'true');
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -56,7 +55,6 @@
   </div>
 
   <div class="container">
-    
     <div id="install-banner" class="install-banner hidden">
         <p>Już teraz zainstaluj aplikację!</p>
         <button id="install-btn" onclick="installApp()"><i class="fa-solid fa-download"></i> Zainstaluj</button>
@@ -170,12 +168,10 @@
                 <h3 id="profile-email">user@example.com</h3>
                 <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="profile-kudos">0</span> Kudos</div>
             </div>
-
             <div class="profile-stats-row">
                 <div class="stat-box"><i class="fa-solid fa-dumbbell"></i><span class="stat-val" id="total-workouts">0</span><span class="stat-label">Treningi</span></div>
                 <div class="stat-box"><i class="fa-solid fa-calendar-check"></i><span class="stat-val" id="last-workout-date">-</span><span class="stat-label">Ostatni</span></div>
             </div>
-            
             <div class="settings-group">
                 <h4><i class="fa-solid fa-bell"></i> Centrum Meldunków</h4>
                 <button class="btn-outline full-width" onclick="openNotificationsModal()" style="display:flex; justify-content:space-between; align-items:center;">
@@ -183,30 +179,25 @@
                     <span id="profile-notif-badge" class="notification-badge">0</span>
                 </button>
             </div>
-
             <div class="settings-group">
                 <h4><i class="fa-solid fa-cloud-arrow-down"></i> Aktualizacja</h4>
                 <button class="btn-outline full-width" onclick="forceAppUpdate(this)" style="border-color: var(--accent-color); color: var(--accent-color);">
                     <i class="fa-solid fa-rotate"></i> SPRAWDŹ I ZAKTUALIZUJ
                 </button>
             </div>
-
             <div class="settings-group">
                 <h4><i class="fa-solid fa-user-gear"></i> Ustawienia</h4>
                 <div class="input-group profile-input"><input type="text" id="new-username" placeholder="Twoja nazwa publiczna"><button class="btn-small" onclick="updateUsername()">Zmień</button></div>
                 <div class="input-group profile-input"><input type="password" id="new-password" placeholder="Nowe hasło"><button class="btn-small" onclick="changePassword()">Zmień</button></div>
             </div>
-
             <div class="settings-group">
                 <h4><i class="fa-solid fa-database"></i> Dane</h4>
                 <button class="btn-outline full-width" onclick="exportData()"><i class="fa-solid fa-download"></i> Kopia zapasowa (JSON)</button>
             </div>
-            
             <div class="settings-group danger-zone">
                 <h4 style="color: var(--danger-color);"><i class="fa-solid fa-triangle-exclamation"></i> Strefa Niebezpieczna</h4>
                 <button class="btn-hard-reset" onclick="hardResetProfile()"><i class="fa-solid fa-skull"></i> USUŃ KONTO</button>
             </div>
-
             <button class="btn-logout-big" onclick="signOut()"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj się</button>
         </div>
     </div>
@@ -244,7 +235,6 @@
             <button id="btn-give-kudos" class="btn-kudos" onclick="giveKudos()">
                 <i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!
             </button>
-            
             <div class="shared-plans-section" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
                 <h4 style="margin:0 0 10px 0; color:#888; font-size:0.9rem;">UDOSTĘPNIONE PLANY:</h4>
                 <div id="public-plans-list" style="max-height: 200px; overflow-y: auto;">
@@ -257,10 +247,8 @@
     <div id="challenge-end-modal" class="modal-overlay hidden">
         <div class="modal-content" style="text-align:center;">
             <h3>Koniec Szychty! ⚒️</h3>
-            <p style="color:#ccc; font-size:0.9rem;">Wystaw notę dla Sztygara (Autora planu):</p>
-            
+            <p style="color:#ccc; font-size:0.9rem;">Wystaw notę dla Sztygara:</p>
             <div class="rating-scale-container" id="rating-buttons"></div>
-            
             <div id="save-decision-area" class="hidden" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
                 <p style="margin-bottom:10px;">Zapisać ten plan u siebie?</p>
                 <div style="display:flex; gap:10px; justify-content:center;">
@@ -268,7 +256,6 @@
                     <button class="btn-outline" style="flex:1" onclick="finalizeChallenge(false)">NIE</button>
                 </div>
             </div>
-
             <div id="day-selector-area" class="hidden" style="margin-top:15px;">
                 <select id="target-save-day" class="main-input" style="background:#222; color:white; margin-bottom:10px;">
                     <option value="monday">Poniedziałek</option>
@@ -290,12 +277,10 @@
                 <h3>Meldunki</h3>
                 <button onclick="closeNotificationsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            
             <div class="notifications-tabs">
                 <button class="notif-tab active" onclick="switchNotifTab('todo')" id="tab-notif-todo">Do Oceny</button>
                 <button class="notif-tab" onclick="switchNotifTab('news')" id="tab-notif-news">Wiadomości</button>
             </div>
-
             <div id="notif-list-container" style="max-height:300px; overflow-y:auto;">
                 <p style="text-align:center; color:#666; margin-top:20px;">Ładowanie...</p>
             </div>
@@ -322,10 +307,10 @@
 
   </div>
   
-  <script src="script.js?v=8"></script> 
+  <script src="script.js?v=15"></script> 
   
   <script>
-    // REJESTRACJA SERVICE WORKERA (service-worker.js)
+    // Rejestracja SW (service-worker.js)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js').then(reg => {
