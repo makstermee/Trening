@@ -1,5 +1,5 @@
 /*************************************************************
-  ZMIENNE GLOBALNE I KONFIGURACJA
+  1. KONFIGURACJA I ZMIENNE GLOBALNE
 *************************************************************/
 const firebaseConfig = {
   apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
@@ -11,33 +11,40 @@ const firebaseConfig = {
   measurementId: "G-EY88TE8L7H"
 };
 
-// Inicjalizacja (tylko raz)
+// Inicjalizacja Firebase (tylko raz)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+// Mapowanie nazw dni
 const dayMap = { 
-    monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa", 
-    thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela",
+    monday: "Poniedziałek", 
+    tuesday: "Wtorek", 
+    wednesday: "Środa", 
+    thursday: "Czwartek", 
+    friday: "Piątek", 
+    saturday: "Sobota", 
+    sunday: "Niedziela",
     challenge: "🏆 WYZWANIE" 
 };
 const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
+// Zmienne stanu
 let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
-
 let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
 let viewingUserId = null; 
 
+// Zmienne dla systemu Wyzwań
 let tempWorkoutResult = null; 
 let currentRatingScore = 0;   
 
 /*************************************************************
-  1. INICJALIZACJA
+  2. START APLIKACJI
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.querySelector('.container');
@@ -69,7 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// --- FUNKCJE POMOCNICZE ---
+/*************************************************************
+  3. FUNKCJE POMOCNICZE I NAWIGACJA
+*************************************************************/
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -103,51 +112,46 @@ function switchBottomNav(el) {
     if(el) el.classList.add('active');
 }
 
-/*************************************************************
-  2. NAWIGACJA
-*************************************************************/
 function switchMode(mode) {
     currentMode = mode;
-    
-    const historySection = document.getElementById('history');
-    const communitySection = document.getElementById('community');
-    const rulesSection = document.getElementById('rules');
-    const profileSection = document.getElementById('profile');
-    const daysNav = document.getElementById('days-nav-container');
-    const fab = document.getElementById('fab-add');
+    const sections = {
+        history: document.getElementById('history'),
+        community: document.getElementById('community'),
+        rules: document.getElementById('rules'),
+        profile: document.getElementById('profile'),
+        nav: document.getElementById('days-nav-container'),
+        fab: document.getElementById('fab-add')
+    };
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    if (mode === 'history' && historySection) {
-        historySection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'block'; 
-        if(fab) fab.style.display = 'none';
+    if (mode === 'history') {
+        if(sections.history) sections.history.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'block'; 
+        if(sections.fab) sections.fab.style.display = 'none';
         loadHistoryFromFirestore(currentSelectedDay);
     } 
-    else if (mode === 'community' && communitySection) {
-        communitySection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
+    else if (mode === 'community') {
+        if(sections.community) sections.community.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'none'; 
+        if(sections.fab) sections.fab.style.display = 'none';
         loadCommunity();
     } 
-    else if (mode === 'rules' && rulesSection) {
-        rulesSection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
+    else if (mode === 'rules') {
+        if(sections.rules) sections.rules.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'none'; 
+        if(sections.fab) sections.fab.style.display = 'none';
     } 
-    else if (mode === 'profile' && profileSection) {
-        profileSection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
+    else if (mode === 'profile') {
+        if(sections.profile) sections.profile.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'none'; 
+        if(sections.fab) sections.fab.style.display = 'none';
         const user = auth.currentUser;
-        if(user) {
-            updateProfileUI(user);
-            loadProfileStats();
-        }
+        if(user) { updateProfileUI(user); loadProfileStats(); }
     } 
     else {
-        if(daysNav) daysNav.style.display = 'block'; 
-        if(fab) fab.style.display = 'flex';
+        if(sections.nav) sections.nav.style.display = 'block'; 
+        if(sections.fab) sections.fab.style.display = 'flex';
         showPlanSection(currentSelectedDay);
     }
     updateHeaderTitle();
@@ -159,7 +163,6 @@ function selectDay(dayValue) {
     if(selector) selector.value = dayValue; 
     
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
-    
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     if(!activeData || activeData.day !== 'challenge') {
         const idx = allDays.indexOf(dayValue);
@@ -188,12 +191,10 @@ function updateHeaderTitle() {
     const timer = document.getElementById('workout-timer');
 
     if (!titleEl) return;
-    
     if (timer && !timer.classList.contains('hidden')) {
         if(shareBtn) shareBtn.classList.add('hidden');
         return; 
     }
-
     if(shareBtn) shareBtn.classList.add('hidden');
 
     if (currentMode === 'plan') {
@@ -207,7 +208,7 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING I WYZWANIA
+  4. TRENING I WYZWANIA
 *************************************************************/
 function startWorkout(day) {
     const now = Date.now();
@@ -237,15 +238,15 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
     });
 
     if (challengeCount >= 2) return alert("Koniec szychty na dziś! Limit wyzwań (2) wykorzystany.");
-    if (challengeAuthors.has(authorUid)) return alert("Już robiłeś trening tego Hajera dzisiaj! Wybierz kogoś innego.");
+    if (challengeAuthors.has(authorUid)) return alert("Już robiłeś trening tego Hajera dzisiaj!");
 
     if (!confirm("Bierzesz to na klatę? Zaczynamy wyzwanie!")) return;
 
     try {
         const exercises = JSON.parse(exercisesJson);
         const batch = db.batch();
-        
         const challengeRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
+        
         const oldData = await challengeRef.get();
         oldData.forEach(doc => batch.delete(doc.ref));
 
@@ -265,11 +266,9 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
 
         closePublicProfile();
-        // Przełącz na widok wyzwania
         document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
         let chDiv = document.getElementById('challenge');
         if(chDiv) chDiv.classList.remove("hidden");
-        
         const nav = document.getElementById('days-nav-container');
         if(nav) nav.style.display = 'none'; 
         
@@ -283,7 +282,7 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
 }
 
 async function surrenderChallenge() {
-    if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt za pokonanie Cię. Na pewno?")) return;
+    if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt.")) return;
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const authorId = activeData.challengeAuthor;
 
@@ -345,7 +344,7 @@ async function finishWorkout(day) {
 }
 
 /*************************************************************
-  4. OBSŁUGA MODALA I RAPORTOWANIA
+  5. MODALE, OCENY, POWIADOMIENIA
 *************************************************************/
 function openChallengeEndModal() {
     const container = document.getElementById('rating-buttons');
@@ -451,9 +450,6 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
     await batch.commit();
 }
 
-/*************************************************************
-  5. MELDUNKI I POWIADOMIENIA
-*************************************************************/
 function openNotificationsModal() {
     document.getElementById('notifications-modal').classList.remove('hidden');
     switchNotifTab('todo'); 
@@ -462,27 +458,23 @@ function closeNotificationsModal() {
     document.getElementById('notifications-modal').classList.add('hidden');
     checkNotificationsCount(); 
 }
-
 function switchNotifTab(tab) {
     document.querySelectorAll('.notif-tab').forEach(b => b.classList.remove('active'));
     document.getElementById(`tab-notif-${tab}`).classList.add('active');
     loadNotificationsList(tab);
 }
-
 function loadNotificationsList(tab) {
     const container = document.getElementById('notif-list-container');
     container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam...</p>';
     const user = auth.currentUser;
 
     if (tab === 'todo') {
-        // Raporty do oceny (jestem autorem)
         db.collection("challenge_reports")
             .where("authorId", "==", user.uid)
             .where("status", "==", "PENDING")
             .get().then(qs => {
                 container.innerHTML = "";
                 if(qs.empty) { container.innerHTML = "<p style='text-align:center;color:#666'>Brak raportów do oceny.</p>"; return; }
-                
                 qs.forEach(doc => {
                     const data = doc.data();
                     const el = document.createElement('div');
@@ -490,22 +482,17 @@ function loadNotificationsList(tab) {
                     el.innerHTML = `
                         <div class="notif-title">⚒️ ${escapeHTML(data.performerName)} ukończył Twój plan!</div>
                         <div class="notif-desc">Czas: ${data.duration}. Ocenił Cię na: ${data.performerRatingGiven}/10.</div>
-                        <div class="notif-actions">
-                            <button class="btn-small" onclick="ratePerformer('${doc.id}')">OCEŃ GO</button>
-                        </div>
-                    `;
+                        <div class="notif-actions"><button class="btn-small" onclick="ratePerformer('${doc.id}')">OCEŃ GO</button></div>`;
                     container.appendChild(el);
                 });
             });
     } else {
-        // Moje wyniki (jestem wykonawcą)
         db.collection("challenge_reports")
             .where("performerId", "==", user.uid)
             .where("status", "==", "RATED") 
             .get().then(qs => {
                 container.innerHTML = "";
                 if(qs.empty) { container.innerHTML = "<p style='text-align:center;color:#666'>Brak nowych wiadomości.</p>"; return; }
-
                 qs.forEach(doc => {
                     const data = doc.data();
                     const el = document.createElement('div');
@@ -514,46 +501,24 @@ function loadNotificationsList(tab) {
                     el.innerHTML = `
                         <div class="notif-title">💰 Wypłata Przyszła!</div>
                         <div class="notif-desc">Sztygar ocenił Twój trening na: <b>${data.bonusPoints} pkt</b>.</div>
-                        <div class="notif-actions">
-                            <button class="btn-small" style="background:var(--accent-color); color:black;" onclick="claimBonusPoints('${doc.id}', ${data.bonusPoints})">ODBIERZ PKT</button>
-                        </div>
-                    `;
+                        <div class="notif-actions"><button class="btn-small" style="background:var(--accent-color); color:black;" onclick="claimBonusPoints('${doc.id}', ${data.bonusPoints})">ODBIERZ PKT</button></div>`;
                     container.appendChild(el);
                 });
             });
     }
 }
-
 function ratePerformer(reportId) {
     const score = prompt("Ile punktów (1-10) dajesz za ten trening?");
     if(!score || isNaN(score) || score < 1 || score > 10) return alert("Podaj liczbę 1-10");
-
-    db.collection("challenge_reports").doc(reportId).update({
-        status: "RATED",
-        bonusPoints: parseInt(score)
-    }).then(() => {
-        alert("Wysłano ocenę!");
-        loadNotificationsList('todo');
-    });
+    db.collection("challenge_reports").doc(reportId).update({ status: "RATED", bonusPoints: parseInt(score) })
+    .then(() => { alert("Wysłano ocenę!"); loadNotificationsList('todo'); });
 }
-
 function claimBonusPoints(reportId, points) {
     const user = auth.currentUser;
-    const batch = db.batch();
-
-    const myRef = db.collection("publicUsers").doc(user.uid);
-    batch.update(myRef, { totalPoints: firebase.firestore.FieldValue.increment(points) });
-
-    const reportRef = db.collection("challenge_reports").doc(reportId);
-    batch.update(reportRef, { status: "COMPLETED" });
-
-    batch.commit().then(() => {
-        alert(`Odebrano ${points} pkt!`);
-        loadNotificationsList('news');
-        checkNotificationsCount();
-    });
+    db.batch().update(db.collection("publicUsers").doc(user.uid), { totalPoints: firebase.firestore.FieldValue.increment(points) })
+    .update(db.collection("challenge_reports").doc(reportId), { status: "COMPLETED" })
+    .commit().then(() => { alert(`Odebrano ${points} pkt!`); loadNotificationsList('news'); checkNotificationsCount(); });
 }
-
 function checkNotificationsCount() {
     const user = auth.currentUser;
     if(!user) return;
@@ -564,12 +529,8 @@ function checkNotificationsCount() {
         const count = res1.size + res2.size;
         const badge = document.getElementById('profile-notif-badge');
         if(badge) {
-            if(count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
+            if(count > 0) { badge.textContent = count; badge.style.display = 'inline-block'; } 
+            else { badge.style.display = 'none'; }
         }
     });
 }
@@ -588,7 +549,6 @@ function checkActiveWorkout() {
             document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
             let chDiv = document.getElementById('challenge');
             if(chDiv) chDiv.classList.remove("hidden");
-            
             const nav = document.getElementById('days-nav-container');
             if(nav) nav.style.display = 'none'; 
             if(shareBtn) shareBtn.style.display = 'none';
@@ -705,7 +665,6 @@ window.toggleCard = function(h) { if(event.target.tagName!=='INPUT' && event.tar
 function updateProfileUI(user) {
     const emailEl = document.getElementById('profile-email');
     const avatarEl = document.getElementById('profile-avatar');
-    
     if(user) {
         const displayName = user.displayName || user.email;
         if(emailEl) emailEl.textContent = displayName;
@@ -715,8 +674,6 @@ function updateProfileUI(user) {
 
 function loadProfileStats() {
     const user = auth.currentUser;
-    if(!user) return;
-
     db.collection("users").doc(user.uid).collection("history").get().then(qs => {
         const total = qs.size;
         let last = '-';
@@ -724,28 +681,19 @@ function loadProfileStats() {
             const docs = qs.docs.sort((a,b) => b.data().dateIso.localeCompare(a.data().dateIso));
             last = docs[0].data().displayDate || docs[0].data().dateIso.split('T')[0];
         }
-        
-        const totEl = document.getElementById('total-workouts');
-        const lastEl = document.getElementById('last-workout-date');
-        if(totEl) totEl.textContent = total;
-        if(lastEl) lastEl.textContent = last;
-        
+        document.getElementById('total-workouts').textContent = total;
+        document.getElementById('last-workout-date').textContent = last;
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let pts = 0;
             if(doc.exists) pts = doc.data().totalPoints || 0;
-            
-            const kudosEl = document.getElementById('profile-kudos');
-            if(kudosEl) kudosEl.innerHTML = `${pts} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(pts)}</span>`;
-            
+            document.getElementById('profile-kudos').innerHTML = `${pts} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(pts)}</span>`;
             publishProfileStats(user, total, last, pts);
         });
     });
 }
-
 function publishProfileStats(user, total, last, pts) {
-    const displayName = user.displayName || user.email.split('@')[0];
     db.collection("publicUsers").doc(user.uid).set({
-        displayName: displayName,
+        displayName: user.displayName || user.email.split('@')[0],
         email: user.email,
         totalWorkouts: total,
         lastWorkout: last,
@@ -758,12 +706,11 @@ function updateUsername() {
     const newName = document.getElementById('new-username').value;
     if(!newName) return;
     const user = auth.currentUser;
-    
     user.updateProfile({ displayName: newName }).then(() => {
         db.collection("publicUsers").doc(user.uid).set({ displayName: newName }, { merge: true });
         updateProfileUI(user);
         alert("Nazwa zmieniona!");
-    }).catch(e => alert("Błąd: " + e.message));
+    }).catch(e => alert(e.message));
 }
 
 function changePassword() {
@@ -775,6 +722,7 @@ function changePassword() {
     }).catch(e => alert("Musisz się zalogować ponownie przed zmianą hasła."));
 }
 
+// --- AUTH ---
 async function signIn() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
@@ -807,65 +755,130 @@ async function signOut() {
     location.reload();
 }
 
-// --- POZOSTAŁE FUNKCJE (Trening, Logi, Community) ---
-// Skopiuj resztę funkcji (startWorkout, loadCommunity, openNotificationsModal, itd.)
-// Z poprzedniego pliku script.js (wersja "Skarbnik Code v1.0"), ponieważ są poprawne.
-// Pamiętaj, żeby na końcu pliku NIE BYŁO NADMIAROWYCH KLAMR `}`.
-
-// --- WAŻNE: TUTAJ DOKLEJAM TE NAJWAŻNIEJSZE, ŻEBY DZIAŁAŁO ---
-
-function openNotificationsModal() {
-    document.getElementById('notifications-modal').classList.remove('hidden');
-    switchNotifTab('todo'); 
-}
-function closeNotificationsModal() {
-    document.getElementById('notifications-modal').classList.add('hidden');
-    checkNotificationsCount(); 
-}
-function switchNotifTab(tab) {
-    document.querySelectorAll('.notif-tab').forEach(b => b.classList.remove('active'));
-    document.getElementById(`tab-notif-${tab}`).classList.add('active');
-    loadNotificationsList(tab);
+async function exportData() {
+    const user = auth.currentUser;
+    const data = {};
+    const daysSnap = await db.collection("users").doc(user.uid).collection("days").get();
+    await Promise.all(daysSnap.docs.map(async (doc) => {
+        const dayKey = doc.id;
+        data[dayKey] = { muscleGroup: doc.data().muscleGroup || "", exercises: [] };
+        const exSnap = await doc.ref.collection("exercises").orderBy("order").get();
+        exSnap.forEach(ex => data[dayKey].exercises.push(ex.data()));
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gympro_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
 }
 
-// (Reszta funkcji: loadNotificationsList, ratePerformer, claimBonusPoints, checkNotificationsCount - weź z poprzedniej wersji)
-// (Reszta funkcji: checkActiveWorkout, updateActionButtons, addLog, removeLog, loadCardsData, renderAccordionCard - weź z poprzedniej wersji)
-// (Reszta funkcji: loadHistoryFromFirestore, renderHistoryCard - weź z poprzedniej wersji)
-// (Reszta funkcji: loadCommunity, openPublicProfile, closePublicProfile - weź z poprzedniej wersji)
-// (Reszta funkcji: loadSharedPlansForUser, deleteSharedPlan, shareCurrentDay - weź z poprzedniej wersji)
-// (Reszta funkcji: openAddModal, closeAddModal, saveFromModal, window.triggerEdit, deleteCard, saveMuscleGroups, loadMuscleGroupFromFirestore - weź z poprzedniej wersji)
+function hardResetProfile() {
+    if(!confirm("CZY NA PEWNO?! To usunie WSZYSTKIE Twoje dane, historię i konto. Tego nie da się cofnąć.")) return;
+    if(!confirm("Ostateczne potwierdzenie. Usuwam konto?")) return;
+    const user = auth.currentUser;
+    db.collection("users").doc(user.uid).delete().then(() => {
+        db.collection("publicUsers").doc(user.uid).delete();
+        user.delete().then(() => {
+            alert("Konto usunięte. Żegnaj!");
+            location.reload();
+        });
+    });
+}
 
-// --- FIX MODALA ZASAD ---
+// --- MODALE I AKTUALIZACJA ---
 function openRulesModal() {
-    const m = document.getElementById('rules-modal');
-    if(m) {
-        m.classList.remove('hidden');
-        setTimeout(() => {
-            const content = m.querySelector('.modal-content');
-            if(content) content.style.transform = 'translateY(0)';
-        }, 10);
-    }
+    const m = document.getElementById('rules-modal'); // Ale w HTML używasz sekcji 'rules' w nawigacji, więc funkcja powinna przełączyć tryb, jeśli nie masz modala.
+    // SPRAWDZAMY HTML: Masz <div id="rules" class="day-section hidden">. To nie jest modal, to sekcja.
+    // WIĘC ZMIENIAMY LOGIKĘ:
+    switchMode('rules');
+    // Opcjonalnie zaznacz ikonę zasad:
+    const rulesBtn = document.querySelector('.nav-item:nth-child(4)');
+    switchBottomNav(rulesBtn);
 }
-
-function closeRulesModal() {
-    const m = document.getElementById('rules-modal');
-    if(m) {
-        const content = m.querySelector('.modal-content');
-        if(content) content.style.transform = 'translateY(100%)';
-        setTimeout(() => m.classList.add('hidden'), 300);
-    }
-}
+// Jeśli jednak wolisz modal, to go nie ma w HTML. Założyłem, że 'Zasady' są teraz w głównym widoku.
+// Więc closeRulesModal nie jest potrzebne, bo wychodzi się zmieniając zakładkę.
 
 async function forceAppUpdate(btnElement) {
     if (!confirm("Wymusić aktualizację?")) return;
-    if('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations(); 
-        for(let r of regs) r.unregister(); 
+    if(btnElement) {
+        btnElement.innerHTML = "Aktualizuję...";
+        btnElement.disabled = true;
     }
-    if('caches' in window) {
-        caches.keys().then(k=>k.forEach(c=>caches.delete(c))); 
+    if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) await registration.unregister();
     }
-    location.reload(true); 
+    if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+    }
+    location.reload(true);
 }
 
-// ... [DODAJ TU RESZTĘ LOGIKI TRENINGOWEJ JEŚLI JEJ NIE MA] ...
+function giveKudos() {
+    if(!viewingUserId) return;
+    const currentUser = auth.currentUser;
+    if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
+    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
+    const today = new Date().toISOString().split('T')[0];
+    interactionRef.get().then(docSnap => {
+        if (docSnap.exists && docSnap.data().date === today) return alert("Już przybita!");
+        const batch = db.batch();
+        const publicRef = db.collection("publicUsers").doc(viewingUserId);
+        batch.update(publicRef, { totalPoints: firebase.firestore.FieldValue.increment(1) });
+        batch.set(interactionRef, { date: today });
+        batch.commit().then(() => {
+            alert("Piątka przybita! (+1 pkt dla Hajera)");
+            const countEl = document.getElementById('pub-kudos-count');
+            if(countEl) {
+                 let currentText = countEl.innerText.split('\n')[0];
+                 let newVal = parseInt(currentText) + 1;
+                 countEl.innerHTML = `${newVal} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(newVal)}</span>`;
+            }
+        });
+    });
+}
+
+// --- POZOSTAŁE FUNKCJE MODALI EDYCJI ---
+function openAddModal(day=null){ 
+    if(!day) day = currentSelectedDay;
+    currentModalDay=day; 
+    document.getElementById('modal-overlay').classList.remove('hidden'); 
+}
+function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
+function saveFromModal(){ 
+    const ex=document.getElementById('modal-exercise').value; 
+    const s=document.getElementById('modal-series').value; 
+    const r=document.getElementById('modal-reps').value; 
+    const w=document.getElementById('modal-weight').value; 
+    const n=document.getElementById('modal-notes').value;
+    if(!ex) return; 
+    const d={exercise:ex,series:s,reps:r,weight:w,notes:n,order:Date.now()}; 
+    const u=auth.currentUser;
+    if(editInfo.docId) db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").doc(editInfo.docId).update(d);
+    else db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").add(d);
+    closeAddModal(); loadCardsDataFromFirestore(currentModalDay);
+}
+window.triggerEdit=function(day,id){ 
+    const u = auth.currentUser;
+    db.collection("users").doc(u.uid).collection("days").doc(day).collection("exercises").doc(id).get().then(doc => {
+        if(doc.exists) {
+            const d = doc.data();
+            document.getElementById('modal-exercise').value = d.exercise;
+            document.getElementById('modal-series').value = d.series;
+            document.getElementById('modal-reps').value = d.reps;
+            document.getElementById('modal-weight').value = d.weight;
+            document.getElementById('modal-notes').value = d.notes;
+            editInfo={day,docId:id}; currentModalDay=day; 
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+    });
+}
+function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
+function saveMuscleGroups(e){ const v=e.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
+function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) {
+    const el = document.getElementById(`${d}-muscle-group`);
+    if(el) el.value=doc.data().muscleGroup||""; 
+}}); }
+function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
