@@ -138,13 +138,19 @@ function selectDay(dayValue) {
     const selector = document.getElementById('day-selector');
     if(selector) selector.value = dayValue; 
     
+    // 1. Usuń klasę 'active' ze wszystkich pigułek
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     
-    const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-    if(!activeData || activeData.day !== 'challenge') {
+    // 2. Podświetl odpowiedni przycisk
+    if (dayValue === 'challenge') {
+        const chBtn = document.getElementById('pill-challenge');
+        if(chBtn) chBtn.classList.add('active');
+    } else {
+        // Jeśli to zwykły dzień, znajdź go na liście i podświetl
         const idx = allDays.indexOf(dayValue);
         if (idx !== -1) {
-            const pills = document.querySelectorAll('.pill');
+            // Szukamy tylko zwykłych przycisków (bez ID pill-challenge)
+            const pills = document.querySelectorAll('.days-pills .pill:not(#pill-challenge)');
             if(pills[idx]) pills[idx].classList.add('active');
         }
     }
@@ -249,9 +255,8 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         let chDiv = document.getElementById('challenge');
         if(chDiv) chDiv.classList.remove("hidden");
         
-        const nav = document.getElementById('days-nav-container');
-        if(nav) nav.style.display = 'none'; 
-        
+        // Zostawiamy nawigację (widoczność paska), ale przełączamy na 'challenge'
+        selectDay("challenge");
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
 
@@ -559,18 +564,12 @@ function checkActiveWorkout() {
     const titleEl = document.getElementById('current-day-display');
     const timerEl = document.getElementById('workout-timer');
     const shareBtn = document.getElementById('btn-share-day');
-    
+    const nav = document.getElementById('days-nav-container');
+
     if (activeData) {
-        if (activeData.day === 'challenge') {
-            document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
-            let chDiv = document.getElementById('challenge');
-            if(chDiv) chDiv.classList.remove("hidden");
-            
-            const nav = document.getElementById('days-nav-container');
-            if(nav) nav.style.display = 'none'; 
-            if(shareBtn) shareBtn.style.display = 'none';
-        }
+        // --- TRENING TRWA ---
         if(titleEl) titleEl.style.display = 'none';
+        
         if(timerEl) {
             timerEl.classList.remove('hidden');
             if (timerInterval) clearInterval(timerInterval);
@@ -580,14 +579,28 @@ function checkActiveWorkout() {
                 timerEl.textContent = date.toISOString().substr(11, 8);
             }, 1000);
         }
+
+        // Jeśli trwa Wyzwanie, ukryj przycisk udostępniania i przełącz zakładkę
+        if (activeData.day === 'challenge') {
+            if(shareBtn) shareBtn.style.display = 'none';
+            // Jeśli użytkownik jest w trybie planu, ale nie jest w zakładce challenge -> przenieś go tam
+            if(currentSelectedDay !== 'challenge' && currentMode === 'plan') {
+                selectDay('challenge');
+            }
+        }
+        
         updateActionButtons(activeData.day);
+
     } else {
+        // --- BRAK TRENINGU ---
         if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
-        const nav = document.getElementById('days-nav-container');
+        
+        // Pokaż nawigację (zawsze)
         if(nav) nav.style.display = 'block';
+        
         updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     }
@@ -603,6 +616,7 @@ function updateActionButtons(currentViewDay) {
     } else if (!activeData) {
         container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
     } else if (activeData && activeData.day !== currentViewDay) {
+        // Tu już nie potrzebujemy przycisku "wróć", bo mamy zakładkę SZYCHTA
         container.innerHTML = `<p style="text-align:center; color:#666;">Trening trwa w: ${dayMap[activeData.day]}</p>`;
     }
 }
@@ -627,12 +641,41 @@ function removeLog(day, docId, w, r, lid) {
 function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
+
+    // --- NOWA LOGIKA: PUSTY STAN DLA WYZWANIA ---
+    if (day === 'challenge') {
+        const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
+        
+        // Jeśli wchodzisz w zakładkę Szychta, ale nie masz odpalonego wyzwania:
+        if (!activeData || activeData.day !== 'challenge') {
+            container.innerHTML = `
+                <div style="text-align:center; padding: 40px 20px; color: #888;">
+                    <i class="fa-solid fa-bed" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;"></i>
+                    <h3 style="margin:0; color:#ccc;">Cisza na kopalni</h3>
+                    <p style="font-size:0.9rem; margin-top:10px;">Aktualnie nie podjąłeś żadnego wyzwania.</p>
+                    <button class="btn-primary" onclick="switchMode('community')" style="margin-top:20px; background:var(--surface-color); border:1px solid #444;">
+                        <i class="fa-solid fa-magnifying-glass"></i> Znajdź Wyzwanie
+                    </button>
+                </div>
+            `;
+            // Ukryj przyciski akcji (Start/Stop), bo tu nic nie robimy
+            const actionsDiv = document.getElementById('challenge-actions');
+            if(actionsDiv) actionsDiv.innerHTML = '';
+            return;
+        }
+    }
+    // ---------------------------------------------
+
     const user = auth.currentUser;
     if(!user) return;
+    
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").orderBy("order", "asc").get()
     .then(qs => {
         container.innerHTML = ""; 
-        if(qs.empty && day === 'challenge') { container.innerHTML="<p>Pusto? Odśwież aplikację.</p>"; return; }
+        if(qs.empty && day === 'challenge') { 
+            container.innerHTML="<p style='text-align:center; padding:20px;'>Błąd danych wyzwania. Spróbuj odświeżyć.</p>"; 
+            return; 
+        }
         if(qs.empty) return;
         qs.forEach(doc => renderAccordionCard(container, day, doc));
     });
