@@ -312,6 +312,7 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
+        // --- TU BYŁ BŁĄD: NAPRAWIONY PRZYPISANIE AUTORA ---
         tempWorkoutResult = {
             dateIso: new Date().toISOString(),
             duration: timerText,
@@ -710,35 +711,15 @@ function renderAccordionCard(container, day, doc) {
     const data = doc.data();
     const id = doc.id;
     const logs = data.currentLogs || []; 
-    
     const card = document.createElement('div');
     card.className = 'exercise-card';
-    
-    // NOWA LISTA SERII (TABELA)
-    let logsHtml = logs.map((l, index) => `
-        <div class="log-row-item">
-            <div>
-                <span class="log-row-info">Seria ${index + 1}</span>
-                <span class="log-row-details">${l.weight} kg x ${l.reps} powt.</span>
-            </div>
-            <button class="log-delete-btn" onclick="removeLog('${day}', '${id}', '${l.weight}', '${l.reps}', ${l.id})">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        </div>
-    `).join('');
-    
-    if (logs.length === 0) {
-        logsHtml = `<div style="text-align:center; color:#555; font-size:0.8rem; padding:5px;">Brak wpisów. Dodaj pierwszą serię!</div>`;
-    }
+    let logsHtml = logs.map(l => `<div class="log-chip"><span>${l.weight}kg x ${l.reps}</span><i class="fa-solid fa-xmark remove-log" onclick="removeLog('${day}', '${id}', '${l.weight}', '${l.reps}', ${l.id})"></i></div>`).join('');
     
     card.innerHTML = `
         <div class="exercise-card-header" onclick="toggleCard(this)">
             <div class="header-left">
                 <i class="fa-solid fa-bars drag-handle"></i>
-                <div>
-                    <div class="ex-title">${escapeHTML(data.exercise)}</div>
-                    <div class="ex-summary">Cel: ${data.series}s x ${data.reps}r ${data.weight ? `(${data.weight}kg)` : ''}</div>
-                </div>
+                <div><div class="ex-title">${escapeHTML(data.exercise)}</div><div class="ex-summary">Cel: ${data.series}s x ${data.reps}r</div></div>
             </div>
             <i class="fa-solid fa-chevron-down expand-icon"></i>
         </div>
@@ -749,33 +730,23 @@ function renderAccordionCard(container, day, doc) {
                  <div class="plan-box"><span class="plan-label">KG</span><div class="plan-val">${data.weight || '-'}</div></div>
             </div>
             ${data.notes ? `<div class="notes-box">"${escapeHTML(data.notes)}"</div>` : ''}
-            
             <div class="logger-section">
-                <div style="margin-bottom:5px; font-size:0.8rem; color:#888;">Dodaj wykonaną serię:</div>
                 <div class="logger-input-row">
-                    <input type="number" id="log-w-${id}" placeholder="kg" value="${data.weight || ''}">
-                    <input type="number" id="log-r-${id}" placeholder="powt." value="${data.reps || ''}">
-                    <button class="btn-add-log" onclick="addLog('${day}', '${id}')">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                    <input type="number" id="log-w-${id}" placeholder="Kg" value="${data.weight || ''}">
+                    <input type="number" id="log-r-${id}" placeholder="Powt" value="${data.reps || ''}">
+                    <button class="btn-add-log" onclick="addLog('${day}', '${id}')"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 <div class="logs-list">${logsHtml}</div>
             </div>
-
             <div class="card-actions">
-                 <button class="btn-icon btn-edit" onclick="triggerEdit('${day}', '${id}')"><i class="fa-solid fa-pen"></i> Edytuj</button>
-                 <button class="btn-icon btn-delete" onclick="deleteCard('${day}', '${id}')"><i class="fa-solid fa-trash"></i> Usuń</button>
+                 <button class="btn-icon btn-edit" onclick="triggerEdit('${day}', '${id}')"><i class="fa-solid fa-pen"></i></button>
+                 <button class="btn-icon btn-delete" onclick="deleteCard('${day}', '${id}')"><i class="fa-solid fa-trash"></i></button>
             </div>
         </div>
     `;
     container.appendChild(card);
 }
-
-// POPRAWIONE OTWIERANIE KART (Ignoruje inputy i guziki wewnątrz)
-window.toggleCard = function(h) { 
-    if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
-    h.parentElement.classList.toggle('open'); 
-};
+window.toggleCard = function(h) { if(event.target.tagName!=='INPUT' && event.target.tagName!=='BUTTON' && !event.target.classList.contains('remove-log')) h.parentElement.classList.toggle('open'); };
 
 function updateProfileUI(user) {
     const emailEl = document.getElementById('profile-email');
@@ -814,6 +785,246 @@ function publishProfileStats(user, total, last, pts) {
         totalPoints: pts || 0,
         uid: user.uid
     }, { merge: true });
+}
+
+function loadHistoryFromFirestore(dayFilterKey) {
+    const container = document.getElementById("history-list");
+    if(!container) return;
+    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
+    const user = auth.currentUser;
+    db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
+    .then(qs => {
+        container.innerHTML = "";
+        let docs = [];
+        qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
+        if (dayFilterKey) {
+            const polishName = dayMap[dayFilterKey];
+            docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName);
+        }
+        if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
+        docs.forEach(item => renderHistoryCard(container, item));
+    });
+}
+function renderHistoryCard(container, item) {
+    const data = item.data;
+    const id = item.id;
+    const card = document.createElement('div');
+    card.className = `history-card ${data.isChallenge ? 'gold-border' : ''}`;
+    
+    let authorHtml = '';
+    if (data.isChallenge && data.originalAuthorName) {
+        authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
+    }
+
+    let detailsHtml = '';
+    if (data.details && Array.isArray(data.details)) {
+        detailsHtml = data.details.map(ex => {
+            let logsStr = (Array.isArray(ex.sets)) ? ex.sets.map((s, i) => `<span>S${i+1}: ${s.weight}kg x ${s.reps}</span>`).join(', ') : (ex.logs || 'Brak');
+            return `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(ex.name)}</div><div class="hex-logs">${logsStr}</div></div>`;
+        }).join('');
+    }
+
+    card.innerHTML = `
+        <div class="history-card-header" onclick="toggleHistoryCard(this)">
+            <div class="history-info">
+                ${authorHtml}
+                <h4>${data.dayName||'Trening'}</h4>
+                <div class="history-meta"><span>${data.displayDate||data.dateIso.split('T')[0]}</span><span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span></div>
+            </div>
+            <div class="history-actions"><button class="history-delete-btn" onclick="deleteHistoryEntry(event, '${id}')"><i class="fa-solid fa-trash"></i></button><i class="fa-solid fa-chevron-down history-toggle-icon"></i></div>
+        </div>
+        <div class="history-card-details">${detailsHtml || '<p>Brak szczegółów</p>'}</div>
+    `;
+    container.appendChild(card);
+}
+window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
+window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
+
+function loadCommunity() {
+    const container = document.getElementById("community-list");
+    if(!container) return;
+    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
+    db.collection("publicUsers").orderBy("totalPoints", "desc").limit(20).get().then(qs => {
+        container.innerHTML = "";
+        if(qs.empty) {
+             container.innerHTML = '<p style="text-align:center;color:#666">Brak nikogo... Bądź pierwszy!</p>';
+             return;
+        }
+        qs.forEach(doc => {
+            const d = doc.data();
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            card.innerHTML = `
+                <div class="user-card-avatar">${d.displayName ? d.displayName[0].toUpperCase() : '?'}</div>
+                <div class="user-card-name">${escapeHTML(d.displayName)}</div>
+                <div class="user-card-stats">
+                    <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
+                    <div>${d.totalPoints || 0} pkt</div>
+                </div>`;
+            card.onclick = () => openPublicProfile(d);
+            container.appendChild(card);
+        });
+    });
+}
+function openPublicProfile(u) {
+    viewingUserId = u.uid;
+    document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
+    document.getElementById('pub-name').textContent = u.displayName;
+    document.getElementById('pub-total').textContent = u.totalWorkouts;
+    document.getElementById('pub-last').textContent = u.lastWorkout || '-';
+    document.getElementById('pub-kudos-count').innerHTML = `${u.totalPoints||0} <br><span style='font-size:0.6rem;color:#ffd700'>${getRankName(u.totalPoints||0)}</span>`;
+    loadSharedPlansForUser(u.uid); 
+    const o = document.getElementById('public-profile-overlay');
+    o.classList.remove('hidden'); setTimeout(()=>o.classList.add('active'),10);
+}
+function closePublicProfile() { viewingUserId=null; const o=document.getElementById('public-profile-overlay'); o.classList.remove('active'); setTimeout(()=>o.classList.add('hidden'),300); }
+
+function loadSharedPlansForUser(targetUid) {
+    const container = document.getElementById('public-plans-list');
+    container.innerHTML = '<p>Sprawdzam...</p>';
+    const currentUser = auth.currentUser;
+    const isMyProfile = (currentUser && currentUser.uid === targetUid); 
+
+    db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
+        const uData = uDoc.data();
+        const pts = uData ? (uData.totalPoints || 0) : 0;
+        const rank = getRankName(pts);
+
+        let rankHtml = `<div style="text-align:center; margin-bottom:15px; padding:10px; background:#1a1a1a; border-radius:8px; border:1px solid #333;">
+            <div style="color:#888; font-size:0.7rem; letter-spacing:1px;">STANOWISKO</div>
+            <div style="color:#ffd700; font-weight:bold; font-size:1.1rem; margin:5px 0;">${rank}</div>
+            <div style="color:#666; font-size:0.8rem;">${pts} pkt</div>
+        </div>`;
+
+        db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get().then(qs => {
+            container.innerHTML = rankHtml;
+            if(qs.empty) { container.innerHTML += "<p style='text-align:center;color:#666;font-size:0.8rem;'>Brak planów na szychcie.</p>"; return; }
+            qs.forEach(doc => {
+                const data = doc.data();
+                const planItem = document.createElement('div');
+                planItem.className = 'shared-plan-item';
+                planItem.style.cssText = 'background:#242426; margin-bottom:10px; padding:10px; border:1px solid #333; border-radius:8px;';
+                const exList = data.exercises.map(e => `<div style="color:#ccc; margin-top:6px; padding-left:10px; border-left:2px solid var(--primary-color);"><strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r)</span></div>`).join('');
+                
+                let btn = '';
+                if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
+                else btn = `<button onclick='startChallenge("${data.dayKey}", ${JSON.stringify(JSON.stringify(data.exercises))}, "${targetUid}")' style="width:100%;margin-top:10px;background:#ffd700;color:black;border:none;padding:8px;font-weight:bold;border-radius:4px;cursor:pointer;">PODEJMIJ WYZWANIE</button>`;
+
+                planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
+                container.appendChild(planItem);
+            });
+        });
+    });
+}
+function deleteSharedPlan(k) { if(confirm("Usunąć?")) db.collection("publicUsers").doc(auth.currentUser.uid).collection("sharedPlans").doc(k).delete().then(()=>loadSharedPlansForUser(auth.currentUser.uid)); }
+async function shareCurrentDay() {
+    const d = currentSelectedDay;
+    if(!confirm("Udostępnić ten dzień?")) return;
+    const u = auth.currentUser;
+    const s = await db.collection("users").doc(u.uid).collection("days").doc(d).collection("exercises").orderBy("order").get();
+    let ex=[]; s.forEach(doc=>ex.push(doc.data()));
+    if(ex.length===0) return alert("Pusto!");
+    await db.collection("publicUsers").doc(u.uid).collection("sharedPlans").doc(d).set({ dayKey:d, dayName:dayMap[d], exercises:ex });
+    alert("Opublikowano na Szychcie!");
+}
+
+function openAddModal(){ 
+    if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
+    currentModalDay=currentSelectedDay; 
+    
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.remove('hidden'); 
+    setTimeout(() => {
+        modal.classList.add('active');
+    }, 10);
+}
+
+function closeAddModal(){ 
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.remove('active');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+function saveFromModal(){ 
+    const ex=document.getElementById('modal-exercise').value; 
+    const s=document.getElementById('modal-series').value; 
+    const r=document.getElementById('modal-reps').value; 
+    if(!ex) return; 
+    const d={exercise:ex,series:s,reps:r,order:Date.now()}; 
+    const u=auth.currentUser;
+    if(editInfo.docId) db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").doc(editInfo.docId).update(d);
+    else db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").add(d);
+    closeAddModal(); loadCardsDataFromFirestore(currentModalDay);
+}
+window.triggerEdit=function(day,id){ editInfo={day,docId:id}; currentModalDay=day; openAddModal(); }
+function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
+function saveMuscleGroups(){ const v=event.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
+function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) document.getElementById(`${d}-muscle-group`).value=doc.data().muscleGroup||""; }); }
+
+function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+async function signIn(){ try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
+async function signUp(){ try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
+async function signOut(){ await auth.signOut(); location.reload(); }
+async function forceAppUpdate(){ 
+    if(!confirm("Aktualizować?")) return; 
+    const regs=await navigator.serviceWorker.getRegistrations(); 
+    for(let r of regs) r.unregister(); 
+    caches.keys().then(k=>k.forEach(c=>caches.delete(c))); 
+    location.reload(true); 
+}
+function giveKudos(){
+    if(!viewingUserId) return;
+    const currentUser = auth.currentUser;
+    if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
+    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
+    interactionRef.get().then(docSnap => {
+        if (docSnap.exists && docSnap.data().date === new Date().toISOString().split('T')[0]) return alert("Już przybita!");
+        db.batch().update(db.collection("publicUsers").doc(viewingUserId), { totalPoints: firebase.firestore.FieldValue.increment(1) }).set(interactionRef, { date: new Date().toISOString().split('T')[0] }).commit()
+        .then(() => alert("Piątka przybita! (+1 pkt dla Hajera)"));
+    });
+}
+
+function updateUsername() {
+    const newName = document.getElementById('new-username').value;
+    if(!newName) return;
+    const user = auth.currentUser;
+    user.updateProfile({ displayName: newName }).then(() => {
+        db.collection("publicUsers").doc(user.uid).set({ displayName: newName }, { merge: true });
+        updateProfileUI(user);
+        alert("Nazwa zmieniona!");
+    }).catch(e => alert(e.message));
+}
+
+function changePassword() {
+    const newPass = document.getElementById('new-password').value;
+    if(!newPass) return;
+    const user = auth.currentUser;
+    user.updatePassword(newPass).then(() => {
+        alert("Hasło zmienione!");
+    }).catch(e => alert("Zaloguj się ponownie, aby zmienić hasło. " + e.message));
+}
+
+async function exportData() {
+    const user = auth.currentUser;
+    const data = {};
+    const daysSnap = await db.collection("users").doc(user.uid).collection("days").get();
+    
+    // Pobieramy dni równolegle
+    await Promise.all(daysSnap.docs.map(async (doc) => {
+        const dayKey = doc.id;
+        data[dayKey] = { muscleGroup: doc.data().muscleGroup || "", exercises: [] };
+        const exSnap = await doc.ref.collection("exercises").orderBy("order").get();
+        exSnap.forEach(ex => data[dayKey].exercises.push(ex.data()));
+    }));
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gympro_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
 }
 
 function hardResetProfile() {
