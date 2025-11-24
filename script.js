@@ -54,10 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
+      // Ładowanie standardowych dni
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
+
+      // --- FIX: WYMUSZENIE ŁADOWANIA WYZWANIA PRZY ODŚWIEŻENIU ---
+      loadCardsDataFromFirestore('challenge'); 
       
       currentMode = 'plan';
       selectDay('monday'); 
@@ -107,7 +111,8 @@ function switchMode(mode) {
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        loadHistoryFromFirestore(currentSelectedDay);
+        // Fix: Ładuj całą historię (null oznacza brak filtra na start)
+        loadHistoryFromFirestore(null);
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
@@ -151,11 +156,11 @@ function selectDay(dayValue) {
         }
     }
 
-    // 3. Obsługa Przycisku PLUS (+)
+    // 3. Obsługa Przycisku PLUS (+) - Ukryj w Szychcie
     const fab = document.getElementById('fab-add');
     if (fab) {
         if (dayValue === 'challenge') {
-            fab.style.display = 'none'; // Ukryj w Szychcie
+            fab.style.display = 'none'; 
         } else {
             // Pokaż tylko jeśli jesteśmy w trybie planu
             fab.style.display = (currentMode === 'plan') ? 'flex' : 'none';
@@ -163,7 +168,10 @@ function selectDay(dayValue) {
     }
 
     if (currentMode === 'plan') showPlanSection(dayValue);
-    else if (currentMode === 'history') loadHistoryFromFirestore(dayValue);
+    else if (currentMode === 'history') {
+        // Jeśli jesteśmy w historii i klikamy dzień, filtrujemy
+        loadHistoryFromFirestore(dayValue === 'challenge' ? null : dayValue);
+    }
     updateHeaderTitle();
 }
 
@@ -635,7 +643,7 @@ function updateActionButtons(currentViewDay) {
     } 
     // 2. Jeśli NIE ma treningu
     else if (!activeData) {
-        // Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start (tylko komunikat "Cisza na kopalni" z cards-container)
+        // Fix: Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
         if (currentViewDay === 'challenge') {
             container.innerHTML = ''; 
         } else {
@@ -673,7 +681,7 @@ function loadCardsDataFromFirestore(day) {
     if (day === 'challenge') {
         const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
         
-        // Pusty stan dla wyzwania (jesli nie ma aktywnego treningu w trybie challenge)
+        // Pusty stan dla wyzwania
         if (!activeData || activeData.day !== 'challenge') {
             container.innerHTML = `
                 <div style="text-align:center; padding: 40px 20px; color: #888;">
@@ -770,6 +778,7 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
+// Fix: Zapobiega zamykaniu karty przy klikaniu w inputy/przyciski
 window.toggleCard = function(h) { 
     if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
     h.parentElement.classList.toggle('open'); 
@@ -814,33 +823,27 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
-/* --- FIX: OBSŁUGA BŁĘDÓW W HISTORII --- */
+// FIX: Dodano obsługę błędów w historii
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     if(!container) return;
     container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
     const user = auth.currentUser;
-    
     db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
     .then(qs => {
         container.innerHTML = "";
         let docs = [];
         qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
-        
-        // Filtrowanie po wybranym dniu (jeśli przekazano klucz dnia)
         if (dayFilterKey) {
             const polishName = dayMap[dayFilterKey];
             docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName);
         }
-        
         if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
         docs.forEach(item => renderHistoryCard(container, item));
-    })
-    .catch(error => {
-        container.innerHTML = `<p style="text-align:center;color:red; padding:20px;">Błąd wczytywania: ${error.message}</p>`;
+    }).catch(e => {
+        container.innerHTML = `<p style="text-align:center; color:#666;">Błąd: ${e.message}</p>`;
     });
 }
-
 function renderHistoryCard(container, item) {
     const data = item.data;
     const id = item.id;
@@ -876,14 +879,12 @@ function renderHistoryCard(container, item) {
 window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
 window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
 
-/* --- FIX: OBSŁUGA BŁĘDÓW W SPOŁECZNOŚCI --- */
+// FIX: Dodano obsługę błędów w społeczności
 function loadCommunity() {
     const container = document.getElementById("community-list");
     if(!container) return;
     container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
-    
-    db.collection("publicUsers").orderBy("totalPoints", "desc").limit(20).get()
-    .then(qs => {
+    db.collection("publicUsers").orderBy("totalPoints", "desc").limit(20).get().then(qs => {
         container.innerHTML = "";
         if(qs.empty) {
              container.innerHTML = '<p style="text-align:center;color:#666">Brak nikogo... Bądź pierwszy!</p>';
@@ -903,12 +904,10 @@ function loadCommunity() {
             card.onclick = () => openPublicProfile(d);
             container.appendChild(card);
         });
-    })
-    .catch(error => {
-        container.innerHTML = `<p style="text-align:center;color:red; padding:20px;">Błąd wczytywania: ${error.message}<br><small>Sprawdź połączenie lub uprawnienia.</small></p>`;
+    }).catch(e => {
+        container.innerHTML = `<p style="text-align:center; color:#666;">Błąd pobierania: ${e.message}</p>`;
     });
 }
-
 function openPublicProfile(u) {
     viewingUserId = u.uid;
     document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
@@ -971,26 +970,19 @@ async function shareCurrentDay() {
     alert("Opublikowano na Szychcie!");
 }
 
+// FIX: Dodanie klas active/hidden dla animacji
 function openAddModal(){ 
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
-    
-    // NAPRAWA: Dodanie klasy ACTIVE po krótkim opóźnieniu (wymagane dla CSS opacity transition)
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden'); 
-    setTimeout(() => {
-        modal.classList.add('active');
-    }, 10);
+    setTimeout(()=>modal.classList.add('active'), 10);
 }
-
 function closeAddModal(){ 
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('active');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300); // Czekamy aż animacja zanikania się skończy
+    setTimeout(()=>modal.classList.add('hidden'), 300);
 }
-
 function saveFromModal(){ 
     const ex=document.getElementById('modal-exercise').value; 
     const s=document.getElementById('modal-series').value; 
