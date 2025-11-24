@@ -97,7 +97,7 @@ function switchMode(mode) {
     const rulesSection = document.getElementById('rules');
     const profileSection = document.getElementById('profile');
     const daysNav = document.getElementById('days-nav-container');
-    const fab = document.getElementById('fab-add'); // Przycisk PLUS
+    const fab = document.getElementById('fab-add'); 
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
@@ -151,7 +151,7 @@ function selectDay(dayValue) {
         }
     }
 
-    // 3. Obsługa Przycisku PLUS (+) - WAŻNE!
+    // 3. Obsługa Przycisku PLUS (+)
     const fab = document.getElementById('fab-add');
     if (fab) {
         if (dayValue === 'challenge') {
@@ -258,7 +258,6 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
 
         closePublicProfile();
-        // Przełączamy od razu na zakładkę Szychta
         selectDay("challenge");
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
@@ -272,7 +271,7 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
 async function surrenderChallenge() {
     if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt za pokonanie Cię. Na pewno?")) return;
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-    const authorId = activeData.challengeAuthor;
+    const authorId = activeData ? activeData.challengeAuthor : null;
 
     if(authorId) {
         db.collection("publicUsers").doc(authorId).update({
@@ -297,37 +296,42 @@ async function finishWorkout(day) {
 
     if(!confirm("Fajrant? (Zakończyć trening)")) return;
 
-    const user = auth.currentUser;
-    const exercisesRef = db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises");
-    const qs = await exercisesRef.get();
-    
-    let exercisesDone = [];
-    const batch = db.batch();
+    try {
+        const user = auth.currentUser;
+        const exercisesRef = db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises");
+        const qs = await exercisesRef.get();
+        
+        let exercisesDone = [];
+        const batch = db.batch();
 
-    qs.forEach(doc => {
-        const data = doc.data();
-        exercisesDone.push({ name: data.exercise, sets: data.currentLogs || [], weight: data.weight }); 
-        batch.update(doc.ref, { currentLogs: firebase.firestore.FieldValue.delete() });
-    });
+        qs.forEach(doc => {
+            const data = doc.data();
+            exercisesDone.push({ name: data.exercise, sets: data.currentLogs || [], weight: data.weight }); 
+            batch.update(doc.ref, { currentLogs: firebase.firestore.FieldValue.delete() });
+        });
 
-    await batch.commit();
+        await batch.commit();
 
-    tempWorkoutResult = {
-        dateIso: new Date().toISOString(),
-        duration: timerText,
-        dayKey: day,
-        details: exercisesDone,
-        isChallenge: !!isChallenge,
-        authorId: activeData ? activeData.challengeAuthor : null
-    };
+        tempWorkoutResult = {
+            dateIso: new Date().toISOString(),
+            duration: timerText,
+            dayKey: day,
+            details: exercisesDone,
+            isChallenge: !!isChallenge,
+            authorId: activeData ? activeData.challengeAuthor : null
+        };
 
-    if (isChallenge) {
-        openChallengeEndModal(); 
-    } else {
-        await saveHistoryAndPoints(2, null, 0); 
-        alert("Fajrant! Trening własny zaliczony (+2 pkt).");
-        localStorage.removeItem('activeWorkout');
-        window.location.reload();
+        if (isChallenge) {
+            openChallengeEndModal(); 
+        } else {
+            await saveHistoryAndPoints(2, null, 0); 
+            alert("Fajrant! Trening własny zaliczony (+2 pkt).");
+            localStorage.removeItem('activeWorkout');
+            window.location.reload();
+        }
+    } catch (e) {
+        console.error(e);
+        alert("BŁĄD ZAPISU: " + e.message + "\nSprawdź połączenie z internetem.");
     }
 }
 
@@ -348,7 +352,11 @@ function openChallengeEndModal() {
     }
     document.getElementById('save-decision-area').classList.add('hidden');
     document.getElementById('day-selector-area').classList.add('hidden');
-    document.getElementById('challenge-end-modal').classList.remove('hidden');
+    
+    // POPRAWKA DLA MODALI
+    const modal = document.getElementById('challenge-end-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('active'), 10);
 }
 
 function selectRating(score, btn) {
@@ -364,41 +372,48 @@ function showDaySelectorForSave() {
 }
 
 async function finalizeChallenge(shouldSaveToPlan) {
-    const user = auth.currentUser;
-    const result = tempWorkoutResult;
+    try {
+        const user = auth.currentUser;
+        const result = tempWorkoutResult;
 
-    await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
+        await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
 
-    if(result.authorId) {
-        await db.collection("challenge_reports").add({
-            authorId: result.authorId,      
-            performerId: user.uid,          
-            performerName: user.displayName || "Górnik",
-            workoutDate: new Date().toISOString(),
-            details: result.details,        
-            duration: result.duration,
-            status: "PENDING",              
-            performerRatingGiven: currentRatingScore 
-        });
+        if(result.authorId) {
+            await db.collection("challenge_reports").add({
+                authorId: result.authorId,      
+                performerId: user.uid,          
+                performerName: user.displayName || "Górnik",
+                workoutDate: new Date().toISOString(),
+                details: result.details,        
+                duration: result.duration,
+                status: "PENDING",              
+                performerRatingGiven: currentRatingScore 
+            });
+        }
+
+        if (shouldSaveToPlan) {
+            const targetDay = document.getElementById('target-save-day').value;
+            const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
+            const targetRef = db.collection("users").doc(user.uid).collection("days").doc(targetDay).collection("exercises");
+            const snap = await sourceRef.get();
+            const batch = db.batch();
+            snap.forEach(doc => {
+                const d = doc.data();
+                batch.set(targetRef.doc(), { ...d, notes: "Zapisane z wyzwania" });
+            });
+            await batch.commit();
+            alert(`Plan dodany do: ${dayMap[targetDay]}`);
+        }
+
+        const modal = document.getElementById('challenge-end-modal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        
+        localStorage.removeItem('activeWorkout');
+        window.location.reload();
+    } catch (e) {
+        alert("Błąd podczas kończenia: " + e.message);
     }
-
-    if (shouldSaveToPlan) {
-        const targetDay = document.getElementById('target-save-day').value;
-        const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
-        const targetRef = db.collection("users").doc(user.uid).collection("days").doc(targetDay).collection("exercises");
-        const snap = await sourceRef.get();
-        const batch = db.batch();
-        snap.forEach(doc => {
-            const d = doc.data();
-            batch.set(targetRef.doc(), { ...d, notes: "Zapisane z wyzwania" });
-        });
-        await batch.commit();
-        alert(`Plan dodany do: ${dayMap[targetDay]}`);
-    }
-
-    document.getElementById('challenge-end-modal').classList.add('hidden');
-    localStorage.removeItem('activeWorkout');
-    window.location.reload();
 }
 
 async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
@@ -442,11 +457,15 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
   5. MELDUNKI I POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
-    document.getElementById('notifications-modal').classList.remove('hidden');
+    const modal = document.getElementById('notifications-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('active'), 10);
     switchNotifTab('todo'); 
 }
 function closeNotificationsModal() {
-    document.getElementById('notifications-modal').classList.add('hidden');
+    const modal = document.getElementById('notifications-modal');
+    modal.classList.remove('active');
+    setTimeout(() => modal.classList.add('hidden'), 300);
     checkNotificationsCount(); 
 }
 
@@ -617,7 +636,6 @@ function updateActionButtons(currentViewDay) {
     } 
     // 2. Jeśli NIE ma treningu
     else if (!activeData) {
-        // POPRAWKA: Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
         if (currentViewDay === 'challenge') {
             container.innerHTML = ''; // Pusto - komunikat "Cisza" jest w cards-container
         } else {
@@ -913,9 +931,23 @@ async function shareCurrentDay() {
 function openAddModal(){ 
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
-    document.getElementById('modal-overlay').classList.remove('hidden'); 
+    
+    // NAPRAWA: Dodanie klasy ACTIVE po krótkim opóźnieniu (wymagane dla CSS opacity transition)
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.remove('hidden'); 
+    setTimeout(() => {
+        modal.classList.add('active');
+    }, 10);
 }
-function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
+
+function closeAddModal(){ 
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.remove('active');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300); // Czekamy aż animacja zanikania się skończy
+}
+
 function saveFromModal(){ 
     const ex=document.getElementById('modal-exercise').value; 
     const s=document.getElementById('modal-series').value; 
