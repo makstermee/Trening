@@ -101,10 +101,8 @@ function switchMode(mode) {
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    // Fix: Pokazuj/Ukrywaj przycisk plusa zależnie od trybu i dnia
-    if(fab) {
-        fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
-    }
+    // Ukrywanie/Pokazywanie Plusa w zależności od trybu
+    if(fab) fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
 
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
@@ -153,11 +151,11 @@ function selectDay(dayValue) {
         }
     }
 
-    // 3. Obsługa Przycisku PLUS (+) - Fix: Ukryj w Szychcie
+    // 3. Obsługa Przycisku PLUS (+)
     const fab = document.getElementById('fab-add');
     if (fab) {
         if (dayValue === 'challenge') {
-            fab.style.display = 'none'; 
+            fab.style.display = 'none'; // Ukryj w Szychcie
         } else {
             // Pokaż tylko jeśli jesteśmy w trybie planu
             fab.style.display = (currentMode === 'plan') ? 'flex' : 'none';
@@ -314,8 +312,6 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
-        // --- FIX: Zabezpieczenie przed undefined w authorId ---
-        // Jeśli nie ma challengeAuthor, wstawiamy null, co baza akceptuje. Undefined powoduje błąd.
         tempWorkoutResult = {
             dateIso: new Date().toISOString(),
             duration: timerText,
@@ -359,7 +355,6 @@ function openChallengeEndModal() {
     
     const modal = document.getElementById('challenge-end-modal');
     modal.classList.remove('hidden');
-    // Fix dla animacji
     setTimeout(() => modal.classList.add('active'), 10);
 }
 
@@ -640,9 +635,9 @@ function updateActionButtons(currentViewDay) {
     } 
     // 2. Jeśli NIE ma treningu
     else if (!activeData) {
-        // Fix: Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
+        // Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start (tylko komunikat "Cisza na kopalni" z cards-container)
         if (currentViewDay === 'challenge') {
-            container.innerHTML = ''; // Pusto - komunikat "Cisza" jest w cards-container
+            container.innerHTML = ''; 
         } else {
             container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
         }
@@ -678,7 +673,7 @@ function loadCardsDataFromFirestore(day) {
     if (day === 'challenge') {
         const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
         
-        // Pusty stan dla wyzwania
+        // Pusty stan dla wyzwania (jesli nie ma aktywnego treningu w trybie challenge)
         if (!activeData || activeData.day !== 'challenge') {
             container.innerHTML = `
                 <div style="text-align:center; padding: 40px 20px; color: #888;">
@@ -720,7 +715,6 @@ function renderAccordionCard(container, day, doc) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     
-    // --- NOWY WYGLĄD LOGÓW (TABELA) ---
     let logsHtml = logs.map((l, index) => `
         <div class="log-row-item">
             <div>
@@ -757,7 +751,6 @@ function renderAccordionCard(container, day, doc) {
             ${data.notes ? `<div class="notes-box">"${escapeHTML(data.notes)}"</div>` : ''}
             
             <div class="logger-section">
-                <div style="margin-bottom:5px; font-size:0.8rem; color:#888;">Dodaj wykonaną serię:</div>
                 <div class="logger-input-row">
                     <input type="number" id="log-w-${id}" placeholder="kg" value="${data.weight || ''}">
                     <input type="number" id="log-r-${id}" placeholder="powt." value="${data.reps || ''}">
@@ -777,7 +770,6 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
-// Fix: Zapobiega zamykaniu karty przy klikaniu w inputy/przyciski
 window.toggleCard = function(h) { 
     if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
     h.parentElement.classList.toggle('open'); 
@@ -822,25 +814,168 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
-function hardResetProfile() {
-    if(!confirm("CZY NA PEWNO?! To usunie WSZYSTKIE Twoje dane, historię i konto. Tego nie da się cofnąć.")) return;
-    if(!confirm("Ostateczne potwierdzenie. Usuwam konto?")) return;
-    
+/* --- FIX: OBSŁUGA BŁĘDÓW W HISTORII --- */
+function loadHistoryFromFirestore(dayFilterKey) {
+    const container = document.getElementById("history-list");
+    if(!container) return;
+    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
     const user = auth.currentUser;
-    db.collection("users").doc(user.uid).delete().then(() => {
-        db.collection("publicUsers").doc(user.uid).delete();
-        user.delete().then(() => {
-            alert("Konto usunięte. Żegnaj!");
-            location.reload();
-        });
+    
+    db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
+    .then(qs => {
+        container.innerHTML = "";
+        let docs = [];
+        qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
+        
+        // Filtrowanie po wybranym dniu (jeśli przekazano klucz dnia)
+        if (dayFilterKey) {
+            const polishName = dayMap[dayFilterKey];
+            docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName);
+        }
+        
+        if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
+        docs.forEach(item => renderHistoryCard(container, item));
+    })
+    .catch(error => {
+        container.innerHTML = `<p style="text-align:center;color:red; padding:20px;">Błąd wczytywania: ${error.message}</p>`;
     });
 }
 
-// --- Fix przycisku PLUS: Dodanie klasy 'active' dla animacji i widoczności ---
+function renderHistoryCard(container, item) {
+    const data = item.data;
+    const id = item.id;
+    const card = document.createElement('div');
+    card.className = `history-card ${data.isChallenge ? 'gold-border' : ''}`;
+    
+    let authorHtml = '';
+    if (data.isChallenge && data.originalAuthorName) {
+        authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
+    }
+
+    let detailsHtml = '';
+    if (data.details && Array.isArray(data.details)) {
+        detailsHtml = data.details.map(ex => {
+            let logsStr = (Array.isArray(ex.sets)) ? ex.sets.map((s, i) => `<span>S${i+1}: ${s.weight}kg x ${s.reps}</span>`).join(', ') : (ex.logs || 'Brak');
+            return `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(ex.name)}</div><div class="hex-logs">${logsStr}</div></div>`;
+        }).join('');
+    }
+
+    card.innerHTML = `
+        <div class="history-card-header" onclick="toggleHistoryCard(this)">
+            <div class="history-info">
+                ${authorHtml}
+                <h4>${data.dayName||'Trening'}</h4>
+                <div class="history-meta"><span>${data.displayDate||data.dateIso.split('T')[0]}</span><span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span></div>
+            </div>
+            <div class="history-actions"><button class="history-delete-btn" onclick="deleteHistoryEntry(event, '${id}')"><i class="fa-solid fa-trash"></i></button><i class="fa-solid fa-chevron-down history-toggle-icon"></i></div>
+        </div>
+        <div class="history-card-details">${detailsHtml || '<p>Brak szczegółów</p>'}</div>
+    `;
+    container.appendChild(card);
+}
+window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
+window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
+
+/* --- FIX: OBSŁUGA BŁĘDÓW W SPOŁECZNOŚCI --- */
+function loadCommunity() {
+    const container = document.getElementById("community-list");
+    if(!container) return;
+    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
+    
+    db.collection("publicUsers").orderBy("totalPoints", "desc").limit(20).get()
+    .then(qs => {
+        container.innerHTML = "";
+        if(qs.empty) {
+             container.innerHTML = '<p style="text-align:center;color:#666">Brak nikogo... Bądź pierwszy!</p>';
+             return;
+        }
+        qs.forEach(doc => {
+            const d = doc.data();
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            card.innerHTML = `
+                <div class="user-card-avatar">${d.displayName ? d.displayName[0].toUpperCase() : '?'}</div>
+                <div class="user-card-name">${escapeHTML(d.displayName)}</div>
+                <div class="user-card-stats">
+                    <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
+                    <div>${d.totalPoints || 0} pkt</div>
+                </div>`;
+            card.onclick = () => openPublicProfile(d);
+            container.appendChild(card);
+        });
+    })
+    .catch(error => {
+        container.innerHTML = `<p style="text-align:center;color:red; padding:20px;">Błąd wczytywania: ${error.message}<br><small>Sprawdź połączenie lub uprawnienia.</small></p>`;
+    });
+}
+
+function openPublicProfile(u) {
+    viewingUserId = u.uid;
+    document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
+    document.getElementById('pub-name').textContent = u.displayName;
+    document.getElementById('pub-total').textContent = u.totalWorkouts;
+    document.getElementById('pub-last').textContent = u.lastWorkout || '-';
+    document.getElementById('pub-kudos-count').innerHTML = `${u.totalPoints||0} <br><span style='font-size:0.6rem;color:#ffd700'>${getRankName(u.totalPoints||0)}</span>`;
+    loadSharedPlansForUser(u.uid); 
+    const o = document.getElementById('public-profile-overlay');
+    o.classList.remove('hidden'); setTimeout(()=>o.classList.add('active'),10);
+}
+function closePublicProfile() { viewingUserId=null; const o=document.getElementById('public-profile-overlay'); o.classList.remove('active'); setTimeout(()=>o.classList.add('hidden'),300); }
+
+function loadSharedPlansForUser(targetUid) {
+    const container = document.getElementById('public-plans-list');
+    container.innerHTML = '<p>Sprawdzam...</p>';
+    const currentUser = auth.currentUser;
+    const isMyProfile = (currentUser && currentUser.uid === targetUid); 
+
+    db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
+        const uData = uDoc.data();
+        const pts = uData ? (uData.totalPoints || 0) : 0;
+        const rank = getRankName(pts);
+
+        let rankHtml = `<div style="text-align:center; margin-bottom:15px; padding:10px; background:#1a1a1a; border-radius:8px; border:1px solid #333;">
+            <div style="color:#888; font-size:0.7rem; letter-spacing:1px;">STANOWISKO</div>
+            <div style="color:#ffd700; font-weight:bold; font-size:1.1rem; margin:5px 0;">${rank}</div>
+            <div style="color:#666; font-size:0.8rem;">${pts} pkt</div>
+        </div>`;
+
+        db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get().then(qs => {
+            container.innerHTML = rankHtml;
+            if(qs.empty) { container.innerHTML += "<p style='text-align:center;color:#666;font-size:0.8rem;'>Brak planów na szychcie.</p>"; return; }
+            qs.forEach(doc => {
+                const data = doc.data();
+                const planItem = document.createElement('div');
+                planItem.className = 'shared-plan-item';
+                planItem.style.cssText = 'background:#242426; margin-bottom:10px; padding:10px; border:1px solid #333; border-radius:8px;';
+                const exList = data.exercises.map(e => `<div style="color:#ccc; margin-top:6px; padding-left:10px; border-left:2px solid var(--primary-color);"><strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r)</span></div>`).join('');
+                
+                let btn = '';
+                if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
+                else btn = `<button onclick='startChallenge("${data.dayKey}", ${JSON.stringify(JSON.stringify(data.exercises))}, "${targetUid}")' style="width:100%;margin-top:10px;background:#ffd700;color:black;border:none;padding:8px;font-weight:bold;border-radius:4px;cursor:pointer;">PODEJMIJ WYZWANIE</button>`;
+
+                planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
+                container.appendChild(planItem);
+            });
+        });
+    });
+}
+function deleteSharedPlan(k) { if(confirm("Usunąć?")) db.collection("publicUsers").doc(auth.currentUser.uid).collection("sharedPlans").doc(k).delete().then(()=>loadSharedPlansForUser(auth.currentUser.uid)); }
+async function shareCurrentDay() {
+    const d = currentSelectedDay;
+    if(!confirm("Udostępnić ten dzień?")) return;
+    const u = auth.currentUser;
+    const s = await db.collection("users").doc(u.uid).collection("days").doc(d).collection("exercises").orderBy("order").get();
+    let ex=[]; s.forEach(doc=>ex.push(doc.data()));
+    if(ex.length===0) return alert("Pusto!");
+    await db.collection("publicUsers").doc(u.uid).collection("sharedPlans").doc(d).set({ dayKey:d, dayName:dayMap[d], exercises:ex });
+    alert("Opublikowano na Szychcie!");
+}
+
 function openAddModal(){ 
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
     
+    // NAPRAWA: Dodanie klasy ACTIVE po krótkim opóźnieniu (wymagane dla CSS opacity transition)
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden'); 
     setTimeout(() => {
@@ -853,7 +988,7 @@ function closeAddModal(){
     modal.classList.remove('active');
     setTimeout(() => {
         modal.classList.add('hidden');
-    }, 300);
+    }, 300); // Czekamy aż animacja zanikania się skończy
 }
 
 function saveFromModal(){ 
@@ -934,4 +1069,18 @@ async function exportData() {
     a.href = url;
     a.download = `gympro_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
+}
+
+function hardResetProfile() {
+    if(!confirm("CZY NA PEWNO?! To usunie WSZYSTKIE Twoje dane, historię i konto. Tego nie da się cofnąć.")) return;
+    if(!confirm("Ostateczne potwierdzenie. Usuwam konto?")) return;
+    
+    const user = auth.currentUser;
+    db.collection("users").doc(user.uid).delete().then(() => {
+        db.collection("publicUsers").doc(user.uid).delete();
+        user.delete().then(() => {
+            alert("Konto usunięte. Żegnaj!");
+            location.reload();
+        });
+    });
 }
