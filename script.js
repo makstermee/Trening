@@ -1,5 +1,5 @@
 /*************************************************************
-  ZMIENNE GLOBALNE I KONFIGURACJA
+  1. KONFIGURACJA I ZMIENNE GLOBALNE
 *************************************************************/
 const firebaseConfig = {
   apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
@@ -11,86 +11,87 @@ const firebaseConfig = {
   measurementId: "G-EY88TE8L7H"
 };
 
-// Inicjalizacja tylko raz
+// Inicjalizacja Firebase (zabezpieczenie przed podwójną inicjalizacją)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+// Mapowanie nazw dni
 const dayMap = { 
-    monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa", 
-    thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela",
+    monday: "Poniedziałek", 
+    tuesday: "Wtorek", 
+    wednesday: "Środa", 
+    thursday: "Czwartek", 
+    friday: "Piątek", 
+    saturday: "Sobota", 
+    sunday: "Niedziela",
     challenge: "🏆 WYZWANIE" 
 };
 const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
+// Zmienne stanu aplikacji
 let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
 let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
 let viewingUserId = null; 
+
+// Zmienne dla systemu Wyzwań
 let tempWorkoutResult = null; 
 let currentRatingScore = 0;   
 
 /*************************************************************
-  1. INICJALIZACJA
+  2. GŁÓWNA PĘTLA STARTOWA (Logowanie i Stan)
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.querySelector('.container');
   const loginSec = document.getElementById('login-section');
   
+  // Na start ukrywamy wszystko, żeby nie mignęło "user"
   if(container) container.style.display = 'none';
+  if(loginSec) loginSec.style.display = 'none';
   
   auth.onAuthStateChanged(user => {
     if (user) {
+      // --- UŻYTKOWNIK ZALOGOWANY ---
+      console.log("Zalogowano jako:", user.email);
+      
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
+      // 1. Załaduj dane treningowe
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
       
+      // 2. Ustaw widok startowy
       currentMode = 'plan';
       selectDay('monday'); 
+      
+      // 3. Sprawdź czy trwa trening (np. po odświeżeniu)
       checkActiveWorkout();
+      
+      // 4. Załaduj dane profilowe
       updateProfileUI(user);
       loadProfileStats();
       checkNotificationsCount(); 
+
     } else {
+      // --- UŻYTKOWNIK WYLOGOWANY ---
+      console.log("Brak zalogowanego użytkownika.");
       if(container) container.style.display = 'none';
       if(loginSec) loginSec.style.display = 'flex';
     }
   });
 });
 
-// --- FUNKCJE UI (DODANE BRAKUJĄCE) ---
-function switchAuthTab(tab) {
-    const lf = document.getElementById('login-form');
-    const rf = document.getElementById('register-form');
-    const bl = document.getElementById('tab-login');
-    const br = document.getElementById('tab-register');
-    
-    if (tab === 'login') {
-        lf.classList.remove('hidden');
-        rf.classList.add('hidden');
-        bl.classList.add('active');
-        br.classList.remove('active');
-    } else {
-        lf.classList.add('hidden');
-        rf.classList.remove('hidden');
-        bl.classList.remove('active');
-        br.classList.add('active');
-    }
-}
-
-function switchBottomNav(el) {
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    if(el) el.classList.add('active');
-}
-
+/*************************************************************
+  3. SYSTEM RANG (Tarnowskie Góry)
+*************************************************************/
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -105,46 +106,57 @@ function getRankName(points) {
 }
 
 /*************************************************************
-  2. NAWIGACJA
+  4. NAWIGACJA (Switch Mode)
 *************************************************************/
 function switchMode(mode) {
     currentMode = mode;
     
-    const historySection = document.getElementById('history');
-    const communitySection = document.getElementById('community');
-    const rulesSection = document.getElementById('rules');
-    const profileSection = document.getElementById('profile');
-    const daysNav = document.getElementById('days-nav-container');
-    const fab = document.getElementById('fab-add');
+    const sections = {
+        history: document.getElementById('history'),
+        community: document.getElementById('community'),
+        rules: document.getElementById('rules'),
+        profile: document.getElementById('profile'),
+        nav: document.getElementById('days-nav-container'),
+        fab: document.getElementById('fab-add')
+    };
 
+    // Ukryj wszystkie sekcje dnia (poniedziałek, wtorek...)
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    if (mode === 'history' && historySection) {
-        historySection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'block'; 
-        if(fab) fab.style.display = 'none';
+    // Logika pokazywania
+    if (mode === 'history') {
+        if(sections.history) sections.history.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'block'; 
+        if(sections.fab) sections.fab.style.display = 'none';
         loadHistoryFromFirestore(currentSelectedDay);
     } 
-    else if (mode === 'community' && communitySection) {
-        communitySection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
+    else if (mode === 'community') {
+        if(sections.community) sections.community.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'none'; 
+        if(sections.fab) sections.fab.style.display = 'none';
         loadCommunity();
     } 
-    else if (mode === 'rules' && rulesSection) {
-        rulesSection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
+    else if (mode === 'rules') {
+        if(sections.rules) sections.rules.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'none'; 
+        if(sections.fab) sections.fab.style.display = 'none';
     } 
-    else if (mode === 'profile' && profileSection) {
-        profileSection.classList.remove('hidden');
-        if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
-        loadProfileStats(); 
+    else if (mode === 'profile') {
+        if(sections.profile) sections.profile.classList.remove('hidden');
+        if(sections.nav) sections.nav.style.display = 'none'; 
+        if(sections.fab) sections.fab.style.display = 'none';
+        
+        // Wymuś odświeżenie danych przy wejściu w profil
+        const user = auth.currentUser;
+        if(user) {
+            updateProfileUI(user);
+            loadProfileStats();
+        }
     } 
     else {
-        if(daysNav) daysNav.style.display = 'block'; 
-        if(fab) fab.style.display = 'flex';
+        // Tryb PLAN (Domyślny)
+        if(sections.nav) sections.nav.style.display = 'block'; 
+        if(sections.fab) sections.fab.style.display = 'flex';
         showPlanSection(currentSelectedDay);
     }
     updateHeaderTitle();
@@ -155,9 +167,11 @@ function selectDay(dayValue) {
     const selector = document.getElementById('day-selector');
     if(selector) selector.value = dayValue; 
     
+    // Obsługa pigułek (kolorowanie aktywnego dnia)
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
-    
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
+    
+    // Jeśli nie jesteśmy w trybie wyzwania, zaznacz dzień
     if(!activeData || activeData.day !== 'challenge') {
         const idx = allDays.indexOf(dayValue);
         if (idx !== -1) {
@@ -186,6 +200,7 @@ function updateHeaderTitle() {
 
     if (!titleEl) return;
     
+    // Jeśli timer działa, nie ruszamy nagłówka
     if (timer && !timer.classList.contains('hidden')) {
         if(shareBtn) shareBtn.classList.add('hidden');
         return; 
@@ -195,17 +210,20 @@ function updateHeaderTitle() {
 
     if (currentMode === 'plan') {
         titleEl.textContent = `Plan: ${polishName}`;
+        // Pokaż przycisk udostępniania tylko w normalnym planie
         if(shareBtn && currentSelectedDay !== 'challenge') shareBtn.classList.remove('hidden'); 
     }
     else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
     else if (currentMode === 'community') titleEl.textContent = `Społeczność`;
-    else if (currentMode === 'rules') titleEl.textContent = `Zasady i Rangi`;
+    else if (currentMode === 'rules') titleEl.textContent = `Kodeks Szychty`;
     else if (currentMode === 'profile') titleEl.textContent = `Twój Profil`;
 }
 
 /*************************************************************
-  3. TRENING I WYZWANIA
+  5. LOGIKA TRENINGU I WYZWAŃ (SYSTEM 2+2)
 *************************************************************/
+
+// --- Rozpoczęcie ZWYKŁEGO treningu ---
 function startWorkout(day) {
     const now = Date.now();
     const workoutData = { day: day, startTime: now, isChallenge: false };
@@ -214,10 +232,12 @@ function startWorkout(day) {
     alert("Szychta rozpoczęta! Do roboty 💪");
 }
 
+// --- Rozpoczęcie WYZWANIA (od innego gracza) ---
 async function startChallenge(dayKey, exercisesJson, authorUid) {
     const user = auth.currentUser;
     if (user.uid === authorUid) return alert("Nie ma punktów za własne wyzwania! Ćwicz normalnie.");
 
+    // 1. SPRAWDZANIE LIMITÓW (2 obce wyzwania dziennie)
     const todayStr = new Date().toISOString().split('T')[0];
     const historySnap = await db.collection("users").doc(user.uid).collection("history")
         .where("dateIso", ">=", todayStr).get();
@@ -242,10 +262,12 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         const exercises = JSON.parse(exercisesJson);
         const batch = db.batch();
         
+        // Czyścimy slot 'challenge' w bazie
         const challengeRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
         const oldData = await challengeRef.get();
         oldData.forEach(doc => batch.delete(doc.ref));
 
+        // Wgrywamy nowe ćwiczenia wyzwania
         exercises.forEach(ex => {
             const newDocRef = challengeRef.doc();
             batch.set(newDocRef, { ...ex, notes: "Wyzwanie", order: Date.now() });
@@ -253,6 +275,7 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
 
         await batch.commit();
 
+        // Ustawiamy stan aktywny
         const workoutData = { 
             day: "challenge", 
             startTime: Date.now(), 
@@ -261,6 +284,7 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         };
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
 
+        // Przełączamy widok
         closePublicProfile();
         document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
         let chDiv = document.getElementById('challenge');
@@ -274,16 +298,18 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
 
     } catch (e) {
         console.error(e);
-        alert("Błąd: " + e.message);
+        alert("Błąd podczas startu: " + e.message);
     }
 }
 
+// --- Poddanie się (Ucieczka) ---
 async function surrenderChallenge() {
     if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt za pokonanie Cię. Na pewno?")) return;
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const authorId = activeData.challengeAuthor;
 
     if(authorId) {
+        // Autor dostaje nagrodę za "pokonanie" użytkownika
         db.collection("publicUsers").doc(authorId).update({
             totalPoints: firebase.firestore.FieldValue.increment(2) 
         });
@@ -292,11 +318,13 @@ async function surrenderChallenge() {
     window.location.reload();
 }
 
+// --- ZAKOŃCZENIE TRENINGU (Wspólne dla obu trybów) ---
 async function finishWorkout(day) {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const isChallenge = activeData && activeData.isChallenge;
 
-    const timerText = document.getElementById('workout-timer').textContent; 
+    // WALIDACJA CZASU (Min 10 min dla wyzwania)
+    const timerText = document.getElementById('workout-timer').textContent; // HH:MM:SS
     const parts = timerText.split(':');
     const totalMinutes = (parseInt(parts[0]) * 60) + parseInt(parts[1]);
 
@@ -315,12 +343,15 @@ async function finishWorkout(day) {
 
     qs.forEach(doc => {
         const data = doc.data();
+        // Zbieramy dane do raportu
         exercisesDone.push({ name: data.exercise, sets: data.currentLogs || [], weight: data.weight }); 
+        // Czyścimy logi
         batch.update(doc.ref, { currentLogs: firebase.firestore.FieldValue.delete() });
     });
 
     await batch.commit();
 
+    // Zapisujemy wynik tymczasowo w pamięci JS
     tempWorkoutResult = {
         dateIso: new Date().toISOString(),
         duration: timerText,
@@ -331,8 +362,9 @@ async function finishWorkout(day) {
     };
 
     if (isChallenge) {
-        openChallengeEndModal(); 
+        openChallengeEndModal(); // Otwórz okno oceny
     } else {
+        // ZWYKŁY TRENING: Stałe 2 PKT
         await saveHistoryAndPoints(2, null, 0); 
         alert("Fajrant! Trening własny zaliczony (+2 pkt).");
         localStorage.removeItem('activeWorkout');
@@ -341,7 +373,7 @@ async function finishWorkout(day) {
 }
 
 /*************************************************************
-  4. OBSŁUGA MODALA I RAPORTOWANIA
+  6. MODALE I RAPORTOWANIE (System Ocen)
 *************************************************************/
 function openChallengeEndModal() {
     const container = document.getElementById('rating-buttons');
@@ -372,12 +404,15 @@ function showDaySelectorForSave() {
     document.getElementById('day-selector-area').classList.remove('hidden');
 }
 
+// Finał wyzwania (zapis raportu)
 async function finalizeChallenge(shouldSaveToPlan) {
     const user = auth.currentUser;
     const result = tempWorkoutResult;
 
+    // 1. Zapisz Historię i moje punkty (3 pkt za ukończenie)
     await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
 
+    // 2. WYŚLIJ RAPORT DO AUTORA (do oceny zwrotnej)
     if(result.authorId) {
         await db.collection("challenge_reports").add({
             authorId: result.authorId,      
@@ -391,6 +426,7 @@ async function finalizeChallenge(shouldSaveToPlan) {
         });
     }
 
+    // 3. Opcjonalny zapis planu do kalendarza
     if (shouldSaveToPlan) {
         const targetDay = document.getElementById('target-save-day').value;
         const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
@@ -410,6 +446,7 @@ async function finalizeChallenge(shouldSaveToPlan) {
     window.location.reload();
 }
 
+// Uniwersalna funkcja zapisu
 async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
     const user = auth.currentUser;
     const result = tempWorkoutResult;
@@ -448,7 +485,7 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
 }
 
 /*************************************************************
-  5. MELDUNKI I POWIADOMIENIA
+  7. SYSTEM MELDUNKÓW (Powiadomienia i Ocena Zwrotna)
 *************************************************************/
 function openNotificationsModal() {
     document.getElementById('notifications-modal').classList.remove('hidden');
@@ -471,6 +508,7 @@ function loadNotificationsList(tab) {
     const user = auth.currentUser;
 
     if (tab === 'todo') {
+        // Raporty do oceny (jestem autorem)
         db.collection("challenge_reports")
             .where("authorId", "==", user.uid)
             .where("status", "==", "PENDING")
@@ -493,6 +531,7 @@ function loadNotificationsList(tab) {
                 });
             });
     } else {
+        // Moje wyniki (jestem wykonawcą)
         db.collection("challenge_reports")
             .where("performerId", "==", user.uid)
             .where("status", "==", "RATED") 
@@ -569,7 +608,7 @@ function checkNotificationsCount() {
 }
 
 /*************************************************************
-  6. FUNKCJE POMOCNICZE UI
+  8. FUNKCJE UI I POMOCNICZE
 *************************************************************/
 function checkActiveWorkout() {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
@@ -699,16 +738,25 @@ window.toggleCard = function(h) { if(event.target.tagName!=='INPUT' && event.tar
 function updateProfileUI(user) {
     const emailEl = document.getElementById('profile-email');
     const avatarEl = document.getElementById('profile-avatar');
-    if(emailEl) emailEl.textContent = user.displayName || user.email;
-    if(avatarEl) avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
+    
+    if(user) {
+        const displayName = user.displayName || user.email;
+        if(emailEl) emailEl.textContent = displayName;
+        if(avatarEl) avatarEl.textContent = (displayName ? displayName[0] : 'U').toUpperCase();
+    }
 }
 
 function loadProfileStats() {
     const user = auth.currentUser;
+    if(!user) return;
+
     db.collection("users").doc(user.uid).collection("history").get().then(qs => {
         const total = qs.size;
         let last = '-';
-        if(!qs.empty) last = qs.docs[0].data().displayDate || qs.docs[0].data().dateIso.split('T')[0];
+        if(!qs.empty) {
+            const docs = qs.docs.sort((a,b) => b.data().dateIso.localeCompare(a.data().dateIso));
+            last = docs[0].data().displayDate || docs[0].data().dateIso.split('T')[0];
+        }
         
         const totEl = document.getElementById('total-workouts');
         const lastEl = document.getElementById('last-workout-date');
@@ -718,15 +766,19 @@ function loadProfileStats() {
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let pts = 0;
             if(doc.exists) pts = doc.data().totalPoints || 0;
+            
             const kudosEl = document.getElementById('profile-kudos');
             if(kudosEl) kudosEl.innerHTML = `${pts} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(pts)}</span>`;
+            
             publishProfileStats(user, total, last, pts);
         });
     });
 }
+
 function publishProfileStats(user, total, last, pts) {
+    const displayName = user.displayName || user.email.split('@')[0];
     db.collection("publicUsers").doc(user.uid).set({
-        displayName: user.displayName || user.email.split('@')[0],
+        displayName: displayName,
         email: user.email,
         totalWorkouts: total,
         lastWorkout: last,
@@ -752,7 +804,55 @@ function changePassword() {
     const user = auth.currentUser;
     user.updatePassword(newPass).then(() => {
         alert("Hasło zmienione!");
-    }).catch(e => alert("Zaloguj się ponownie, aby zmienić hasło. " + e.message));
+    }).catch(e => alert("Musisz się zalogować ponownie przed zmianą hasła."));
+}
+
+// --- AUTH ---
+async function signIn() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+    } catch (error) {
+        document.getElementById('login-error').textContent = error.message;
+    }
+}
+
+async function signUp() {
+    const email = document.getElementById('register-email').value;
+    const pass = document.getElementById('register-password').value;
+    try {
+        await auth.createUserWithEmailAndPassword(email, pass);
+        alert("Konto założone! Zaloguj się.");
+        switchAuthTab('login');
+    } catch (error) {
+        document.getElementById('register-error').textContent = error.message;
+    }
+}
+
+async function signOut() {
+    await auth.signOut();
+    location.reload();
+}
+
+// --- SWITCH TABS DLA AUTH ---
+function switchAuthTab(tab) {
+    const lf = document.getElementById('login-form');
+    const rf = document.getElementById('register-form');
+    const bl = document.getElementById('tab-login');
+    const br = document.getElementById('tab-register');
+    
+    if (tab === 'login') {
+        lf.classList.remove('hidden'); rf.classList.add('hidden');
+        bl.classList.add('active'); br.classList.remove('active');
+    } else {
+        lf.classList.add('hidden'); rf.classList.remove('hidden');
+        bl.classList.remove('active'); br.classList.add('active');
+    }
+}
+function switchBottomNav(el) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    if(el) el.classList.add('active');
 }
 
 async function exportData() {
@@ -760,7 +860,6 @@ async function exportData() {
     const data = {};
     const daysSnap = await db.collection("users").doc(user.uid).collection("days").get();
     
-    // Pobieramy dni równolegle
     await Promise.all(daysSnap.docs.map(async (doc) => {
         const dayKey = doc.id;
         data[dayKey] = { muscleGroup: doc.data().muscleGroup || "", exercises: [] };
@@ -790,7 +889,7 @@ function hardResetProfile() {
     });
 }
 
-// --- OBSŁUGA MODALA ZASAD (DODANE) ---
+// --- MODALE I AKTUALIZACJA ---
 function openRulesModal() {
     const m = document.getElementById('rules-modal');
     if(m) {
@@ -801,7 +900,6 @@ function openRulesModal() {
         }, 10);
     }
 }
-
 function closeRulesModal() {
     const m = document.getElementById('rules-modal');
     if(m) {
@@ -811,41 +909,15 @@ function closeRulesModal() {
     }
 }
 
-// --- LOGOWANIE/REJESTRACJA (DODANE BRAKUJĄCE FUNKCJE) ---
-async function signIn() {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
-    try {
-        await auth.signInWithEmailAndPassword(email, pass);
-    } catch (error) {
-        document.getElementById('login-error').textContent = error.message;
+async function forceAppUpdate(btnElement) {
+    if (!confirm("Wymusić aktualizację?")) return;
+    if(btnElement) {
+        btnElement.innerHTML = "Aktualizuję...";
+        btnElement.disabled = true;
     }
-}
-
-async function signUp() {
-    const email = document.getElementById('register-email').value;
-    const pass = document.getElementById('register-password').value;
-    try {
-        await auth.createUserWithEmailAndPassword(email, pass);
-        alert("Konto założone! Zaloguj się.");
-        switchAuthTab('login');
-    } catch (error) {
-        document.getElementById('register-error').textContent = error.message;
-    }
-}
-
-async function signOut() {
-    await auth.signOut();
-    location.reload();
-}
-
-async function forceAppUpdate() {
-    if (!confirm("Wymusić aktualizację? Strona zostanie przeładowana.")) return;
     if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of registrations) {
-            await registration.unregister();
-        }
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) await registration.unregister();
     }
     if ('caches' in window) {
         const keys = await caches.keys();
@@ -855,18 +927,14 @@ async function forceAppUpdate() {
 }
 
 function giveKudos() {
-    if (!viewingUserId) return;
+    if(!viewingUserId) return;
     const currentUser = auth.currentUser;
-    if (viewingUserId === currentUser.uid) return alert("Nie możesz dać lajka sobie!");
-    
+    if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
     const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
     const today = new Date().toISOString().split('T')[0];
 
     interactionRef.get().then(docSnap => {
-        if (docSnap.exists && docSnap.data().date === today) {
-            alert("Już przybita piątka dzisiaj!");
-            return;
-        }
+        if (docSnap.exists && docSnap.data().date === today) return alert("Już przybita!");
         const batch = db.batch();
         const publicRef = db.collection("publicUsers").doc(viewingUserId);
         batch.update(publicRef, { totalPoints: firebase.firestore.FieldValue.increment(1) });
@@ -874,10 +942,8 @@ function giveKudos() {
         
         batch.commit().then(() => {
             alert("Piątka przybita! (+1 pkt dla Hajera)");
-            // Aktualizuj licznik w modalu
             const countEl = document.getElementById('pub-kudos-count');
             if(countEl) {
-                 // Pobierz aktualną wartość (trochę hack, ale działa wizualnie)
                  let currentText = countEl.innerText.split('\n')[0];
                  let newVal = parseInt(currentText) + 1;
                  countEl.innerHTML = `${newVal} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(newVal)}</span>`;
@@ -885,3 +951,46 @@ function giveKudos() {
         });
     });
 }
+
+// --- POZOSTAŁE FUNKCJE MODALI EDYCJI ---
+function openAddModal(day=null){ 
+    if(!day) day = currentSelectedDay;
+    currentModalDay=day; 
+    document.getElementById('modal-overlay').classList.remove('hidden'); 
+}
+function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
+function saveFromModal(){ 
+    const ex=document.getElementById('modal-exercise').value; 
+    const s=document.getElementById('modal-series').value; 
+    const r=document.getElementById('modal-reps').value; 
+    const w=document.getElementById('modal-weight').value; 
+    const n=document.getElementById('modal-notes').value;
+    if(!ex) return; 
+    const d={exercise:ex,series:s,reps:r,weight:w,notes:n,order:Date.now()}; 
+    const u=auth.currentUser;
+    if(editInfo.docId) db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").doc(editInfo.docId).update(d);
+    else db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").add(d);
+    closeAddModal(); loadCardsDataFromFirestore(currentModalDay);
+}
+window.triggerEdit=function(day,id){ 
+    const u = auth.currentUser;
+    db.collection("users").doc(u.uid).collection("days").doc(day).collection("exercises").doc(id).get().then(doc => {
+        if(doc.exists) {
+            const d = doc.data();
+            document.getElementById('modal-exercise').value = d.exercise;
+            document.getElementById('modal-series').value = d.series;
+            document.getElementById('modal-reps').value = d.reps;
+            document.getElementById('modal-weight').value = d.weight;
+            document.getElementById('modal-notes').value = d.notes;
+            editInfo={day,docId:id}; currentModalDay=day; 
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+    });
+}
+function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
+function saveMuscleGroups(e){ const v=e.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
+function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) {
+    const el = document.getElementById(`${d}-muscle-group`);
+    if(el) el.value=doc.data().muscleGroup||""; 
+}}); }
+function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
