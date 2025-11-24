@@ -12,27 +12,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 
-  <script>
-    if (!localStorage.getItem('RESET_DONE_FINAL')) {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) { registration.unregister(); }
-          caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('RESET_DONE_FINAL', 'true');
-          console.log("Wyczyszczono cache (Final Fix).");
-          setTimeout(() => window.location.reload(), 100);
-        });
-      }
-    }
-  </script>
-
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 </head>
 <body>
-
   <div id="login-section">
     <div class="login-card">
         <div class="brand-logo"><i class="fa-solid fa-dumbbell"></i> GymPro</div>
@@ -56,25 +41,15 @@
   </div>
 
   <div class="container">
-    <div id="install-banner" class="install-banner hidden">
-        <p>Już teraz zainstaluj aplikację!</p>
-        <button id="install-btn" onclick="installApp()"><i class="fa-solid fa-download"></i> Zainstaluj</button>
-    </div>
-    
     <header class="app-header">
         <div class="header-title">
             <span id="current-day-display">Plan Treningowy</span>
-            <button id="btn-share-day" class="btn-icon-small hidden" onclick="shareCurrentDay()" style="margin-left:10px; background:none; border:none; color:var(--accent-color); font-size:1.2rem; cursor:pointer;">
-                <i class="fa-solid fa-share-nodes"></i>
-            </button>
+            <button id="btn-share-day" class="btn-icon-small hidden" onclick="shareCurrentDay()"><i class="fa-solid fa-share-nodes"></i></button>
             <span id="workout-timer" class="hidden">00:00:00</span>
         </div>
     </header>
 
-    <select id="day-selector" onchange="showSection()" style="display:none;">
-        <option value="monday">Poniedziałek</option>
-        <option value="history">Historia</option>
-    </select>
+    <select id="day-selector" onchange="showSection()" style="display:none;"><option value="monday">Poniedziałek</option></select>
 
     <div class="days-scroll-wrapper" id="days-nav-container">
         <div class="days-pills">
@@ -89,20 +64,18 @@
     </div>
 
     <div class="content-area">
-        <div id="monday" class="day-section"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="monday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="monday-cards"></div><div class="bottom-actions" id="monday-actions"></div></div>
-        <div id="tuesday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="tuesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="tuesday-cards"></div><div class="bottom-actions" id="tuesday-actions"></div></div>
-        <div id="wednesday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="wednesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="wednesday-cards"></div><div class="bottom-actions" id="wednesday-actions"></div></div>
-        <div id="thursday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="thursday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="thursday-cards"></div><div class="bottom-actions" id="thursday-actions"></div></div>
-        <div id="friday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="friday-cards"></div><div class="bottom-actions" id="friday-actions"></div></div>
-        <div id="saturday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="saturday-cards"></div><div class="bottom-actions" id="saturday-actions"></div></div>
-        <div id="sunday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="sunday-cards"></div><div class="bottom-actions" id="sunday-actions"></div></div>
+        <div id="monday" class="day-section"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="monday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups(event)"/></div><div class="cards-container" id="monday-cards"></div><div class="bottom-actions" id="monday-actions"></div></div>
+        <div id="tuesday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="tuesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups(event)"/></div><div class="cards-container" id="tuesday-cards"></div><div class="bottom-actions" id="tuesday-actions"></div></div>
+        <div id="wednesday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="wednesday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups(event)"/></div><div class="cards-container" id="wednesday-cards"></div><div class="bottom-actions" id="wednesday-actions"></div></div>
+        <div id="thursday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="thursday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups(event)"/></div><div class="cards-container" id="thursday-cards"></div><div class="bottom-actions" id="thursday-actions"></div></div>
+        <div id="friday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups(event)"/></div><div class="cards-container" id="friday-cards"></div><div class="bottom-actions" id="friday-actions"></div></div>
+        <div id="saturday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups(event)"/></div><div class="cards-container" id="saturday-cards"></div><div class="bottom-actions" id="saturday-actions"></div></div>
+        <div id="sunday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups(event)"/></div><div class="cards-container" id="sunday-cards"></div><div class="bottom-actions" id="sunday-actions"></div></div>
 
         <div id="challenge" class="day-section hidden">
             <div class="muscle-header" style="background: linear-gradient(45deg, #b99d08, #ffd700); color:black; display:flex; justify-content:space-between; align-items:center;">
                 <div><i class="fa-solid fa-trophy"></i> <span>SZYCHTA (Wyzwanie)</span></div>
-                <button onclick="surrenderChallenge()" style="background:#000; color:#fff; border:none; padding:5px 10px; border-radius:5px; font-size:0.7rem; cursor:pointer;">
-                    <i class="fa-solid fa-flag"></i> PODDAJĘ SIĘ
-                </button>
+                <button onclick="surrenderChallenge()" style="background:#000; color:#fff; border:none; padding:5px 10px; border-radius:5px; font-size:0.7rem; cursor:pointer;"><i class="fa-solid fa-flag"></i> PODDAJĘ SIĘ</button>
             </div>
             <div class="cards-container" id="challenge-cards"></div>
             <div class="bottom-actions" id="challenge-actions"></div>
@@ -115,42 +88,26 @@
 
         <div id="community" class="day-section hidden">
             <h2 class="history-title"><i class="fa-solid fa-users"></i> Społeczność</h2>
-            <div id="community-list" class="community-grid">
-                <p style="text-align:center; color:#666;">Szukam innych użytkowników...</p>
-            </div>
+            <div id="community-list" class="community-grid"></div>
         </div>
 
         <div id="rules" class="day-section hidden">
             <h2 class="history-title"><i class="fa-solid fa-book-open"></i> Kodeks Szychty</h2>
             <div class="rules-container">
-                <div class="rule-box">
-                    <h4>1. O co tu chodzi?</h4>
-                    <p>To nie jest zwykły dziennik. Tutaj pniemy się po szczeblach górniczej kariery. Zaczynasz na dole jako <b>Sztrajer</b>, a Twoim celem jest zostanie <b>Skarbnikiem</b>.</p>
-                </div>
-                <div class="rule-box">
-                    <h4>2. Wypłata (Punkty)</h4>
-                    <ul class="rules-list">
-                        <li><b>+2 pkt</b> – Własny trening.</li>
-                        <li><b>+3 pkt</b> – Ukończenie Wyzwania.</li>
-                        <li><b>Premia (1-10 pkt)</b> – Ocena od Sztygara za dobry wynik.</li>
-                        <li><b>Zapłata dla Autora</b> – Tyle pkt, ile gwiazdek mu dasz.</li>
-                    </ul>
-                </div>
-                <div class="rule-box">
-                    <h4>3. Drabina Awansu</h4>
-                    <div class="ranks-table">
-                        <div class="rank-row"><span>0 - 20 pkt</span> <span class="r-name">Sztrajer 🔦</span></div>
-                        <div class="rank-row"><span>21 - 100 pkt</span> <span class="r-name">Młody Gwarek ⛏️</span></div>
-                        <div class="rank-row"><span>101 - 200 pkt</span> <span class="r-name">Hajer 👷</span></div>
-                        <div class="rank-row"><span>201 - 400 pkt</span> <span class="r-name">Hajer Przodowy 💪</span></div>
-                        <div class="rank-row"><span>401 - 600 pkt</span> <span class="r-name">Szczelmistrz 🧨</span></div>
-                        <div class="rank-row"><span>601 - 1000 pkt</span> <span class="r-name">Sztygar Zmianowy 📋</span></div>
-                        <div class="rank-row"><span>1001 - 1500 pkt</span> <span class="r-name">Sztygar Oddziałowy 🏗️</span></div>
-                        <div class="rank-row"><span>1501 - 2000 pkt</span> <span class="r-name">Nadsztygar 🎩</span></div>
-                        <div class="rank-row"><span>2001 - 3000 pkt</span> <span class="r-name">Zawiadowca 🏭</span></div>
-                        <div class="rank-row gold"><span>3000+ pkt</span> <span class="r-name">SKARBNIK 🥇</span></div>
-                    </div>
-                </div>
+                <div class="rule-box"><h4>1. O co tu chodzi?</h4><p>To nie jest zwykły dziennik. Tutaj pniemy się po szczeblach górniczej kariery.</p></div>
+                <div class="rule-box"><h4>2. Wypłata (Punkty)</h4><ul class="rules-list"><li><b>+2 pkt</b> – Własny trening.</li><li><b>+3 pkt</b> – Wyzwanie.</li></ul></div>
+                <div class="rule-box"><h4>3. Drabina Awansu</h4><div class="ranks-table">
+                    <div class="rank-row"><span>0-20</span> <span class="r-name">Sztrajer</span></div>
+                    <div class="rank-row"><span>21-100</span> <span class="r-name">Młody Gwarek</span></div>
+                    <div class="rank-row"><span>101-200</span> <span class="r-name">Hajer</span></div>
+                    <div class="rank-row"><span>201-400</span> <span class="r-name">Hajer Przodowy</span></div>
+                    <div class="rank-row"><span>401-600</span> <span class="r-name">Szczelmistrz</span></div>
+                    <div class="rank-row"><span>601-1000</span> <span class="r-name">Sztygar Zmianowy</span></div>
+                    <div class="rank-row"><span>1001-1500</span> <span class="r-name">Sztygar Oddziałowy</span></div>
+                    <div class="rank-row"><span>1501-2000</span> <span class="r-name">Nadsztygar</span></div>
+                    <div class="rank-row"><span>2001-3000</span> <span class="r-name">Zawiadowca</span></div>
+                    <div class="rank-row gold"><span>3000+</span> <span class="r-name">SKARBNIK 🥇</span></div>
+                </div></div>
             </div>
         </div>
 
@@ -158,45 +115,16 @@
             <div class="profile-header-card">
                 <div class="profile-avatar" id="profile-avatar">U</div>
                 <h3 id="profile-email">user@example.com</h3>
-                <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="profile-kudos">0</span> Kudos</div>
+                <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="profile-kudos">0</span></div>
             </div>
             <div class="profile-stats-row">
-                <div class="stat-box"><i class="fa-solid fa-dumbbell"></i><span class="stat-val" id="total-workouts">0</span><span class="stat-label">Treningi</span></div>
-                <div class="stat-box"><i class="fa-solid fa-calendar-check"></i><span class="stat-val" id="last-workout-date">-</span><span class="stat-label">Ostatni</span></div>
+                <div class="stat-box"><span class="stat-val" id="total-workouts">0</span><span class="stat-label">Treningi</span></div>
+                <div class="stat-box"><span class="stat-val" id="last-workout-date">-</span><span class="stat-label">Ostatni</span></div>
             </div>
-            
-            <div class="settings-group">
-                <h4><i class="fa-solid fa-bell"></i> Centrum Meldunków</h4>
-                <button class="btn-outline full-width" onclick="openNotificationsModal()" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Otwórz Skrzynkę</span>
-                    <span id="profile-notif-badge" class="notification-badge">0</span>
-                </button>
-            </div>
-
-            <div class="settings-group">
-                <h4><i class="fa-solid fa-cloud-arrow-down"></i> Aktualizacja</h4>
-                <button class="btn-outline full-width" onclick="forceAppUpdate(this)" style="border-color: var(--accent-color); color: var(--accent-color);">
-                    <i class="fa-solid fa-rotate"></i> SPRAWDŹ I ZAKTUALIZUJ
-                </button>
-            </div>
-
-            <div class="settings-group">
-                <h4><i class="fa-solid fa-user-gear"></i> Ustawienia</h4>
-                <div class="input-group profile-input"><input type="text" id="new-username" placeholder="Twoja nazwa publiczna"><button class="btn-small" onclick="updateUsername()">Zmień</button></div>
-                <div class="input-group profile-input"><input type="password" id="new-password" placeholder="Nowe hasło"><button class="btn-small" onclick="changePassword()">Zmień</button></div>
-            </div>
-
-            <div class="settings-group">
-                <h4><i class="fa-solid fa-database"></i> Dane</h4>
-                <button class="btn-outline full-width" onclick="exportData()"><i class="fa-solid fa-download"></i> Kopia zapasowa (JSON)</button>
-            </div>
-            
-            <div class="settings-group danger-zone">
-                <h4 style="color: var(--danger-color);"><i class="fa-solid fa-triangle-exclamation"></i> Strefa Niebezpieczna</h4>
-                <button class="btn-hard-reset" onclick="hardResetProfile()"><i class="fa-solid fa-skull"></i> USUŃ KONTO</button>
-            </div>
-
-            <button class="btn-logout-big" onclick="signOut()"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj się</button>
+            <div class="settings-group"><h4>Centrum Meldunków</h4><button class="btn-outline full-width" onclick="openNotificationsModal()"><span>Otwórz Skrzynkę</span><span id="profile-notif-badge" class="notification-badge">0</span></button></div>
+            <div class="settings-group"><h4>Aktualizacja</h4><button class="btn-outline full-width" onclick="forceAppUpdate(this)">SPRAWDŹ I ZAKTUALIZUJ</button></div>
+            <div class="settings-group"><h4>Ustawienia</h4><div class="input-group profile-input"><input type="text" id="new-username" placeholder="Nazwa"><button class="btn-small" onclick="updateUsername()">OK</button></div></div>
+            <button class="btn-logout-big" onclick="signOut()">Wyloguj</button>
         </div>
     </div>
 
@@ -204,16 +132,16 @@
 
     <div id="modal-overlay" class="modal-overlay hidden">
         <div class="modal-content">
-            <div class="modal-header"><h3 id="modal-title">Dodaj ćwiczenie</h3><button onclick="closeAddModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="modal-header"><h3>Dodaj ćwiczenie</h3><button onclick="closeAddModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
-                <input type="text" id="modal-exercise" placeholder="Nazwa ćwiczenia" class="input-modal main-input">
+                <input type="text" id="modal-exercise" placeholder="Nazwa" class="input-modal">
                 <div class="modal-row">
-                    <div class="input-wrapper"><label>Serie</label><input type="number" id="modal-series" placeholder="3"></div>
-                    <div class="input-wrapper"><label>Powt.</label><input type="number" id="modal-reps" placeholder="10"></div>
-                    <div class="input-wrapper"><label>Kg</label><input type="number" id="modal-weight" placeholder="0"></div>
+                    <div class="input-wrapper"><label>Serie</label><input type="number" id="modal-series"></div>
+                    <div class="input-wrapper"><label>Powt.</label><input type="number" id="modal-reps"></div>
+                    <div class="input-wrapper"><label>Kg</label><input type="number" id="modal-weight"></div>
                 </div>
-                <input type="text" id="modal-notes" placeholder="Notatki (opcjonalne)" class="input-modal">
-                <button id="modal-save-btn" class="btn-primary btn-modal-save" onclick="saveFromModal()">ZAPISZ</button>
+                <input type="text" id="modal-notes" placeholder="Notatki" class="input-modal">
+                <button class="btn-primary btn-modal-save" onclick="saveFromModal()">ZAPISZ</button>
             </div>
         </div>
     </div>
@@ -221,50 +149,25 @@
     <div id="public-profile-overlay" class="modal-overlay hidden">
         <div class="modal-content public-profile-content">
             <button onclick="closePublicProfile()" class="btn-close-abs"><i class="fa-solid fa-xmark"></i></button>
-            <div class="profile-header-card">
-                <div class="profile-avatar" id="pub-avatar">?</div>
-                <h3 id="pub-name">Użytkownik</h3>
-                <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="pub-kudos-count">0</span></div>
-            </div>
-            <div class="profile-stats-row">
-                <div class="stat-box"><i class="fa-solid fa-dumbbell"></i><span class="stat-val" id="pub-total">0</span><span class="stat-label">Treningi</span></div>
-                <div class="stat-box"><i class="fa-solid fa-calendar-check"></i><span class="stat-val" id="pub-last">-</span><span class="stat-label">Ostatni</span></div>
-            </div>
-            <button id="btn-give-kudos" class="btn-kudos" onclick="giveKudos()">
-                <i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!
-            </button>
-            <div class="shared-plans-section" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
-                <h4 style="margin:0 0 10px 0; color:#888; font-size:0.9rem;">UDOSTĘPNIONE PLANY:</h4>
-                <div id="public-plans-list" style="max-height: 200px; overflow-y: auto;">
-                    <p style="text-align:center; font-size:0.8rem; color:#666;">Ten użytkownik nie udostępnił jeszcze planów.</p>
-                </div>
-            </div>
+            <div class="profile-header-card"><div class="profile-avatar" id="pub-avatar">?</div><h3 id="pub-name">User</h3><div class="kudos-badge" id="pub-kudos-count">0</div></div>
+            <div class="profile-stats-row"><div class="stat-box"><span class="stat-val" id="pub-total">0</span></div><div class="stat-box"><span class="stat-val" id="pub-last">-</span></div></div>
+            <button id="btn-give-kudos" class="btn-kudos" onclick="giveKudos()">PRZYBIJ PIĄTKĘ!</button>
+            <div class="shared-plans-section"><div id="public-plans-list"></div></div>
         </div>
     </div>
 
     <div id="challenge-end-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="text-align:center;">
-            <h3>Koniec Szychty! ⚒️</h3>
-            <p style="color:#ccc; font-size:0.9rem;">Wystaw notę dla Sztygara:</p>
+        <div class="modal-content text-center">
+            <h3>Koniec Szychty!</h3>
+            <p>Oceń Sztygara:</p>
             <div class="rating-scale-container" id="rating-buttons"></div>
-            <div id="save-decision-area" class="hidden" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
-                <p style="margin-bottom:10px;">Zapisać plan u siebie?</p>
-                <div style="display:flex; gap:10px; justify-content:center;">
-                    <button class="btn-primary" style="flex:1" onclick="showDaySelectorForSave()">JA, BIORA</button>
-                    <button class="btn-outline" style="flex:1" onclick="finalizeChallenge(false)">NIE</button>
-                </div>
+            <div id="save-decision-area" class="hidden" style="margin-top:15px;">
+                <p>Zapisać plan?</p>
+                <div style="display:flex; gap:10px;"><button class="btn-primary" onclick="showDaySelectorForSave()">TAK</button><button class="btn-outline" onclick="finalizeChallenge(false)">NIE</button></div>
             </div>
             <div id="day-selector-area" class="hidden" style="margin-top:15px;">
-                <select id="target-save-day" class="main-input" style="background:#222; color:white; margin-bottom:10px;">
-                    <option value="monday">Poniedziałek</option>
-                    <option value="tuesday">Wtorek</option>
-                    <option value="wednesday">Środa</option>
-                    <option value="thursday">Czwartek</option>
-                    <option value="friday">Piątek</option>
-                    <option value="saturday">Sobota</option>
-                    <option value="sunday">Niedziela</option>
-                </select>
-                <button class="btn-accent full-width" onclick="finalizeChallenge(true)">ZAPISZ PLAN</button>
+                <select id="target-save-day" class="main-input"><option value="monday">Poniedziałek</option></select>
+                <button class="btn-accent full-width" onclick="finalizeChallenge(true)">ZAPISZ</button>
             </div>
         </div>
     </div>
@@ -272,11 +175,8 @@
     <div id="notifications-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header"><h3>Meldunki</h3><button onclick="closeNotificationsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button></div>
-            <div class="notifications-tabs">
-                <button class="notif-tab active" onclick="switchNotifTab('todo')" id="tab-notif-todo">Do Oceny</button>
-                <button class="notif-tab" onclick="switchNotifTab('news')" id="tab-notif-news">Wiadomości</button>
-            </div>
-            <div id="notif-list-container" style="max-height:300px; overflow-y:auto;"><p style="text-align:center; color:#666; margin-top:20px;">Ładowanie...</p></div>
+            <div class="notifications-tabs"><button class="notif-tab active" id="tab-notif-todo" onclick="switchNotifTab('todo')">Do Oceny</button><button class="notif-tab" id="tab-notif-news" onclick="switchNotifTab('news')">Wiadomości</button></div>
+            <div id="notif-list-container"></div>
         </div>
     </div>
 
@@ -289,11 +189,9 @@
     </nav>
 
   </div>
-  
-  <script src="script.js?v=7"></script> 
-  
+
+  <script src="script.js?v=9"></script>
   <script>
-    // --- REJESTRACJA SW (Nowy plik) ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js').then(reg => {
