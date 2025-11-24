@@ -271,7 +271,7 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
 async function surrenderChallenge() {
     if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt za pokonanie Cię. Na pewno?")) return;
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-    const authorId = activeData ? activeData.challengeAuthor : null;
+    const authorId = (activeData && activeData.challengeAuthor) || null;
 
     if(authorId) {
         db.collection("publicUsers").doc(authorId).update({
@@ -312,13 +312,14 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
+        // --- TU BYŁ BŁĄD: NAPRAWIONY PRZYPISANIE AUTORA ---
         tempWorkoutResult = {
             dateIso: new Date().toISOString(),
             duration: timerText,
             dayKey: day,
             details: exercisesDone,
             isChallenge: !!isChallenge,
-            authorId: activeData ? activeData.challengeAuthor : null
+            authorId: (activeData && activeData.challengeAuthor) || null
         };
 
         if (isChallenge) {
@@ -353,7 +354,6 @@ function openChallengeEndModal() {
     document.getElementById('save-decision-area').classList.add('hidden');
     document.getElementById('day-selector-area').classList.add('hidden');
     
-    // POPRAWKA DLA MODALI
     const modal = document.getElementById('challenge-end-modal');
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.add('active'), 10);
@@ -932,7 +932,6 @@ function openAddModal(){
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
     
-    // NAPRAWA: Dodanie klasy ACTIVE po krótkim opóźnieniu (wymagane dla CSS opacity transition)
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden'); 
     setTimeout(() => {
@@ -945,7 +944,7 @@ function closeAddModal(){
     modal.classList.remove('active');
     setTimeout(() => {
         modal.classList.add('hidden');
-    }, 300); // Czekamy aż animacja zanikania się skończy
+    }, 300);
 }
 
 function saveFromModal(){ 
