@@ -54,18 +54,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
+      // Ładowanie dni
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
-      
+      // Ładowanie wyzwania (na wypadek odświeżenia w trakcie szychty)
+      loadCardsDataFromFirestore('challenge');
+
       currentMode = 'plan';
-            // --- AUTOMATYCZNY WYBÓR DNIA ---
-      const todayIndex = new Date().getDay(); // Pobiera dzień (0=Niedziela, 1=Poniedziałek...)
-      // Tablica mapująca numer JS na nasze ID w HTML:
-      const daysMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-      selectDay(daysMap[todayIndex]); // Włączamy aktualny dzień
-      // -------------------------------
+      selectDay('monday'); 
       checkActiveWorkout();
       updateProfileUI(user);
       loadProfileStats();
@@ -106,7 +104,7 @@ function switchMode(mode) {
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    // Ukrywanie przycisku PLUS (widoczny tylko w PLANIE i nie w SZYCHCIE)
+    // Logika ukrywania PLUSA
     if(fab) {
         fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
     }
@@ -114,8 +112,7 @@ function switchMode(mode) {
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        // Ładuj całą historię (null), a nie tylko dla wybranego dnia
-        loadHistoryFromFirestore(null);
+        loadHistoryFromFirestore(null); // Ładuj wszystko
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
@@ -157,7 +154,7 @@ function selectDay(dayValue) {
         }
     }
 
-    // Obsługa Plusa - Ukryj w Szychcie
+    // Obsługa PLUSA (ukryj w Szychcie)
     const fab = document.getElementById('fab-add');
     if (fab) {
         if (dayValue === 'challenge') {
@@ -169,7 +166,6 @@ function selectDay(dayValue) {
 
     if (currentMode === 'plan') showPlanSection(dayValue);
     else if (currentMode === 'history') {
-        // Jeśli w historii klikniesz dzień, filtruj po tym dniu
         loadHistoryFromFirestore(dayValue === 'challenge' ? null : dayValue);
     }
     updateHeaderTitle();
@@ -320,13 +316,19 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
+        // --- FIX GŁÓWNY: Pancerne zabezpieczenie przed 'undefined' ---
+        let safeAuthorId = null;
+        if (activeData && activeData.challengeAuthor) {
+            safeAuthorId = activeData.challengeAuthor;
+        }
+
         tempWorkoutResult = {
             dateIso: new Date().toISOString(),
             duration: timerText,
             dayKey: day,
             details: exercisesDone,
             isChallenge: !!isChallenge,
-            authorId: (activeData && activeData.challengeAuthor) || null
+            authorId: safeAuthorId // Teraz na 100% będzie null albo string, nigdy undefined
         };
 
         if (isChallenge) {
@@ -643,7 +645,7 @@ function updateActionButtons(currentViewDay) {
     } 
     // 2. Jeśli NIE ma treningu
     else if (!activeData) {
-        // Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start (tylko komunikat "Cisza na kopalni" z cards-container)
+        // Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
         if (currentViewDay === 'challenge') {
             container.innerHTML = ''; 
         } else {
@@ -656,16 +658,13 @@ function updateActionButtons(currentViewDay) {
     }
 }
 
-// --- POPRAWIONA FUNKCJA DODAWANIA LOGÓW (Bez nadpisywania planu) ---
 function addLog(day, docId) {
     const w = document.getElementById(`log-w-${docId}`).value;
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
     const user = auth.currentUser;
-    
-    // Używamy arrayUnion tylko dla currentLogs, nie ruszamy głównego pola 'weight'
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
-      .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) })
+      .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) // FIX: Bez weight: w
       .then(() => loadCardsDataFromFirestore(day));
 }
 
@@ -830,18 +829,22 @@ function loadHistoryFromFirestore(dayFilterKey) {
     if(!container) return;
     container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
     const user = auth.currentUser;
+    
     db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
     .then(qs => {
         container.innerHTML = "";
         let docs = [];
         qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
+        
         if (dayFilterKey) {
             const polishName = dayMap[dayFilterKey];
             docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName);
         }
+        
         if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
         docs.forEach(item => renderHistoryCard(container, item));
-    }).catch(e => {
+    })
+    .catch(e => {
         container.innerHTML = `<p style="text-align:center; color:#666;">Błąd: ${e.message}</p>`;
     });
 }
@@ -970,26 +973,19 @@ async function shareCurrentDay() {
     alert("Opublikowano na Szychcie!");
 }
 
+// FIX: Dodanie klas active/hidden dla animacji
 function openAddModal(){ 
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
-    
-    // NAPRAWA: Dodanie klasy ACTIVE po krótkim opóźnieniu (wymagane dla CSS opacity transition)
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden'); 
-    setTimeout(() => {
-        modal.classList.add('active');
-    }, 10);
+    setTimeout(()=>modal.classList.add('active'), 10);
 }
-
 function closeAddModal(){ 
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('active');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300); // Czekamy aż animacja zanikania się skończy
+    setTimeout(()=>modal.classList.add('hidden'), 300);
 }
-
 function saveFromModal(){ 
     const ex=document.getElementById('modal-exercise').value; 
     const s=document.getElementById('modal-series').value; 
