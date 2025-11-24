@@ -1,7 +1,7 @@
 /*************************************************************
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
-// 1. Konfiguracja Firebase (BEZPOŚREDNIO TUTAJ DLA PEWNOŚCI I JEDNOZNACZNOŚCI)
+// 1. Konfiguracja Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
   authDomain: "plan-treningowy-a9d00.firebaseapp.com",
@@ -97,37 +97,35 @@ function switchMode(mode) {
     const rulesSection = document.getElementById('rules');
     const profileSection = document.getElementById('profile');
     const daysNav = document.getElementById('days-nav-container');
-    const fab = document.getElementById('fab-add');
+    const fab = document.getElementById('fab-add'); // Przycisk PLUS
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
+    // Ukrywanie/Pokazywanie Plusa w zależności od trybu
+    if(fab) fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
+
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        if(fab) fab.style.display = 'none';
         loadHistoryFromFirestore(currentSelectedDay);
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
         loadCommunity();
     } 
     else if (mode === 'rules' && rulesSection) {
         rulesSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
     } 
     else if (mode === 'profile' && profileSection) {
         profileSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
-        if(fab) fab.style.display = 'none';
         loadProfileStats(); 
     } 
     else {
         // Domyślnie PLAN
         if(daysNav) daysNav.style.display = 'block'; 
-        if(fab) fab.style.display = 'flex';
         showPlanSection(currentSelectedDay);
     }
     updateHeaderTitle();
@@ -138,20 +136,29 @@ function selectDay(dayValue) {
     const selector = document.getElementById('day-selector');
     if(selector) selector.value = dayValue; 
     
-    // 1. Usuń klasę 'active' ze wszystkich pigułek
+    // 1. Reset pigułek
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     
-    // 2. Podświetl odpowiedni przycisk
+    // 2. Podświetlanie
     if (dayValue === 'challenge') {
         const chBtn = document.getElementById('pill-challenge');
         if(chBtn) chBtn.classList.add('active');
     } else {
-        // Jeśli to zwykły dzień, znajdź go na liście i podświetl
         const idx = allDays.indexOf(dayValue);
         if (idx !== -1) {
-            // Szukamy tylko zwykłych przycisków (bez ID pill-challenge)
             const pills = document.querySelectorAll('.days-pills .pill:not(#pill-challenge)');
             if(pills[idx]) pills[idx].classList.add('active');
+        }
+    }
+
+    // 3. Obsługa Przycisku PLUS (+) - WAŻNE!
+    const fab = document.getElementById('fab-add');
+    if (fab) {
+        if (dayValue === 'challenge') {
+            fab.style.display = 'none'; // Ukryj w Szychcie
+        } else {
+            // Pokaż tylko jeśli jesteśmy w trybie planu
+            fab.style.display = (currentMode === 'plan') ? 'flex' : 'none';
         }
     }
 
@@ -251,11 +258,7 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
 
         closePublicProfile();
-        document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
-        let chDiv = document.getElementById('challenge');
-        if(chDiv) chDiv.classList.remove("hidden");
-        
-        // Zostawiamy nawigację (widoczność paska), ale przełączamy na 'challenge'
+        // Przełączamy od razu na zakładkę Szychta
         selectDay("challenge");
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
@@ -580,17 +583,14 @@ function checkActiveWorkout() {
             }, 1000);
         }
 
-        // Jeśli trwa Wyzwanie, ukryj przycisk udostępniania i przełącz zakładkę
         if (activeData.day === 'challenge') {
             if(shareBtn) shareBtn.style.display = 'none';
-            // Jeśli użytkownik jest w trybie planu, ale nie jest w zakładce challenge -> przenieś go tam
             if(currentSelectedDay !== 'challenge' && currentMode === 'plan') {
                 selectDay('challenge');
             }
         }
         
         updateActionButtons(activeData.day);
-
     } else {
         // --- BRAK TRENINGU ---
         if(titleEl) titleEl.style.display = 'block';
@@ -598,7 +598,6 @@ function checkActiveWorkout() {
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         
-        // Pokaż nawigację (zawsze)
         if(nav) nav.style.display = 'block';
         
         updateHeaderTitle(); 
@@ -611,12 +610,22 @@ function updateActionButtons(currentViewDay) {
     const container = document.getElementById(`${currentViewDay}-actions`);
     if(!container) return;
     container.innerHTML = '';
+
+    // 1. Jeśli w tym dniu trwa trening
     if (activeData && activeData.day === currentViewDay) {
         container.innerHTML = `<button class="btn-finish-workout" onclick="finishWorkout('${currentViewDay}')"><i class="fa-solid fa-flag-checkered"></i> ZAKOŃCZ TRENING</button>`;
-    } else if (!activeData) {
-        container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
-    } else if (activeData && activeData.day !== currentViewDay) {
-        // Tu już nie potrzebujemy przycisku "wróć", bo mamy zakładkę SZYCHTA
+    } 
+    // 2. Jeśli NIE ma treningu
+    else if (!activeData) {
+        // POPRAWKA: Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
+        if (currentViewDay === 'challenge') {
+            container.innerHTML = ''; // Pusto - komunikat "Cisza" jest w cards-container
+        } else {
+            container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
+        }
+    } 
+    // 3. Jeśli trening trwa w INNYM dniu
+    else if (activeData && activeData.day !== currentViewDay) {
         container.innerHTML = `<p style="text-align:center; color:#666;">Trening trwa w: ${dayMap[activeData.day]}</p>`;
     }
 }
@@ -642,11 +651,11 @@ function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
 
-    // --- NOWA LOGIKA: PUSTY STAN DLA WYZWANIA ---
+    // --- SZYCHTA (WYZWANIE) ---
     if (day === 'challenge') {
         const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
         
-        // Jeśli wchodzisz w zakładkę Szychta, ale nie masz odpalonego wyzwania:
+        // Pusty stan dla wyzwania
         if (!activeData || activeData.day !== 'challenge') {
             container.innerHTML = `
                 <div style="text-align:center; padding: 40px 20px; color: #888;">
@@ -658,13 +667,12 @@ function loadCardsDataFromFirestore(day) {
                     </button>
                 </div>
             `;
-            // Ukryj przyciski akcji (Start/Stop), bo tu nic nie robimy
             const actionsDiv = document.getElementById('challenge-actions');
             if(actionsDiv) actionsDiv.innerHTML = '';
             return;
         }
     }
-    // ---------------------------------------------
+    // ---------------------------
 
     const user = auth.currentUser;
     if(!user) return;
@@ -902,7 +910,11 @@ async function shareCurrentDay() {
     alert("Opublikowano na Szychcie!");
 }
 
-function openAddModal(){ currentModalDay=currentSelectedDay; document.getElementById('modal-overlay').classList.remove('hidden'); }
+function openAddModal(){ 
+    if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
+    currentModalDay=currentSelectedDay; 
+    document.getElementById('modal-overlay').classList.remove('hidden'); 
+}
 function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
 function saveFromModal(){ 
     const ex=document.getElementById('modal-exercise').value; 
