@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gympro-v-final-reset'; 
+const CACHE_NAME = 'gympro-v-final-resetv2'; 
 const ASSETS = [
   './',
   './index.html',
