@@ -60,7 +60,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       
       currentMode = 'plan';
-      selectDay('monday'); 
+            // --- AUTOMATYCZNY WYBÓR DNIA ---
+      const todayIndex = new Date().getDay(); // Pobiera dzień (0=Niedziela, 1=Poniedziałek...)
+      // Tablica mapująca numer JS na nasze ID w HTML:
+      const daysMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      selectDay(daysMap[todayIndex]); // Włączamy aktualny dzień
+      // -------------------------------
       checkActiveWorkout();
       updateProfileUI(user);
       loadProfileStats();
