@@ -1,7 +1,6 @@
 /*************************************************************
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
-// 1. Konfiguracja Firebase (BEZPOŚREDNIO TUTAJ DLA PEWNOŚCI)
 const firebaseConfig = {
   apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
   authDomain: "plan-treningowy-a9d00.firebaseapp.com",
@@ -12,15 +11,13 @@ const firebaseConfig = {
   measurementId: "G-EY88TE8L7H"
 };
 
-// Inicjalizacja Firebase (jeśli jeszcze nie jest zrobiona)
+// Inicjalizacja tylko raz
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// 2. Mapy i Zmienne
 const dayMap = { 
     monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa", 
     thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela",
@@ -31,17 +28,14 @@ const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","
 let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
-
 let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
 let viewingUserId = null; 
-
-// Zmienne do obsługi wyzwań
 let tempWorkoutResult = null; 
 let currentRatingScore = 0;   
 
 /*************************************************************
-  1. INICJALIZACJA I RANGI
+  1. INICJALIZACJA
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.querySelector('.container');
@@ -72,7 +66,31 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// --- RANGI GÓRNICZE ---
+// --- FUNKCJE UI (DODANE BRAKUJĄCE) ---
+function switchAuthTab(tab) {
+    const lf = document.getElementById('login-form');
+    const rf = document.getElementById('register-form');
+    const bl = document.getElementById('tab-login');
+    const br = document.getElementById('tab-register');
+    
+    if (tab === 'login') {
+        lf.classList.remove('hidden');
+        rf.classList.add('hidden');
+        bl.classList.add('active');
+        br.classList.remove('active');
+    } else {
+        lf.classList.add('hidden');
+        rf.classList.remove('hidden');
+        bl.classList.remove('active');
+        br.classList.add('active');
+    }
+}
+
+function switchBottomNav(el) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    if(el) el.classList.add('active');
+}
+
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -87,12 +105,11 @@ function getRankName(points) {
 }
 
 /*************************************************************
-  2. NAWIGACJA (Z NAPRAWIONYM PRZEŁĄCZANIEM)
+  2. NAWIGACJA
 *************************************************************/
 function switchMode(mode) {
     currentMode = mode;
     
-    // Pobieramy sekcje bezpiecznie (żeby nie było błędu null)
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
@@ -100,7 +117,6 @@ function switchMode(mode) {
     const daysNav = document.getElementById('days-nav-container');
     const fab = document.getElementById('fab-add');
 
-    // Ukryj wszystkie sekcje day-section
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
     if (mode === 'history' && historySection) {
@@ -127,7 +143,6 @@ function switchMode(mode) {
         loadProfileStats(); 
     } 
     else {
-        // Domyślnie PLAN
         if(daysNav) daysNav.style.display = 'block'; 
         if(fab) fab.style.display = 'flex';
         showPlanSection(currentSelectedDay);
@@ -171,7 +186,6 @@ function updateHeaderTitle() {
 
     if (!titleEl) return;
     
-    // Jeśli timer jest widoczny, nie zmieniaj tytułu
     if (timer && !timer.classList.contains('hidden')) {
         if(shareBtn) shareBtn.classList.add('hidden');
         return; 
@@ -248,7 +262,6 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
 
         closePublicProfile();
-        // Przełącz na widok wyzwania
         document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
         let chDiv = document.getElementById('challenge');
         if(chDiv) chDiv.classList.remove("hidden");
@@ -722,188 +735,6 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
-function loadHistoryFromFirestore(dayFilterKey) {
-    const container = document.getElementById("history-list");
-    if(!container) return;
-    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
-    const user = auth.currentUser;
-    db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").limit(50).get()
-    .then(qs => {
-        container.innerHTML = "";
-        let docs = [];
-        qs.forEach(d => docs.push({ data: d.data(), id: d.id }));
-        if (dayFilterKey) {
-            const polishName = dayMap[dayFilterKey];
-            docs = docs.filter(doc => doc.data.dayKey === dayFilterKey || doc.data.dayName === polishName);
-        }
-        if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
-        docs.forEach(item => renderHistoryCard(container, item));
-    });
-}
-function renderHistoryCard(container, item) {
-    const data = item.data;
-    const id = item.id;
-    const card = document.createElement('div');
-    card.className = `history-card ${data.isChallenge ? 'gold-border' : ''}`;
-    
-    let authorHtml = '';
-    if (data.isChallenge && data.originalAuthorName) {
-        authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
-    }
-
-    let detailsHtml = '';
-    if (data.details && Array.isArray(data.details)) {
-        detailsHtml = data.details.map(ex => {
-            let logsStr = (Array.isArray(ex.sets)) ? ex.sets.map((s, i) => `<span>S${i+1}: ${s.weight}kg x ${s.reps}</span>`).join(', ') : (ex.logs || 'Brak');
-            return `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(ex.name)}</div><div class="hex-logs">${logsStr}</div></div>`;
-        }).join('');
-    }
-
-    card.innerHTML = `
-        <div class="history-card-header" onclick="toggleHistoryCard(this)">
-            <div class="history-info">
-                ${authorHtml}
-                <h4>${data.dayName||'Trening'}</h4>
-                <div class="history-meta"><span>${data.displayDate||data.dateIso.split('T')[0]}</span><span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span></div>
-            </div>
-            <div class="history-actions"><button class="history-delete-btn" onclick="deleteHistoryEntry(event, '${id}')"><i class="fa-solid fa-trash"></i></button><i class="fa-solid fa-chevron-down history-toggle-icon"></i></div>
-        </div>
-        <div class="history-card-details">${detailsHtml || '<p>Brak szczegółów</p>'}</div>
-    `;
-    container.appendChild(card);
-}
-window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
-window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
-
-function loadCommunity() {
-    const container = document.getElementById("community-list");
-    if(!container) return;
-    container.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
-    db.collection("publicUsers").orderBy("totalPoints", "desc").limit(20).get().then(qs => {
-        container.innerHTML = "";
-        if(qs.empty) {
-             container.innerHTML = '<p style="text-align:center;color:#666">Brak nikogo... Bądź pierwszy!</p>';
-             return;
-        }
-        qs.forEach(doc => {
-            const d = doc.data();
-            const card = document.createElement('div');
-            card.className = 'user-card';
-            card.innerHTML = `
-                <div class="user-card-avatar">${d.displayName ? d.displayName[0].toUpperCase() : '?'}</div>
-                <div class="user-card-name">${escapeHTML(d.displayName)}</div>
-                <div class="user-card-stats">
-                    <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
-                    <div>${d.totalPoints || 0} pkt</div>
-                </div>`;
-            card.onclick = () => openPublicProfile(d);
-            container.appendChild(card);
-        });
-    });
-}
-function openPublicProfile(u) {
-    viewingUserId = u.uid;
-    document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
-    document.getElementById('pub-name').textContent = u.displayName;
-    document.getElementById('pub-total').textContent = u.totalWorkouts;
-    document.getElementById('pub-last').textContent = u.lastWorkout || '-';
-    document.getElementById('pub-kudos-count').innerHTML = `${u.totalPoints||0} <br><span style='font-size:0.6rem;color:#ffd700'>${getRankName(u.totalPoints||0)}</span>`;
-    loadSharedPlansForUser(u.uid); 
-    const o = document.getElementById('public-profile-overlay');
-    o.classList.remove('hidden'); setTimeout(()=>o.classList.add('active'),10);
-}
-function closePublicProfile() { viewingUserId=null; const o=document.getElementById('public-profile-overlay'); o.classList.remove('active'); setTimeout(()=>o.classList.add('hidden'),300); }
-
-function loadSharedPlansForUser(targetUid) {
-    const container = document.getElementById('public-plans-list');
-    container.innerHTML = '<p>Sprawdzam...</p>';
-    const currentUser = auth.currentUser;
-    const isMyProfile = (currentUser && currentUser.uid === targetUid); 
-
-    db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
-        const uData = uDoc.data();
-        const pts = uData ? (uData.totalPoints || 0) : 0;
-        const rank = getRankName(pts);
-
-        let rankHtml = `<div style="text-align:center; margin-bottom:15px; padding:10px; background:#1a1a1a; border-radius:8px; border:1px solid #333;">
-            <div style="color:#888; font-size:0.7rem; letter-spacing:1px;">STANOWISKO</div>
-            <div style="color:#ffd700; font-weight:bold; font-size:1.1rem; margin:5px 0;">${rank}</div>
-            <div style="color:#666; font-size:0.8rem;">${pts} pkt</div>
-        </div>`;
-
-        db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get().then(qs => {
-            container.innerHTML = rankHtml;
-            if(qs.empty) { container.innerHTML += "<p style='text-align:center;color:#666;font-size:0.8rem;'>Brak planów na szychcie.</p>"; return; }
-            qs.forEach(doc => {
-                const data = doc.data();
-                const planItem = document.createElement('div');
-                planItem.className = 'shared-plan-item';
-                planItem.style.cssText = 'background:#242426; margin-bottom:10px; padding:10px; border:1px solid #333; border-radius:8px;';
-                const exList = data.exercises.map(e => `<div style="color:#ccc; margin-top:6px; padding-left:10px; border-left:2px solid var(--primary-color);"><strong>${escapeHTML(e.exercise)}</strong> <span style="color:#666; font-size:0.8em;">(${e.series}s x ${e.reps}r)</span></div>`).join('');
-                
-                let btn = '';
-                if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
-                else btn = `<button onclick='startChallenge("${data.dayKey}", ${JSON.stringify(JSON.stringify(data.exercises))}, "${targetUid}")' style="width:100%;margin-top:10px;background:#ffd700;color:black;border:none;padding:8px;font-weight:bold;border-radius:4px;cursor:pointer;">PODEJMIJ WYZWANIE</button>`;
-
-                planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
-                container.appendChild(planItem);
-            });
-        });
-    });
-}
-function deleteSharedPlan(k) { if(confirm("Usunąć?")) db.collection("publicUsers").doc(auth.currentUser.uid).collection("sharedPlans").doc(k).delete().then(()=>loadSharedPlansForUser(auth.currentUser.uid)); }
-async function shareCurrentDay() {
-    const d = currentSelectedDay;
-    if(!confirm("Udostępnić ten dzień?")) return;
-    const u = auth.currentUser;
-    const s = await db.collection("users").doc(u.uid).collection("days").doc(d).collection("exercises").orderBy("order").get();
-    let ex=[]; s.forEach(doc=>ex.push(doc.data()));
-    if(ex.length===0) return alert("Pusto!");
-    await db.collection("publicUsers").doc(u.uid).collection("sharedPlans").doc(d).set({ dayKey:d, dayName:dayMap[d], exercises:ex });
-    alert("Opublikowano na Szychcie!");
-}
-
-function openAddModal(){ currentModalDay=currentSelectedDay; document.getElementById('modal-overlay').classList.remove('hidden'); }
-function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
-function saveFromModal(){ 
-    const ex=document.getElementById('modal-exercise').value; 
-    const s=document.getElementById('modal-series').value; 
-    const r=document.getElementById('modal-reps').value; 
-    if(!ex) return; 
-    const d={exercise:ex,series:s,reps:r,order:Date.now()}; 
-    const u=auth.currentUser;
-    if(editInfo.docId) db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").doc(editInfo.docId).update(d);
-    else db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").add(d);
-    closeAddModal(); loadCardsDataFromFirestore(currentModalDay);
-}
-window.triggerEdit=function(day,id){ editInfo={day,docId:id}; currentModalDay=day; openAddModal(); }
-function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
-function saveMuscleGroups(){ const v=event.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
-function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) document.getElementById(`${d}-muscle-group`).value=doc.data().muscleGroup||""; }); }
-
-function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-async function signIn(){ try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-async function signUp(){ try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
-async function signOut(){ await auth.signOut(); location.reload(); }
-async function forceAppUpdate(){ 
-    if(!confirm("Aktualizować?")) return; 
-    const regs=await navigator.serviceWorker.getRegistrations(); 
-    for(let r of regs) r.unregister(); 
-    caches.keys().then(k=>k.forEach(c=>caches.delete(c))); 
-    location.reload(true); 
-}
-function giveKudos(){
-    if(!viewingUserId) return;
-    const currentUser = auth.currentUser;
-    if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
-    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
-    interactionRef.get().then(docSnap => {
-        if (docSnap.exists && docSnap.data().date === new Date().toISOString().split('T')[0]) return alert("Już przybita!");
-        db.batch().update(db.collection("publicUsers").doc(viewingUserId), { totalPoints: firebase.firestore.FieldValue.increment(1) }).set(interactionRef, { date: new Date().toISOString().split('T')[0] }).commit()
-        .then(() => alert("Piątka przybita! (+1 pkt dla Hajera)"));
-    });
-}
-
 function updateUsername() {
     const newName = document.getElementById('new-username').value;
     if(!newName) return;
@@ -955,6 +786,102 @@ function hardResetProfile() {
         user.delete().then(() => {
             alert("Konto usunięte. Żegnaj!");
             location.reload();
+        });
+    });
+}
+
+// --- OBSŁUGA MODALA ZASAD (DODANE) ---
+function openRulesModal() {
+    const m = document.getElementById('rules-modal');
+    if(m) {
+        m.classList.remove('hidden');
+        setTimeout(() => {
+            const content = m.querySelector('.modal-content');
+            if(content) content.style.transform = 'translateY(0)';
+        }, 10);
+    }
+}
+
+function closeRulesModal() {
+    const m = document.getElementById('rules-modal');
+    if(m) {
+        const content = m.querySelector('.modal-content');
+        if(content) content.style.transform = 'translateY(100%)';
+        setTimeout(() => m.classList.add('hidden'), 300);
+    }
+}
+
+// --- LOGOWANIE/REJESTRACJA (DODANE BRAKUJĄCE FUNKCJE) ---
+async function signIn() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+    } catch (error) {
+        document.getElementById('login-error').textContent = error.message;
+    }
+}
+
+async function signUp() {
+    const email = document.getElementById('register-email').value;
+    const pass = document.getElementById('register-password').value;
+    try {
+        await auth.createUserWithEmailAndPassword(email, pass);
+        alert("Konto założone! Zaloguj się.");
+        switchAuthTab('login');
+    } catch (error) {
+        document.getElementById('register-error').textContent = error.message;
+    }
+}
+
+async function signOut() {
+    await auth.signOut();
+    location.reload();
+}
+
+async function forceAppUpdate() {
+    if (!confirm("Wymusić aktualizację? Strona zostanie przeładowana.")) return;
+    if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+            await registration.unregister();
+        }
+    }
+    if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+    }
+    location.reload(true);
+}
+
+function giveKudos() {
+    if (!viewingUserId) return;
+    const currentUser = auth.currentUser;
+    if (viewingUserId === currentUser.uid) return alert("Nie możesz dać lajka sobie!");
+    
+    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
+    const today = new Date().toISOString().split('T')[0];
+
+    interactionRef.get().then(docSnap => {
+        if (docSnap.exists && docSnap.data().date === today) {
+            alert("Już przybita piątka dzisiaj!");
+            return;
+        }
+        const batch = db.batch();
+        const publicRef = db.collection("publicUsers").doc(viewingUserId);
+        batch.update(publicRef, { totalPoints: firebase.firestore.FieldValue.increment(1) });
+        batch.set(interactionRef, { date: today });
+        
+        batch.commit().then(() => {
+            alert("Piątka przybita! (+1 pkt dla Hajera)");
+            // Aktualizuj licznik w modalu
+            const countEl = document.getElementById('pub-kudos-count');
+            if(countEl) {
+                 // Pobierz aktualną wartość (trochę hack, ale działa wizualnie)
+                 let currentText = countEl.innerText.split('\n')[0];
+                 let newVal = parseInt(currentText) + 1;
+                 countEl.innerHTML = `${newVal} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(newVal)}</span>`;
+            }
         });
     });
 }
