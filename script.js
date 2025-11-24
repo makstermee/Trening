@@ -97,35 +97,37 @@ function switchMode(mode) {
     const rulesSection = document.getElementById('rules');
     const profileSection = document.getElementById('profile');
     const daysNav = document.getElementById('days-nav-container');
-    const fab = document.getElementById('fab-add'); 
+    const fab = document.getElementById('fab-add');
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    // Ukrywanie/Pokazywanie Plusa w zależności od trybu
-    if(fab) fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
-
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
+        if(fab) fab.style.display = 'none';
         loadHistoryFromFirestore(currentSelectedDay);
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
+        if(fab) fab.style.display = 'none';
         loadCommunity();
     } 
     else if (mode === 'rules' && rulesSection) {
         rulesSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
+        if(fab) fab.style.display = 'none';
     } 
     else if (mode === 'profile' && profileSection) {
         profileSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
+        if(fab) fab.style.display = 'none';
         loadProfileStats(); 
     } 
     else {
         // Domyślnie PLAN
         if(daysNav) daysNav.style.display = 'block'; 
+        if(fab) fab.style.display = 'flex';
         showPlanSection(currentSelectedDay);
     }
     updateHeaderTitle();
@@ -136,29 +138,14 @@ function selectDay(dayValue) {
     const selector = document.getElementById('day-selector');
     if(selector) selector.value = dayValue; 
     
-    // 1. Reset pigułek
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     
-    // 2. Podświetlanie
-    if (dayValue === 'challenge') {
-        const chBtn = document.getElementById('pill-challenge');
-        if(chBtn) chBtn.classList.add('active');
-    } else {
+    const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
+    if(!activeData || activeData.day !== 'challenge') {
         const idx = allDays.indexOf(dayValue);
         if (idx !== -1) {
-            const pills = document.querySelectorAll('.days-pills .pill:not(#pill-challenge)');
+            const pills = document.querySelectorAll('.pill');
             if(pills[idx]) pills[idx].classList.add('active');
-        }
-    }
-
-    // 3. Obsługa Przycisku PLUS (+)
-    const fab = document.getElementById('fab-add');
-    if (fab) {
-        if (dayValue === 'challenge') {
-            fab.style.display = 'none'; // Ukryj w Szychcie
-        } else {
-            // Pokaż tylko jeśli jesteśmy w trybie planu
-            fab.style.display = (currentMode === 'plan') ? 'flex' : 'none';
         }
     }
 
@@ -258,7 +245,13 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
 
         closePublicProfile();
-        selectDay("challenge");
+        document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
+        let chDiv = document.getElementById('challenge');
+        if(chDiv) chDiv.classList.remove("hidden");
+        
+        const nav = document.getElementById('days-nav-container');
+        if(nav) nav.style.display = 'none'; 
+        
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
 
@@ -312,14 +305,14 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
-        // --- TU BYŁ BŁĄD: NAPRAWIONY PRZYPISANIE AUTORA ---
+        // --- POPRAWKA: Zabezpieczenie przed undefined ---
         tempWorkoutResult = {
             dateIso: new Date().toISOString(),
             duration: timerText,
             dayKey: day,
             details: exercisesDone,
             isChallenge: !!isChallenge,
-            authorId: (activeData && activeData.challengeAuthor) || null
+            authorId: (activeData && activeData.challengeAuthor) || null 
         };
 
         if (isChallenge) {
@@ -330,9 +323,9 @@ async function finishWorkout(day) {
             localStorage.removeItem('activeWorkout');
             window.location.reload();
         }
-    } catch (e) {
+    } catch(e) {
         console.error(e);
-        alert("BŁĄD ZAPISU: " + e.message + "\nSprawdź połączenie z internetem.");
+        alert("Błąd zapisu: " + e.message);
     }
 }
 
@@ -353,10 +346,7 @@ function openChallengeEndModal() {
     }
     document.getElementById('save-decision-area').classList.add('hidden');
     document.getElementById('day-selector-area').classList.add('hidden');
-    
-    const modal = document.getElementById('challenge-end-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.add('active'), 10);
+    document.getElementById('challenge-end-modal').classList.remove('hidden');
 }
 
 function selectRating(score, btn) {
@@ -372,48 +362,41 @@ function showDaySelectorForSave() {
 }
 
 async function finalizeChallenge(shouldSaveToPlan) {
-    try {
-        const user = auth.currentUser;
-        const result = tempWorkoutResult;
+    const user = auth.currentUser;
+    const result = tempWorkoutResult;
 
-        await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
+    await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
 
-        if(result.authorId) {
-            await db.collection("challenge_reports").add({
-                authorId: result.authorId,      
-                performerId: user.uid,          
-                performerName: user.displayName || "Górnik",
-                workoutDate: new Date().toISOString(),
-                details: result.details,        
-                duration: result.duration,
-                status: "PENDING",              
-                performerRatingGiven: currentRatingScore 
-            });
-        }
-
-        if (shouldSaveToPlan) {
-            const targetDay = document.getElementById('target-save-day').value;
-            const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
-            const targetRef = db.collection("users").doc(user.uid).collection("days").doc(targetDay).collection("exercises");
-            const snap = await sourceRef.get();
-            const batch = db.batch();
-            snap.forEach(doc => {
-                const d = doc.data();
-                batch.set(targetRef.doc(), { ...d, notes: "Zapisane z wyzwania" });
-            });
-            await batch.commit();
-            alert(`Plan dodany do: ${dayMap[targetDay]}`);
-        }
-
-        const modal = document.getElementById('challenge-end-modal');
-        modal.classList.remove('active');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        
-        localStorage.removeItem('activeWorkout');
-        window.location.reload();
-    } catch (e) {
-        alert("Błąd podczas kończenia: " + e.message);
+    if(result.authorId) {
+        await db.collection("challenge_reports").add({
+            authorId: result.authorId,      
+            performerId: user.uid,          
+            performerName: user.displayName || "Górnik",
+            workoutDate: new Date().toISOString(),
+            details: result.details,        
+            duration: result.duration,
+            status: "PENDING",              
+            performerRatingGiven: currentRatingScore 
+        });
     }
+
+    if (shouldSaveToPlan) {
+        const targetDay = document.getElementById('target-save-day').value;
+        const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
+        const targetRef = db.collection("users").doc(user.uid).collection("days").doc(targetDay).collection("exercises");
+        const snap = await sourceRef.get();
+        const batch = db.batch();
+        snap.forEach(doc => {
+            const d = doc.data();
+            batch.set(targetRef.doc(), { ...d, notes: "Zapisane z wyzwania" });
+        });
+        await batch.commit();
+        alert(`Plan dodany do: ${dayMap[targetDay]}`);
+    }
+
+    document.getElementById('challenge-end-modal').classList.add('hidden');
+    localStorage.removeItem('activeWorkout');
+    window.location.reload();
 }
 
 async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
@@ -457,15 +440,11 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
   5. MELDUNKI I POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
-    const modal = document.getElementById('notifications-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.add('active'), 10);
+    document.getElementById('notifications-modal').classList.remove('hidden');
     switchNotifTab('todo'); 
 }
 function closeNotificationsModal() {
-    const modal = document.getElementById('notifications-modal');
-    modal.classList.remove('active');
-    setTimeout(() => modal.classList.add('hidden'), 300);
+    document.getElementById('notifications-modal').classList.add('hidden');
     checkNotificationsCount(); 
 }
 
@@ -586,12 +565,18 @@ function checkActiveWorkout() {
     const titleEl = document.getElementById('current-day-display');
     const timerEl = document.getElementById('workout-timer');
     const shareBtn = document.getElementById('btn-share-day');
-    const nav = document.getElementById('days-nav-container');
-
+    
     if (activeData) {
-        // --- TRENING TRWA ---
+        if (activeData.day === 'challenge') {
+            document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
+            let chDiv = document.getElementById('challenge');
+            if(chDiv) chDiv.classList.remove("hidden");
+            
+            const nav = document.getElementById('days-nav-container');
+            if(nav) nav.style.display = 'none'; 
+            if(shareBtn) shareBtn.style.display = 'none';
+        }
         if(titleEl) titleEl.style.display = 'none';
-        
         if(timerEl) {
             timerEl.classList.remove('hidden');
             if (timerInterval) clearInterval(timerInterval);
@@ -601,24 +586,14 @@ function checkActiveWorkout() {
                 timerEl.textContent = date.toISOString().substr(11, 8);
             }, 1000);
         }
-
-        if (activeData.day === 'challenge') {
-            if(shareBtn) shareBtn.style.display = 'none';
-            if(currentSelectedDay !== 'challenge' && currentMode === 'plan') {
-                selectDay('challenge');
-            }
-        }
-        
         updateActionButtons(activeData.day);
     } else {
-        // --- BRAK TRENINGU ---
         if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
-        
+        const nav = document.getElementById('days-nav-container');
         if(nav) nav.style.display = 'block';
-        
         updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     }
@@ -629,21 +604,11 @@ function updateActionButtons(currentViewDay) {
     const container = document.getElementById(`${currentViewDay}-actions`);
     if(!container) return;
     container.innerHTML = '';
-
-    // 1. Jeśli w tym dniu trwa trening
     if (activeData && activeData.day === currentViewDay) {
         container.innerHTML = `<button class="btn-finish-workout" onclick="finishWorkout('${currentViewDay}')"><i class="fa-solid fa-flag-checkered"></i> ZAKOŃCZ TRENING</button>`;
-    } 
-    // 2. Jeśli NIE ma treningu
-    else if (!activeData) {
-        if (currentViewDay === 'challenge') {
-            container.innerHTML = ''; // Pusto - komunikat "Cisza" jest w cards-container
-        } else {
-            container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
-        }
-    } 
-    // 3. Jeśli trening trwa w INNYM dniu
-    else if (activeData && activeData.day !== currentViewDay) {
+    } else if (!activeData) {
+        container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
+    } else if (activeData && activeData.day !== currentViewDay) {
         container.innerHTML = `<p style="text-align:center; color:#666;">Trening trwa w: ${dayMap[activeData.day]}</p>`;
     }
 }
@@ -668,40 +633,12 @@ function removeLog(day, docId, w, r, lid) {
 function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
-
-    // --- SZYCHTA (WYZWANIE) ---
-    if (day === 'challenge') {
-        const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-        
-        // Pusty stan dla wyzwania
-        if (!activeData || activeData.day !== 'challenge') {
-            container.innerHTML = `
-                <div style="text-align:center; padding: 40px 20px; color: #888;">
-                    <i class="fa-solid fa-bed" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;"></i>
-                    <h3 style="margin:0; color:#ccc;">Cisza na kopalni</h3>
-                    <p style="font-size:0.9rem; margin-top:10px;">Aktualnie nie podjąłeś żadnego wyzwania.</p>
-                    <button class="btn-primary" onclick="switchMode('community')" style="margin-top:20px; background:var(--surface-color); border:1px solid #444;">
-                        <i class="fa-solid fa-magnifying-glass"></i> Znajdź Wyzwanie
-                    </button>
-                </div>
-            `;
-            const actionsDiv = document.getElementById('challenge-actions');
-            if(actionsDiv) actionsDiv.innerHTML = '';
-            return;
-        }
-    }
-    // ---------------------------
-
     const user = auth.currentUser;
     if(!user) return;
-    
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").orderBy("order", "asc").get()
     .then(qs => {
         container.innerHTML = ""; 
-        if(qs.empty && day === 'challenge') { 
-            container.innerHTML="<p style='text-align:center; padding:20px;'>Błąd danych wyzwania. Spróbuj odświeżyć.</p>"; 
-            return; 
-        }
+        if(qs.empty && day === 'challenge') { container.innerHTML="<p>Pusto? Odśwież aplikację.</p>"; return; }
         if(qs.empty) return;
         qs.forEach(doc => renderAccordionCard(container, day, doc));
     });
@@ -928,25 +865,8 @@ async function shareCurrentDay() {
     alert("Opublikowano na Szychcie!");
 }
 
-function openAddModal(){ 
-    if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
-    currentModalDay=currentSelectedDay; 
-    
-    const modal = document.getElementById('modal-overlay');
-    modal.classList.remove('hidden'); 
-    setTimeout(() => {
-        modal.classList.add('active');
-    }, 10);
-}
-
-function closeAddModal(){ 
-    const modal = document.getElementById('modal-overlay');
-    modal.classList.remove('active');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300);
-}
-
+function openAddModal(){ currentModalDay=currentSelectedDay; document.getElementById('modal-overlay').classList.remove('hidden'); }
+function closeAddModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
 function saveFromModal(){ 
     const ex=document.getElementById('modal-exercise').value; 
     const s=document.getElementById('modal-series').value; 
