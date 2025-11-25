@@ -54,17 +54,34 @@ document.addEventListener("DOMContentLoaded", () => {
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
-      // Ładowanie dni
+      // Ładowanie wszystkich dni
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
-      
-      // FIX: Zawsze ładuj dane Szychty (naprawia znikanie po odświeżeniu)
+      // Ładowanie Szychty (zawsze, na wypadek odświeżenia)
       loadCardsDataFromFirestore('challenge');
 
-      currentMode = 'plan';
-      selectDay('monday'); 
+      // --- INTELIGENTNY START (Pamięć Sesji + Kalendarz) ---
+      const lastMode = sessionStorage.getItem('GEM_saved_mode');
+      const lastDay = sessionStorage.getItem('GEM_saved_day');
+
+      // Oblicz dzień dzisiejszy (0=Niedziela, przestawiamy na naszą mapę)
+      const todayIndex = new Date().getDay(); 
+      const jsDayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      const todayName = jsDayMap[todayIndex];
+
+      if (lastMode && lastMode !== 'plan') {
+          // Powrót do zakładki (Historia/Ludzie) po odświeżeniu
+          switchMode(lastMode);
+          if (lastDay) selectDay(lastDay); 
+      } else {
+          // Start w Planie: Wróć do ostatniego dnia (odświeżenie) LUB otwórz DZIŚ (nowa sesja)
+          currentMode = 'plan';
+          selectDay(lastDay || todayName);
+      }
+      // ----------------------------------------------------
+
       checkActiveWorkout();
       updateProfileUI(user);
       loadProfileStats();
@@ -91,9 +108,11 @@ function getRankName(points) {
 }
 
 /*************************************************************
-  2. NAWIGACJA
+  2. NAWIGACJA (Z Pamięcią Sesji)
 *************************************************************/
 function switchMode(mode) {
+    // Zapisz tryb, żeby pamiętać po odświeżeniu
+    sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
     
     const historySection = document.getElementById('history');
@@ -101,11 +120,11 @@ function switchMode(mode) {
     const rulesSection = document.getElementById('rules');
     const profileSection = document.getElementById('profile');
     const daysNav = document.getElementById('days-nav-container');
-    const fab = document.getElementById('fab-add');
+    const fab = document.getElementById('fab-add'); 
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    // FIX: Ukrywanie plusa w Szychcie i poza Planem
+    // Ukrywanie Plusa (tylko w planie, nie w szychcie)
     if(fab) {
         fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
     }
@@ -113,8 +132,7 @@ function switchMode(mode) {
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        // FIX: Ładuj całą historię, nie tylko dla wybranego dnia
-        loadHistoryFromFirestore(null);
+        loadHistoryFromFirestore(null); // Ładuj całą historię
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
@@ -139,12 +157,16 @@ function switchMode(mode) {
 }
 
 function selectDay(dayValue) {
+    // Zapisz dzień, żeby pamiętać po odświeżeniu
+    sessionStorage.setItem('GEM_saved_day', dayValue);
+    
     currentSelectedDay = dayValue;
     const selector = document.getElementById('day-selector');
     if(selector) selector.value = dayValue; 
     
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     
+    // Logika podświetlania przycisków
     if (dayValue === 'challenge') {
         const chBtn = document.getElementById('pill-challenge');
         if(chBtn) chBtn.classList.add('active');
@@ -156,7 +178,7 @@ function selectDay(dayValue) {
         }
     }
 
-    // FIX: Ukrywanie plusa w Szychcie
+    // Ukrywanie Plusa w Szychcie
     const fab = document.getElementById('fab-add');
     if (fab) {
         if (dayValue === 'challenge') {
@@ -168,7 +190,6 @@ function selectDay(dayValue) {
 
     if (currentMode === 'plan') showPlanSection(dayValue);
     else if (currentMode === 'history') {
-        // W historii: jeśli klikniesz dzień, filtruj. Jeśli szychta - pokaż wszystko
         loadHistoryFromFirestore(dayValue === 'challenge' ? null : dayValue);
     }
     updateHeaderTitle();
@@ -266,7 +287,6 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
 
         closePublicProfile();
         selectDay("challenge");
-        // Wczytaj dane natychmiast
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
 
@@ -314,13 +334,18 @@ async function finishWorkout(day) {
 
         qs.forEach(doc => {
             const data = doc.data();
-            exercisesDone.push({ name: data.exercise, sets: data.currentLogs || [], weight: data.weight }); 
+            // FIX: Zabezpieczenie wagi przed undefined
+            exercisesDone.push({ 
+                name: data.exercise, 
+                sets: data.currentLogs || [], 
+                weight: data.weight || 0 
+            }); 
             batch.update(doc.ref, { currentLogs: firebase.firestore.FieldValue.delete() });
         });
 
         await batch.commit();
 
-        // FIX: Bezpieczne pobranie autora (zabezpieczenie przed błędem undefined)
+        // FIX: Zabezpieczenie autora przed undefined
         let safeAuthorId = null;
         if(activeData && activeData.challengeAuthor) {
             safeAuthorId = activeData.challengeAuthor;
@@ -389,10 +414,8 @@ async function finalizeChallenge(shouldSaveToPlan) {
         const user = auth.currentUser;
         const result = tempWorkoutResult;
 
-        // 1. Zapisz historię i punkty (Twoje i Autora)
         await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
 
-        // 2. Utwórz raport dla Autora (żeby mógł Ci dać bonus)
         if(result.authorId) {
             await db.collection("challenge_reports").add({
                 authorId: result.authorId,      
@@ -406,7 +429,6 @@ async function finalizeChallenge(shouldSaveToPlan) {
             });
         }
 
-        // 3. Opcjonalny zapis planu
         if (shouldSaveToPlan) {
             const targetDay = document.getElementById('target-save-day').value;
             const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
@@ -437,7 +459,6 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
     const result = tempWorkoutResult;
     const batch = db.batch();
 
-    // Zapis do historii
     const historyRef = db.collection("users").doc(user.uid).collection("history").doc();
     let authorName = "Nieznany";
     if (authorId) {
@@ -453,17 +474,14 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
         pointsEarned: myPoints
     });
 
-    // Aktualizacja moich punktów
     const myPublicRef = db.collection("publicUsers").doc(user.uid);
     batch.set(myPublicRef, {
         totalPoints: firebase.firestore.FieldValue.increment(myPoints),
         lastWorkout: new Date().toISOString()
     }, { merge: true });
 
-    // Aktualizacja punktów autora (jeśli to wyzwanie)
     if (authorId && ratingPoints > 0) {
         const authorRef = db.collection("publicUsers").doc(authorId);
-        // Używamy update, bo profil autora musi istnieć
         batch.update(authorRef, {
             totalPoints: firebase.firestore.FieldValue.increment(ratingPoints),
             ratingCount: firebase.firestore.FieldValue.increment(1)
@@ -656,7 +674,7 @@ function updateActionButtons(currentViewDay) {
     } 
     // 2. Jeśli NIE ma treningu
     else if (!activeData) {
-        // FIX: W Szychcie nie pokazuj przycisku Start, jeśli jest pusto
+        // Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
         if (currentViewDay === 'challenge') {
             container.innerHTML = ''; 
         } else {
@@ -669,14 +687,14 @@ function updateActionButtons(currentViewDay) {
     }
 }
 
+// FIX: Dodawanie serii BEZ nadpisywania planu
 function addLog(day, docId) {
     const w = document.getElementById(`log-w-${docId}`).value;
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
     const user = auth.currentUser;
-    // FIX: Tylko arrayUnion, bez nadpisywania 'weight'
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
-      .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) })
+      .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) 
       .then(() => loadCardsDataFromFirestore(day));
 }
 
@@ -695,7 +713,6 @@ function loadCardsDataFromFirestore(day) {
     if (day === 'challenge') {
         const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
         
-        // Pusty stan dla wyzwania
         if (!activeData || activeData.day !== 'challenge') {
             container.innerHTML = `
                 <div style="text-align:center; padding: 40px 20px; color: #888;">
@@ -737,7 +754,7 @@ function renderAccordionCard(container, day, doc) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     
-    // FIX: Nowy wygląd listy serii
+    // Lista serii (Tabela)
     let logsHtml = logs.map((l, index) => `
         <div class="log-row-item">
             <div>
@@ -793,7 +810,7 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
-// FIX: Zapobieganie zamykaniu przy dodawaniu serii
+// Fix: Zapobiega zamykaniu karty przy klikaniu w inputy
 window.toggleCard = function(h) { 
     if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
     h.parentElement.classList.toggle('open'); 
