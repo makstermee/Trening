@@ -59,7 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
-      // Ładowanie wyzwania (na wypadek odświeżenia w trakcie szychty)
+      
+      // FIX: Zawsze ładuj dane Szychty (naprawia znikanie po odświeżeniu)
       loadCardsDataFromFirestore('challenge');
 
       currentMode = 'plan';
@@ -100,11 +101,11 @@ function switchMode(mode) {
     const rulesSection = document.getElementById('rules');
     const profileSection = document.getElementById('profile');
     const daysNav = document.getElementById('days-nav-container');
-    const fab = document.getElementById('fab-add'); 
+    const fab = document.getElementById('fab-add');
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    // Logika ukrywania PLUSA
+    // FIX: Ukrywanie plusa w Szychcie i poza Planem
     if(fab) {
         fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
     }
@@ -112,7 +113,8 @@ function switchMode(mode) {
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        loadHistoryFromFirestore(null); // Ładuj wszystko
+        // FIX: Ładuj całą historię, nie tylko dla wybranego dnia
+        loadHistoryFromFirestore(null);
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
@@ -154,11 +156,11 @@ function selectDay(dayValue) {
         }
     }
 
-    // Obsługa PLUSA (ukryj w Szychcie)
+    // FIX: Ukrywanie plusa w Szychcie
     const fab = document.getElementById('fab-add');
     if (fab) {
         if (dayValue === 'challenge') {
-            fab.style.display = 'none'; 
+            fab.style.display = 'none';
         } else {
             fab.style.display = (currentMode === 'plan') ? 'flex' : 'none';
         }
@@ -166,6 +168,7 @@ function selectDay(dayValue) {
 
     if (currentMode === 'plan') showPlanSection(dayValue);
     else if (currentMode === 'history') {
+        // W historii: jeśli klikniesz dzień, filtruj. Jeśli szychta - pokaż wszystko
         loadHistoryFromFirestore(dayValue === 'challenge' ? null : dayValue);
     }
     updateHeaderTitle();
@@ -263,6 +266,7 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
 
         closePublicProfile();
         selectDay("challenge");
+        // Wczytaj dane natychmiast
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
 
@@ -316,9 +320,9 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
-        // --- FIX GŁÓWNY: Pancerne zabezpieczenie przed 'undefined' ---
+        // FIX: Bezpieczne pobranie autora (zabezpieczenie przed błędem undefined)
         let safeAuthorId = null;
-        if (activeData && activeData.challengeAuthor) {
+        if(activeData && activeData.challengeAuthor) {
             safeAuthorId = activeData.challengeAuthor;
         }
 
@@ -328,7 +332,7 @@ async function finishWorkout(day) {
             dayKey: day,
             details: exercisesDone,
             isChallenge: !!isChallenge,
-            authorId: safeAuthorId // Teraz na 100% będzie null albo string, nigdy undefined
+            authorId: safeAuthorId
         };
 
         if (isChallenge) {
@@ -341,7 +345,7 @@ async function finishWorkout(day) {
         }
     } catch (e) {
         console.error(e);
-        alert("BŁĄD ZAPISU: " + e.message + "\nSprawdź połączenie z internetem.");
+        alert("BŁĄD ZAPISU: " + e.message);
     }
 }
 
@@ -385,8 +389,10 @@ async function finalizeChallenge(shouldSaveToPlan) {
         const user = auth.currentUser;
         const result = tempWorkoutResult;
 
+        // 1. Zapisz historię i punkty (Twoje i Autora)
         await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
 
+        // 2. Utwórz raport dla Autora (żeby mógł Ci dać bonus)
         if(result.authorId) {
             await db.collection("challenge_reports").add({
                 authorId: result.authorId,      
@@ -400,6 +406,7 @@ async function finalizeChallenge(shouldSaveToPlan) {
             });
         }
 
+        // 3. Opcjonalny zapis planu
         if (shouldSaveToPlan) {
             const targetDay = document.getElementById('target-save-day').value;
             const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
@@ -430,6 +437,7 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
     const result = tempWorkoutResult;
     const batch = db.batch();
 
+    // Zapis do historii
     const historyRef = db.collection("users").doc(user.uid).collection("history").doc();
     let authorName = "Nieznany";
     if (authorId) {
@@ -445,14 +453,17 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
         pointsEarned: myPoints
     });
 
+    // Aktualizacja moich punktów
     const myPublicRef = db.collection("publicUsers").doc(user.uid);
     batch.set(myPublicRef, {
         totalPoints: firebase.firestore.FieldValue.increment(myPoints),
         lastWorkout: new Date().toISOString()
     }, { merge: true });
 
+    // Aktualizacja punktów autora (jeśli to wyzwanie)
     if (authorId && ratingPoints > 0) {
         const authorRef = db.collection("publicUsers").doc(authorId);
+        // Używamy update, bo profil autora musi istnieć
         batch.update(authorRef, {
             totalPoints: firebase.firestore.FieldValue.increment(ratingPoints),
             ratingCount: firebase.firestore.FieldValue.increment(1)
@@ -645,7 +656,7 @@ function updateActionButtons(currentViewDay) {
     } 
     // 2. Jeśli NIE ma treningu
     else if (!activeData) {
-        // Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
+        // FIX: W Szychcie nie pokazuj przycisku Start, jeśli jest pusto
         if (currentViewDay === 'challenge') {
             container.innerHTML = ''; 
         } else {
@@ -663,8 +674,9 @@ function addLog(day, docId) {
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
     const user = auth.currentUser;
+    // FIX: Tylko arrayUnion, bez nadpisywania 'weight'
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
-      .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) // FIX: Bez weight: w
+      .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) })
       .then(() => loadCardsDataFromFirestore(day));
 }
 
@@ -725,6 +737,7 @@ function renderAccordionCard(container, day, doc) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     
+    // FIX: Nowy wygląd listy serii
     let logsHtml = logs.map((l, index) => `
         <div class="log-row-item">
             <div>
@@ -780,6 +793,7 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
+// FIX: Zapobieganie zamykaniu przy dodawaniu serii
 window.toggleCard = function(h) { 
     if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
     h.parentElement.classList.toggle('open'); 
@@ -824,6 +838,7 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
+// FIX: Obsługa błędów w historii
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     if(!container) return;
@@ -883,6 +898,7 @@ function renderHistoryCard(container, item) {
 window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
 window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
 
+// FIX: Obsługa błędów w społeczności
 function loadCommunity() {
     const container = document.getElementById("community-list");
     if(!container) return;
