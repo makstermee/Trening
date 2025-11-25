@@ -810,7 +810,7 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
-// Fix: Zapobiega zamykaniu karty przy klikaniu w inputy
+// Zapobiega zamykaniu karty przy klikaniu w inputy
 window.toggleCard = function(h) { 
     if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
     h.parentElement.classList.toggle('open'); 
@@ -1006,31 +1006,84 @@ async function shareCurrentDay() {
     alert("Opublikowano na Szychcie!");
 }
 
-// FIX: Dodanie klas active/hidden dla animacji
+// FIX: Otwieranie okna + czyszczenie pól (naprawa "zacinającego się" okna)
 function openAddModal(){ 
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
+    
+    // Resetujemy edycję (to sprawia, że zawsze jest nowe okno)
+    editInfo = { day: null, docId: null };
+    document.getElementById('modal-title').textContent = "Dodaj ćwiczenie";
+    
+    // Czyścimy pola
+    document.getElementById('modal-exercise').value = "";
+    document.getElementById('modal-series').value = "";
+    document.getElementById('modal-reps').value = "";
+    document.getElementById('modal-weight').value = "";
+    document.getElementById('modal-notes').value = "";
+
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden'); 
     setTimeout(()=>modal.classList.add('active'), 10);
 }
+
 function closeAddModal(){ 
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('active');
     setTimeout(()=>modal.classList.add('hidden'), 300);
 }
+
+// FIX: Pobieranie wagi (naprawa braku kg w bazie)
 function saveFromModal(){ 
-    const ex=document.getElementById('modal-exercise').value; 
-    const s=document.getElementById('modal-series').value; 
-    const r=document.getElementById('modal-reps').value; 
+    const ex = document.getElementById('modal-exercise').value; 
+    const s = document.getElementById('modal-series').value; 
+    const r = document.getElementById('modal-reps').value; 
+    const w = document.getElementById('modal-weight').value; // Pobieramy wagę!
+    
     if(!ex) return; 
-    const d={exercise:ex,series:s,reps:r,order:Date.now()}; 
+    
+    const d = {
+        exercise: ex,
+        series: s,
+        reps: r,
+        weight: w, // Dodajemy wagę do obiektu
+        notes: document.getElementById('modal-notes').value,
+        order: Date.now()
+    }; 
+    
     const u=auth.currentUser;
     if(editInfo.docId) db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").doc(editInfo.docId).update(d);
     else db.collection("users").doc(u.uid).collection("days").doc(currentModalDay).collection("exercises").add(d);
-    closeAddModal(); loadCardsDataFromFirestore(currentModalDay);
+    
+    closeAddModal(); 
+    loadCardsDataFromFirestore(currentModalDay);
 }
-window.triggerEdit=function(day,id){ editInfo={day,docId:id}; currentModalDay=day; openAddModal(); }
+
+window.triggerEdit=function(day,id){ 
+    // Ustawiamy tryb edycji
+    editInfo={day,docId:id}; 
+    currentModalDay=day; 
+    
+    // Pobieramy dane, żeby wypełnić pola
+    const user = auth.currentUser;
+    db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(id).get()
+    .then(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            document.getElementById('modal-exercise').value = data.exercise;
+            document.getElementById('modal-series').value = data.series;
+            document.getElementById('modal-reps').value = data.reps;
+            document.getElementById('modal-weight').value = data.weight || "";
+            document.getElementById('modal-notes').value = data.notes || "";
+            document.getElementById('modal-title').textContent = "Edytuj ćwiczenie";
+            
+            const modal = document.getElementById('modal-overlay');
+            modal.classList.remove('hidden'); 
+            setTimeout(()=>modal.classList.add('active'), 10);
+        }
+    });
+}
+
 function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
 function saveMuscleGroups(){ const v=event.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
 function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) document.getElementById(`${d}-muscle-group`).value=doc.data().muscleGroup||""; }); }
