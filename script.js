@@ -804,19 +804,7 @@ function renderAccordionCard(container, day, doc) {
                 <div class="logs-list">${logsHtml}</div>
             </div>
 
-            <div class="card-actions">
-                 <button class="btn-icon btn-edit" onclick="triggerEdit('${day}', '${id}')"><i class="fa-solid fa-pen"></i> Edytuj</button>
-                 <button class="btn-icon btn-delete" onclick="deleteCard('${day}', '${id}')"><i class="fa-solid fa-trash"></i> Usuń</button>
-            </div>
-        </div>
-    `;
-    container.appendChild(card);
-}
-
-window.toggleCard = function(h) { 
-    if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
-    h.parentElement.classList.toggle('open'); 
-};
+;
 
 function updateProfileUI(user) {
     const emailEl = document.getElementById('profile-email');
@@ -907,17 +895,10 @@ function renderHistoryCard(container, item) {
         authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
     }
 
-    // Używamy "Opcji C": Tytuł to nazwa partii (workoutName) lub dzień tygodnia
-    const titleToShow = data.workoutName ? data.workoutName : (data.dayName || 'Trening');
-
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
-        // Generowanie tabeli
         detailsHtml = data.details.map(ex => {
-            // Nagłówek ćwiczenia
-            let exHeader = `<div class="ex-header">${escapeHTML(ex.name)}</div>`;
-            
-            // Wiersze tabeli
+            // Generowanie wierszy tabeli
             let rows = '';
             if (Array.isArray(ex.sets)) {
                 rows = ex.sets.map((s, i) => `
@@ -928,14 +909,20 @@ function renderHistoryCard(container, item) {
                     </tr>
                 `).join('');
             }
-            
+
+            // Zwracamy blok z nagłówkiem (klikowalnym) i ukrytą tabelą
             return `
                 <div class="history-ex-block">
-                    ${exHeader}
-                    <table class="history-table">
-                        <tr><th>Seria</th><th>Kg</th><th>Powt</th></tr>
-                        ${rows}
-                    </table>
+                    <div class="ex-header" onclick="toggleHistoryExercise(this)">
+                        <span>${escapeHTML(ex.name)}</span>
+                        <i class="fa-solid fa-chevron-down ex-toggle-icon"></i>
+                    </div>
+                    <div class="history-ex-details">
+                        <table class="history-table">
+                            <tr><th>Seria</th><th>Kg</th><th>Powt</th></tr>
+                            ${rows}
+                        </table>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -945,7 +932,7 @@ function renderHistoryCard(container, item) {
         <div class="history-card-header" onclick="toggleHistoryCard(this)">
             <div class="history-info">
                 ${authorHtml}
-                <h4>${escapeHTML(titleToShow)}</h4>
+                <h4>${escapeHTML(data.workoutName || data.dayName || 'Trening')}</h4>
                 <div class="history-meta">
                     <span>${data.displayDate || data.dateIso.split('T')[0]}</span>
                     <span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span>
@@ -962,6 +949,12 @@ function renderHistoryCard(container, item) {
     `;
     container.appendChild(card);
 }
+// Nowa funkcja do otwierania pojedynczych ćwiczeń w historii
+window.toggleHistoryExercise = function(header) {
+    event.stopPropagation(); // Żeby nie zamykało całej karty dnia
+    header.parentElement.classList.toggle('open');
+};
+
 window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
 window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
 
