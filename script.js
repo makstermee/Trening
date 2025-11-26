@@ -659,7 +659,15 @@ function checkActiveWorkout() {
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         
-        if(nav) nav.style.display = 'block';
+                // FIX: Pokaż pasek Dni tylko w Planie lub Historii
+        if(nav) {
+            if (currentMode === 'plan' || currentMode === 'history') {
+                nav.style.display = 'block';
+            } else {
+                nav.style.display = 'none';
+            }
+        }
+
         
         updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
