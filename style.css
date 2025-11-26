@@ -299,7 +299,8 @@ body {
 .rank-row.gold { border: 1px solid #ffd700; background: rgba(255, 215, 0, 0.1); }
 .rank-row.gold .r-name { color: #ffd700; }
 
-/* NOWA HISTORIA (TABELA I MIESIĄCE) - WKLEJ TO */
+/* NOWA HISTORIA (TABELA I MIESIĄCE) - 
+/* NOWA HISTORIA (PODWÓJNY AKORDEON) */
 .history-month-header {
     font-size: 0.85rem;
     color: var(--text-secondary);
@@ -312,21 +313,56 @@ body {
 }
 
 .history-ex-block {
-    margin-bottom: 15px;
-    background: rgba(0,0,0,0.2);
-    padding: 10px;
-    border-radius: 8px;
-}
-
-.ex-header {
-    font-weight: 700;
-    color: white;
     margin-bottom: 8px;
-    font-size: 0.95rem;
-    border-bottom: 1px solid #333;
-    padding-bottom: 5px;
+    background: rgba(0,0,0,0.3); /* Ciemniejsze tło dla bloku */
+    border-radius: 8px;
+    overflow: hidden;
 }
 
+/* Nagłówek ćwiczenia - teraz jest przyciskiem */
+.ex-header {
+    font-weight: 600;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    padding: 12px 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+}
+
+.ex-header:active {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Tabela ze szczegółami - domyślnie UKRYTA */
+.history-ex-details {
+    display: none;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-top: 1px solid #333;
+}
+
+/* Kiedy blok ma klasę .open - pokaż tabelę */
+.history-ex-block.open .history-ex-details {
+    display: block;
+    animation: fadeIn 0.2s;
+}
+
+/* Ikonka strzałki */
+.ex-toggle-icon {
+    font-size: 0.8rem;
+    color: #666;
+    transition: transform 0.3s;
+}
+
+.history-ex-block.open .ex-toggle-icon {
+    transform: rotate(180deg);
+    color: var(--primary-color);
+}
+
+/* Styl samej tabeli */
 .history-table {
     width: 100%;
     border-collapse: collapse;
