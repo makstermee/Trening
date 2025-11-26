@@ -135,7 +135,7 @@ function switchMode(mode) {
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        loadHistoryFromFirestore(null); 
+        loadHistoryFromFirestore(currentSelectedDay);
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
