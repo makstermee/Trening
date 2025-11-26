@@ -1,7 +1,6 @@
 /*************************************************************
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
-// 1. Konfiguracja Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
   authDomain: "plan-treningowy-a9d00.firebaseapp.com",
@@ -12,7 +11,6 @@ const firebaseConfig = {
   measurementId: "G-EY88TE8L7H"
 };
 
-// Inicjalizacja Firebase 
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -20,7 +18,6 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// 2. Mapy i Zmienne
 const dayMap = { 
     monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa", 
     thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela",
@@ -36,12 +33,11 @@ let currentMode = 'plan';
 let currentSelectedDay = 'monday'; 
 let viewingUserId = null; 
 
-// Zmienne do obsługi wyzwań
 let tempWorkoutResult = null; 
 let currentRatingScore = 0;   
 
 /*************************************************************
-  1. INICJALIZACJA I RANGI
+  1. INICJALIZACJA
 *************************************************************/
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.querySelector('.container');
@@ -54,18 +50,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
-      // Ładowanie wszystkich dni
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
-      // Ładowanie Szychty (zawsze)
       loadCardsDataFromFirestore('challenge');
 
-      // --- INTELIGENTNY START ---
+      // INTELIGENTNY START
       const lastMode = sessionStorage.getItem('GEM_saved_mode');
       const lastDay = sessionStorage.getItem('GEM_saved_day');
-
       const todayIndex = new Date().getDay(); 
       const jsDayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
       const todayName = jsDayMap[todayIndex];
@@ -77,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
           currentMode = 'plan';
           selectDay(lastDay || todayName);
       }
-      // --------------------------
 
       checkActiveWorkout();
       updateProfileUI(user);
@@ -90,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// --- RANGI GÓRNICZE ---
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -110,15 +101,15 @@ function getRankName(points) {
 function switchMode(mode) {
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
-      // --- FIX: Aktualizacja podświetlenia dolnego paska ---
+    
+    // Podświetlenie ikon
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('active');
-        // Sprawdzamy czy przycisk prowadzi do tego trybu
         if (btn.getAttribute('onclick').includes(`'${mode}'`)) {
             btn.classList.add('active');
         }
     });
-    // -----------------------------------------------------  
+
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
@@ -135,7 +126,7 @@ function switchMode(mode) {
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        loadHistoryFromFirestore(currentSelectedDay);
+        loadHistoryFromFirestore(null); 
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
@@ -226,7 +217,7 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING I WYZWANIA
+  3. TRENING
 *************************************************************/
 function startWorkout(day) {
     const now = Date.now();
@@ -317,7 +308,7 @@ async function finishWorkout(day) {
     const totalMinutes = (parseInt(parts[0]) * 60) + parseInt(parts[1]);
 
     if (isChallenge && totalMinutes < 10) {
-        return alert(`Za krótko, chopie! Szychta musi trwać minimum 10 minut. (Twój czas: ${totalMinutes} min)`);
+        return alert(`Za krótko, chopie! Szychta musi trwać minimum 10 minut.`);
     }
 
     if(!confirm("Fajrant? (Zakończyć trening)")) return;
@@ -347,7 +338,6 @@ async function finishWorkout(day) {
             safeAuthorId = activeData.challengeAuthor;
         }
 
-        // NOWOŚĆ: Pobieranie nazwy partii z inputa
         let muscleName = "";
         const muscleInput = document.getElementById(`${day}-muscle-group`);
         if (muscleInput) muscleName = muscleInput.value;
@@ -359,7 +349,7 @@ async function finishWorkout(day) {
             details: exercisesDone,
             isChallenge: !!isChallenge,
             authorId: safeAuthorId,
-            workoutName: muscleName // Zapisujemy to pole!
+            workoutName: muscleName 
         };
 
         if (isChallenge) {
@@ -471,7 +461,6 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
     batch.set(historyRef, {
         ...result,
         dayName: result.isChallenge ? `🏆 WYZWANIE` : dayMap[result.dayKey],
-        // Jeśli workoutName jest pusty, użyj dayName
         workoutName: result.workoutName || dayMap[result.dayKey],
         originalAuthorId: authorId || null,
         originalAuthorName: authorId ? authorName : null,
@@ -496,7 +485,7 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
 }
 
 /*************************************************************
-  5. MELDUNKI I POWIADOMIENIA
+  5. POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
     const modal = document.getElementById('notifications-modal');
@@ -621,7 +610,7 @@ function checkNotificationsCount() {
 }
 
 /*************************************************************
-  6. FUNKCJE POMOCNICZE UI
+  6. UI
 *************************************************************/
 function checkActiveWorkout() {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
@@ -631,7 +620,6 @@ function checkActiveWorkout() {
     const nav = document.getElementById('days-nav-container');
 
     if (activeData) {
-        // --- TRENING TRWA ---
         if(titleEl) titleEl.style.display = 'none';
         
         if(timerEl) {
@@ -653,13 +641,12 @@ function checkActiveWorkout() {
         
         updateActionButtons(activeData.day);
     } else {
-        // --- BRAK TRENINGU ---
         if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         
-                // FIX: Pokaż pasek Dni tylko w Planie lub Historii
+        // FIX: Pasek Dni tylko w Planie/Historii
         if(nav) {
             if (currentMode === 'plan' || currentMode === 'history') {
                 nav.style.display = 'block';
@@ -667,7 +654,6 @@ function checkActiveWorkout() {
                 nav.style.display = 'none';
             }
         }
-
         
         updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
@@ -804,7 +790,19 @@ function renderAccordionCard(container, day, doc) {
                 <div class="logs-list">${logsHtml}</div>
             </div>
 
-;
+            <div class="card-actions">
+                 <button class="btn-icon btn-edit" onclick="triggerEdit('${day}', '${id}')"><i class="fa-solid fa-pen"></i> Edytuj</button>
+                 <button class="btn-icon btn-delete" onclick="deleteCard('${day}', '${id}')"><i class="fa-solid fa-trash"></i> Usuń</button>
+            </div>
+        </div>
+    `;
+    container.appendChild(card);
+}
+
+window.toggleCard = function(h) { 
+    if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
+    h.parentElement.classList.toggle('open'); 
+};
 
 function updateProfileUI(user) {
     const emailEl = document.getElementById('profile-email');
@@ -845,7 +843,7 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
-// NOWA HISTORIA: GRUPOWANIE + TABELA
+// HISTORIA: GRUPOWANIE + TABELA
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     if(!container) return;
@@ -865,11 +863,9 @@ function loadHistoryFromFirestore(dayFilterKey) {
         
         if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
 
-        // Logika grupowania miesiącami
         let currentMonth = "";
         docs.forEach(item => {
              const date = new Date(item.data.dateIso);
-             // Używamy polskiej nazwy miesiąca
              const monthName = date.toLocaleString('pl-PL', { month: 'long', year: 'numeric' }).toUpperCase();
              
              if (monthName !== currentMonth) {
@@ -898,7 +894,6 @@ function renderHistoryCard(container, item) {
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
         detailsHtml = data.details.map(ex => {
-            // Generowanie wierszy tabeli
             let rows = '';
             if (Array.isArray(ex.sets)) {
                 rows = ex.sets.map((s, i) => `
@@ -910,7 +905,6 @@ function renderHistoryCard(container, item) {
                 `).join('');
             }
 
-            // Zwracamy blok z nagłówkiem (klikowalnym) i ukrytą tabelą
             return `
                 <div class="history-ex-block">
                     <div class="ex-header" onclick="toggleHistoryExercise(this)">
@@ -949,9 +943,10 @@ function renderHistoryCard(container, item) {
     `;
     container.appendChild(card);
 }
-// Nowa funkcja do otwierania pojedynczych ćwiczeń w historii
+
+// Otwieranie szczegółów ćwiczenia w historii
 window.toggleHistoryExercise = function(header) {
-    event.stopPropagation(); // Żeby nie zamykało całej karty dnia
+    event.stopPropagation(); 
     header.parentElement.classList.toggle('open');
 };
 
