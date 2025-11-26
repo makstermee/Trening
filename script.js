@@ -110,7 +110,15 @@ function getRankName(points) {
 function switchMode(mode) {
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
-    
+      // --- FIX: Aktualizacja podświetlenia dolnego paska ---
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.remove('active');
+        // Sprawdzamy czy przycisk prowadzi do tego trybu
+        if (btn.getAttribute('onclick').includes(`'${mode}'`)) {
+            btn.classList.add('active');
+        }
+    });
+    // -----------------------------------------------------  
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
