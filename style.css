@@ -298,3 +298,57 @@ body {
 .rank-row .r-name { color: white; font-weight: bold; }
 .rank-row.gold { border: 1px solid #ffd700; background: rgba(255, 215, 0, 0.1); }
 .rank-row.gold .r-name { color: #ffd700; }
+
+/* NOWA HISTORIA (TABELA I MIESIĄCE) - WKLEJ TO */
+.history-month-header {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 25px 0 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding-left: 10px;
+    border-left: 3px solid var(--primary-color);
+    font-weight: 800;
+}
+
+.history-ex-block {
+    margin-bottom: 15px;
+    background: rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.ex-header {
+    font-weight: 700;
+    color: white;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.history-table th {
+    text-align: left;
+    color: #666;
+    font-weight: normal;
+    padding: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.history-table td {
+    padding: 6px 4px;
+    border-bottom: 1px solid #222;
+    color: #ccc;
+}
+
+.history-table td.strong {
+    color: var(--primary-color);
+    font-weight: bold;
+}
