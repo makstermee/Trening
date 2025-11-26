@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gympro-sport-to-zdrowie 1.3'; 
+const CACHE_NAME = 'gympro-sport-to-zdrowie 2.0v'; 
 const ASSETS = [
   './',
   './index.html',
