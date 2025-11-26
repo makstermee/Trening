@@ -59,28 +59,25 @@ document.addEventListener("DOMContentLoaded", () => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
-      // Ładowanie Szychty (zawsze, na wypadek odświeżenia)
+      // Ładowanie Szychty (zawsze)
       loadCardsDataFromFirestore('challenge');
 
-      // --- INTELIGENTNY START (Pamięć Sesji + Kalendarz) ---
+      // --- INTELIGENTNY START ---
       const lastMode = sessionStorage.getItem('GEM_saved_mode');
       const lastDay = sessionStorage.getItem('GEM_saved_day');
 
-      // Oblicz dzień dzisiejszy (0=Niedziela, przestawiamy na naszą mapę)
       const todayIndex = new Date().getDay(); 
       const jsDayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
       const todayName = jsDayMap[todayIndex];
 
       if (lastMode && lastMode !== 'plan') {
-          // Powrót do zakładki (Historia/Ludzie) po odświeżeniu
           switchMode(lastMode);
           if (lastDay) selectDay(lastDay); 
       } else {
-          // Start w Planie: Wróć do ostatniego dnia (odświeżenie) LUB otwórz DZIŚ (nowa sesja)
           currentMode = 'plan';
           selectDay(lastDay || todayName);
       }
-      // ----------------------------------------------------
+      // --------------------------
 
       checkActiveWorkout();
       updateProfileUI(user);
@@ -108,10 +105,9 @@ function getRankName(points) {
 }
 
 /*************************************************************
-  2. NAWIGACJA (Z Pamięcią Sesji)
+  2. NAWIGACJA
 *************************************************************/
 function switchMode(mode) {
-    // Zapisz tryb, żeby pamiętać po odświeżeniu
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
     
@@ -124,7 +120,6 @@ function switchMode(mode) {
 
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
-    // Ukrywanie Plusa (tylko w planie, nie w szychcie)
     if(fab) {
         fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
     }
@@ -132,7 +127,7 @@ function switchMode(mode) {
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        loadHistoryFromFirestore(null); // Ładuj całą historię
+        loadHistoryFromFirestore(null); 
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
@@ -149,7 +144,6 @@ function switchMode(mode) {
         loadProfileStats(); 
     } 
     else {
-        // Domyślnie PLAN
         if(daysNav) daysNav.style.display = 'block'; 
         showPlanSection(currentSelectedDay);
     }
@@ -157,16 +151,13 @@ function switchMode(mode) {
 }
 
 function selectDay(dayValue) {
-    // Zapisz dzień, żeby pamiętać po odświeżeniu
     sessionStorage.setItem('GEM_saved_day', dayValue);
-    
     currentSelectedDay = dayValue;
     const selector = document.getElementById('day-selector');
     if(selector) selector.value = dayValue; 
     
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     
-    // Logika podświetlania przycisków
     if (dayValue === 'challenge') {
         const chBtn = document.getElementById('pill-challenge');
         if(chBtn) chBtn.classList.add('active');
@@ -178,7 +169,6 @@ function selectDay(dayValue) {
         }
     }
 
-    // Ukrywanie Plusa w Szychcie
     const fab = document.getElementById('fab-add');
     if (fab) {
         if (dayValue === 'challenge') {
@@ -334,7 +324,6 @@ async function finishWorkout(day) {
 
         qs.forEach(doc => {
             const data = doc.data();
-            // FIX: Zabezpieczenie wagi przed undefined
             exercisesDone.push({ 
                 name: data.exercise, 
                 sets: data.currentLogs || [], 
@@ -345,11 +334,15 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
-        // FIX: Zabezpieczenie autora przed undefined
         let safeAuthorId = null;
         if(activeData && activeData.challengeAuthor) {
             safeAuthorId = activeData.challengeAuthor;
         }
+
+        // NOWOŚĆ: Pobieranie nazwy partii z inputa
+        let muscleName = "";
+        const muscleInput = document.getElementById(`${day}-muscle-group`);
+        if (muscleInput) muscleName = muscleInput.value;
 
         tempWorkoutResult = {
             dateIso: new Date().toISOString(),
@@ -357,7 +350,8 @@ async function finishWorkout(day) {
             dayKey: day,
             details: exercisesDone,
             isChallenge: !!isChallenge,
-            authorId: safeAuthorId
+            authorId: safeAuthorId,
+            workoutName: muscleName // Zapisujemy to pole!
         };
 
         if (isChallenge) {
@@ -469,6 +463,8 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
     batch.set(historyRef, {
         ...result,
         dayName: result.isChallenge ? `🏆 WYZWANIE` : dayMap[result.dayKey],
+        // Jeśli workoutName jest pusty, użyj dayName
+        workoutName: result.workoutName || dayMap[result.dayKey],
         originalAuthorId: authorId || null,
         originalAuthorName: authorId ? authorName : null,
         pointsEarned: myPoints
@@ -668,26 +664,21 @@ function updateActionButtons(currentViewDay) {
     if(!container) return;
     container.innerHTML = '';
 
-    // 1. Jeśli w tym dniu trwa trening
     if (activeData && activeData.day === currentViewDay) {
         container.innerHTML = `<button class="btn-finish-workout" onclick="finishWorkout('${currentViewDay}')"><i class="fa-solid fa-flag-checkered"></i> ZAKOŃCZ TRENING</button>`;
     } 
-    // 2. Jeśli NIE ma treningu
     else if (!activeData) {
-        // Jeśli to Szychta, ale nie ma treningu, NIE POKAZUJ przycisku Start
         if (currentViewDay === 'challenge') {
             container.innerHTML = ''; 
         } else {
             container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
         }
     } 
-    // 3. Jeśli trening trwa w INNYM dniu
     else if (activeData && activeData.day !== currentViewDay) {
         container.innerHTML = `<p style="text-align:center; color:#666;">Trening trwa w: ${dayMap[activeData.day]}</p>`;
     }
 }
 
-// FIX: Dodawanie serii BEZ nadpisywania planu
 function addLog(day, docId) {
     const w = document.getElementById(`log-w-${docId}`).value;
     const r = document.getElementById(`log-r-${docId}`).value;
@@ -709,10 +700,8 @@ function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
 
-    // --- SZYCHTA (WYZWANIE) ---
     if (day === 'challenge') {
         const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-        
         if (!activeData || activeData.day !== 'challenge') {
             container.innerHTML = `
                 <div style="text-align:center; padding: 40px 20px; color: #888;">
@@ -729,7 +718,6 @@ function loadCardsDataFromFirestore(day) {
             return;
         }
     }
-    // ---------------------------
 
     const user = auth.currentUser;
     if(!user) return;
@@ -754,7 +742,6 @@ function renderAccordionCard(container, day, doc) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     
-    // Lista serii (Tabela)
     let logsHtml = logs.map((l, index) => `
         <div class="log-row-item">
             <div>
@@ -810,7 +797,6 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
-// Zapobiega zamykaniu karty przy klikaniu w inputy
 window.toggleCard = function(h) { 
     if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
     h.parentElement.classList.toggle('open'); 
@@ -855,7 +841,7 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
-// FIX: Obsługa błędów w historii
+// NOWA HISTORIA: GRUPOWANIE + TABELA
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     if(!container) return;
@@ -874,12 +860,26 @@ function loadHistoryFromFirestore(dayFilterKey) {
         }
         
         if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
-        docs.forEach(item => renderHistoryCard(container, item));
+
+        // Logika grupowania miesiącami
+        let currentMonth = "";
+        docs.forEach(item => {
+             const date = new Date(item.data.dateIso);
+             // Używamy polskiej nazwy miesiąca
+             const monthName = date.toLocaleString('pl-PL', { month: 'long', year: 'numeric' }).toUpperCase();
+             
+             if (monthName !== currentMonth) {
+                 container.innerHTML += `<div class="history-month-header">${monthName}</div>`;
+                 currentMonth = monthName;
+             }
+             renderHistoryCard(container, item);
+        });
     })
     .catch(e => {
         container.innerHTML = `<p style="text-align:center; color:#666;">Błąd: ${e.message}</p>`;
     });
 }
+
 function renderHistoryCard(container, item) {
     const data = item.data;
     const id = item.id;
@@ -891,11 +891,37 @@ function renderHistoryCard(container, item) {
         authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
     }
 
+    // Używamy "Opcji C": Tytuł to nazwa partii (workoutName) lub dzień tygodnia
+    const titleToShow = data.workoutName ? data.workoutName : (data.dayName || 'Trening');
+
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
+        // Generowanie tabeli
         detailsHtml = data.details.map(ex => {
-            let logsStr = (Array.isArray(ex.sets)) ? ex.sets.map((s, i) => `<span>S${i+1}: ${s.weight}kg x ${s.reps}</span>`).join(', ') : (ex.logs || 'Brak');
-            return `<div class="history-exercise-item"><div class="hex-name">${escapeHTML(ex.name)}</div><div class="hex-logs">${logsStr}</div></div>`;
+            // Nagłówek ćwiczenia
+            let exHeader = `<div class="ex-header">${escapeHTML(ex.name)}</div>`;
+            
+            // Wiersze tabeli
+            let rows = '';
+            if (Array.isArray(ex.sets)) {
+                rows = ex.sets.map((s, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td class="strong">${s.weight} kg</td>
+                        <td>${s.reps} powt.</td>
+                    </tr>
+                `).join('');
+            }
+            
+            return `
+                <div class="history-ex-block">
+                    ${exHeader}
+                    <table class="history-table">
+                        <tr><th>Seria</th><th>Kg</th><th>Powt</th></tr>
+                        ${rows}
+                    </table>
+                </div>
+            `;
         }).join('');
     }
 
@@ -903,10 +929,18 @@ function renderHistoryCard(container, item) {
         <div class="history-card-header" onclick="toggleHistoryCard(this)">
             <div class="history-info">
                 ${authorHtml}
-                <h4>${data.dayName||'Trening'}</h4>
-                <div class="history-meta"><span>${data.displayDate||data.dateIso.split('T')[0]}</span><span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span></div>
+                <h4>${escapeHTML(titleToShow)}</h4>
+                <div class="history-meta">
+                    <span>${data.displayDate || data.dateIso.split('T')[0]}</span>
+                    <span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span>
+                </div>
             </div>
-            <div class="history-actions"><button class="history-delete-btn" onclick="deleteHistoryEntry(event, '${id}')"><i class="fa-solid fa-trash"></i></button><i class="fa-solid fa-chevron-down history-toggle-icon"></i></div>
+            <div class="history-actions">
+                <button class="history-delete-btn" onclick="deleteHistoryEntry(event, '${id}')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+                <i class="fa-solid fa-chevron-down history-toggle-icon"></i>
+            </div>
         </div>
         <div class="history-card-details">${detailsHtml || '<p>Brak szczegółów</p>'}</div>
     `;
@@ -915,7 +949,6 @@ function renderHistoryCard(container, item) {
 window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
 window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
 
-// FIX: Obsługa błędów w społeczności
 function loadCommunity() {
     const container = document.getElementById("community-list");
     if(!container) return;
@@ -1006,16 +1039,13 @@ async function shareCurrentDay() {
     alert("Opublikowano na Szychcie!");
 }
 
-// FIX: Otwieranie okna + czyszczenie pól (naprawa "zacinającego się" okna)
 function openAddModal(){ 
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
     
-    // Resetujemy edycję (to sprawia, że zawsze jest nowe okno)
+    // Resetujemy edycję
     editInfo = { day: null, docId: null };
     document.getElementById('modal-title').textContent = "Dodaj ćwiczenie";
-    
-    // Czyścimy pola
     document.getElementById('modal-exercise').value = "";
     document.getElementById('modal-series').value = "";
     document.getElementById('modal-reps').value = "";
@@ -1024,21 +1054,24 @@ function openAddModal(){
 
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden'); 
-    setTimeout(()=>modal.classList.add('active'), 10);
+    setTimeout(() => {
+        modal.classList.add('active');
+    }, 10);
 }
 
 function closeAddModal(){ 
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('active');
-    setTimeout(()=>modal.classList.add('hidden'), 300);
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
 }
 
-// FIX: Pobieranie wagi (naprawa braku kg w bazie)
 function saveFromModal(){ 
     const ex = document.getElementById('modal-exercise').value; 
     const s = document.getElementById('modal-series').value; 
     const r = document.getElementById('modal-reps').value; 
-    const w = document.getElementById('modal-weight').value; // Pobieramy wagę!
+    const w = document.getElementById('modal-weight').value;
     
     if(!ex) return; 
     
@@ -1046,7 +1079,7 @@ function saveFromModal(){
         exercise: ex,
         series: s,
         reps: r,
-        weight: w, // Dodajemy wagę do obiektu
+        weight: w, 
         notes: document.getElementById('modal-notes').value,
         order: Date.now()
     }; 
@@ -1058,13 +1091,10 @@ function saveFromModal(){
     closeAddModal(); 
     loadCardsDataFromFirestore(currentModalDay);
 }
-
 window.triggerEdit=function(day,id){ 
-    // Ustawiamy tryb edycji
     editInfo={day,docId:id}; 
     currentModalDay=day; 
     
-    // Pobieramy dane, żeby wypełnić pola
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(id).get()
     .then(doc => {
@@ -1083,7 +1113,6 @@ window.triggerEdit=function(day,id){
         }
     });
 }
-
 function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
 function saveMuscleGroups(){ const v=event.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
 function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) document.getElementById(`${d}-muscle-group`).value=doc.data().muscleGroup||""; }); }
