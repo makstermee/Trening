@@ -13,13 +13,14 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    if (!localStorage.getItem('RESET_DONE_V4')) {
+    // Mechanizm twardego resetu cache przy dużej aktualizacji
+    if (!localStorage.getItem('RESET_AVATARS_V1')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('RESET_DONE_V4', 'true');
-          console.log("Wyczyszczono cache V4.");
+          localStorage.setItem('RESET_AVATARS_V1', 'true');
+          console.log("Wyczyszczono cache (Avatars Update).");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -124,13 +125,11 @@
 
         <div id="rules" class="day-section hidden">
             <h2 class="history-title"><i class="fa-solid fa-book-open"></i> Kodeks Szychty</h2>
-            
             <div class="rules-container">
                 <div class="rule-box">
                     <h4>1. O co tu chodzi?</h4>
                     <p>To nie jest zwykły dziennik. Tutaj pniemy się po szczeblach górniczej kariery. Zaczynasz na dole jako <b>Sztrajer</b> (pomocnik), a Twoim celem jest zostanie <b>Skarbnikiem</b> (Legendą Kopalni).</p>
                 </div>
-
                 <div class="rule-box">
                     <h4>2. Wypłata (Jak zarabiać punkty?)</h4>
                     <ul class="rules-list">
@@ -138,10 +137,8 @@
                         <li><b>+3 pkt</b> – Za ukończenie <b>Wyzwania</b> (treningu innej osoby).</li>
                         <li><b>Premia (1-10 pkt)</b> – Po szychcie wysyłasz raport do Autora planu. Jeśli on uzna, że dobrze ćwiczyłeś, przyzna Ci premię!</li>
                         <li><b>Zapłata dla Autora (1-10 pkt)</b> – Ty też oceniasz plan po treningu. Ile gwiazdek dasz Autorowi, tyle punktów wpadnie na jego konto.</li>
-                        <li><b>+2 pkt (Walkower)</b> – Jeśli ktoś podejmie Twoje wyzwanie, ale się podda – Ty dostajesz punkty za "pokonanie" go.</li>
                     </ul>
                 </div>
-
                 <div class="rule-box warning">
                     <h4>3. Żelazne Zasady BHP</h4>
                     <ul class="rules-list">
@@ -150,7 +147,6 @@
                         <li>🤝 <b>Fair Play:</b> Nie ma punktów za robienie własnych Wyzwań.</li>
                     </ul>
                 </div>
-
                 <div class="rule-box">
                     <h4>4. Drabina Awansu (Rangi)</h4>
                     <div class="ranks-table">
@@ -171,9 +167,10 @@
 
         <div id="profile" class="day-section hidden">
             <div class="profile-header-card">
-                <div class="profile-avatar" id="profile-avatar">U</div>
+                <div class="profile-avatar" id="profile-avatar" onclick="openAvatarModal()">U</div>
                 <h3 id="profile-email">user@example.com</h3>
-                <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="profile-kudos">0</span>.</div>
+                <p style="font-size:0.8rem; color:#aaa; margin-top:-10px;">(Kliknij w kółko, aby zmienić awatar)</p>
+                <div class="kudos-badge"><i class="fa-solid fa-hand-spock"></i> <span id="profile-kudos">0</span> Kudos</div>
             </div>
 
             <div class="profile-stats-row">
@@ -263,9 +260,7 @@
         <div class="modal-content" style="text-align:center;">
             <h3>Koniec Szychty! ⚒️</h3>
             <p style="color:#ccc; font-size:0.9rem;">Wystaw notę dla Sztygara (Autora planu):</p>
-            
             <div class="rating-scale-container" id="rating-buttons"></div>
-            
             <div id="save-decision-area" class="hidden" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
                 <p style="margin-bottom:10px;">Zapisać ten plan u siebie?</p>
                 <div style="display:flex; gap:10px; justify-content:center;">
@@ -273,7 +268,6 @@
                     <button class="btn-outline" style="flex:1" onclick="finalizeChallenge(false)">NIE</button>
                 </div>
             </div>
-
             <div id="day-selector-area" class="hidden" style="margin-top:15px;">
                 <select id="target-save-day" class="main-input" style="background:#222; color:white; margin-bottom:10px;">
                     <option value="monday">Poniedziałek</option>
@@ -295,15 +289,24 @@
                 <h3>Meldunki</h3>
                 <button onclick="closeNotificationsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            
             <div class="notifications-tabs">
                 <button class="notif-tab active" onclick="switchNotifTab('todo')" id="tab-notif-todo">Do Oceny</button>
                 <button class="notif-tab" onclick="switchNotifTab('news')" id="tab-notif-news">Wiadomości</button>
             </div>
-
             <div id="notif-list-container" style="max-height:300px; overflow-y:auto;">
                 <p style="text-align:center; color:#666; margin-top:20px;">Ładowanie...</p>
             </div>
+        </div>
+    </div>
+
+    <div id="avatar-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Wybierz Awatar</h3>
+                <button onclick="closeAvatarModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="avatar-grid" id="avatar-grid-container">
+                </div>
         </div>
     </div>
 
@@ -327,8 +330,7 @@
 
   </div>
   
-  <script src="script.js?v=1000"></script> 
-
+  <script src="script.js?v=AVATAR_UPDATE_1"></script> 
   
   <script>
     function switchAuthTab(tab) {
