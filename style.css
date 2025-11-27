@@ -387,3 +387,34 @@ body {
     color: var(--primary-color);
     font-weight: bold;
 }
+/* --- WYBÓR AWATARA --- */
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    padding: 10px;
+}
+
+.avatar-option {
+    background: #2c2c2e;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s;
+}
+
+.avatar-option:active {
+    transform: scale(0.9);
+}
+
+.avatar-option.selected {
+    border-color: var(--primary-color);
+    background: rgba(10, 132, 255, 0.2);
+}
+
