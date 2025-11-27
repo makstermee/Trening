@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gympro-STABLE-FIX-v3.0'; // Zmieniona nazwa cache
+const CACHE_NAME = 'gympro-STABLE-FIX-v5.0'; // Zmieniona nazwa cache
 const ASSETS = [
   './',
   './index.html',
