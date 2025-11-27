@@ -1,6 +1,9 @@
 /*************************************************************
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
+// 1. TUTAJ WPISZ SWÓJ EMAIL ADMINISTRATORA
+const ADMIN_EMAIL = "michalnowicki000@gmail.com"; // <--- ZMIEŃ TO!
+
 const firebaseConfig = {
   apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
   authDomain: "plan-treningowy-a9d00.firebaseapp.com",
@@ -25,6 +28,14 @@ const dayMap = {
 };
 const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
+// LISTA AWATARÓW (Korona 👑 jest na końcu)
+const AVATARS = [
+    "👷", "⛑️", "🏋️", "🤸", 
+    "🤺", "🤼", "🦍", "🐂", 
+    "🐗", "🤖", "💀", "👹", 
+    "👺", "👽", "👾", "👑"
+];
+
 let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
@@ -32,7 +43,6 @@ let timerInterval = null;
 let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
 let viewingUserId = null; 
-
 let tempWorkoutResult = null; 
 let currentRatingScore = 0;   
 
@@ -56,7 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       loadCardsDataFromFirestore('challenge');
 
-      // INTELIGENTNY START
       const lastMode = sessionStorage.getItem('GEM_saved_mode');
       const lastDay = sessionStorage.getItem('GEM_saved_day');
       const todayIndex = new Date().getDay(); 
@@ -101,15 +110,14 @@ function getRankName(points) {
 function switchMode(mode) {
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
-    
-    // Podświetlenie ikon
+
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('active');
         if (btn.getAttribute('onclick').includes(`'${mode}'`)) {
             btn.classList.add('active');
         }
     });
-
+    
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
@@ -123,13 +131,11 @@ function switchMode(mode) {
         fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
     }
 
-        if (mode === 'history' && historySection) {
+    if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        // Ładuj historię TYLKO dla aktualnie wybranego dnia
         loadHistoryFromFirestore(currentSelectedDay);
     } 
-          
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
@@ -219,8 +225,9 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING
+  3. TRENING I WYZWANIA
 *************************************************************/
+// ... (FUNKCJE TRENINGU BEZ ZMIAN) ...
 function startWorkout(day) {
     const now = Date.now();
     const workoutData = { day: day, startTime: now, isChallenge: false };
@@ -256,31 +263,20 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
     try {
         const exercises = JSON.parse(exercisesJson);
         const batch = db.batch();
-        
         const challengeRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
         const oldData = await challengeRef.get();
         oldData.forEach(doc => batch.delete(doc.ref));
-
         exercises.forEach(ex => {
             const newDocRef = challengeRef.doc();
             batch.set(newDocRef, { ...ex, notes: "Wyzwanie", order: Date.now() });
         });
-
         await batch.commit();
-
-        const workoutData = { 
-            day: "challenge", 
-            startTime: Date.now(), 
-            isChallenge: true, 
-            challengeAuthor: authorUid 
-        };
+        const workoutData = { day: "challenge", startTime: Date.now(), isChallenge: true, challengeAuthor: authorUid };
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
-
         closePublicProfile();
         selectDay("challenge");
         loadCardsDataFromFirestore("challenge");
         checkActiveWorkout();
-
     } catch (e) {
         console.error(e);
         alert("Błąd: " + e.message);
@@ -291,7 +287,6 @@ async function surrenderChallenge() {
     if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt za pokonanie Cię. Na pewno?")) return;
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const authorId = (activeData && activeData.challengeAuthor) || null;
-
     if(authorId) {
         db.collection("publicUsers").doc(authorId).update({
             totalPoints: firebase.firestore.FieldValue.increment(2) 
@@ -304,7 +299,6 @@ async function surrenderChallenge() {
 async function finishWorkout(day) {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
     const isChallenge = activeData && activeData.isChallenge;
-
     const timerText = document.getElementById('workout-timer').textContent; 
     const parts = timerText.split(':');
     const totalMinutes = (parseInt(parts[0]) * 60) + parseInt(parts[1]);
@@ -322,24 +316,15 @@ async function finishWorkout(day) {
         
         let exercisesDone = [];
         const batch = db.batch();
-
         qs.forEach(doc => {
             const data = doc.data();
-            exercisesDone.push({ 
-                name: data.exercise, 
-                sets: data.currentLogs || [], 
-                weight: data.weight || 0 
-            }); 
+            exercisesDone.push({ name: data.exercise, sets: data.currentLogs || [], weight: data.weight || 0 }); 
             batch.update(doc.ref, { currentLogs: firebase.firestore.FieldValue.delete() });
         });
-
         await batch.commit();
 
         let safeAuthorId = null;
-        if(activeData && activeData.challengeAuthor) {
-            safeAuthorId = activeData.challengeAuthor;
-        }
-
+        if(activeData && activeData.challengeAuthor) safeAuthorId = activeData.challengeAuthor;
         let muscleName = "";
         const muscleInput = document.getElementById(`${day}-muscle-group`);
         if (muscleInput) muscleName = muscleInput.value;
@@ -369,8 +354,52 @@ async function finishWorkout(day) {
 }
 
 /*************************************************************
-  4. OBSŁUGA MODALA I RAPORTOWANIA
+  4. AWATARY, MODALE I RAPORTOWANIE
 *************************************************************/
+
+// --- NOWE: OBSŁUGA AWATARÓW ---
+function openAvatarModal() {
+    const user = auth.currentUser;
+    const container = document.getElementById('avatar-grid-container');
+    container.innerHTML = '';
+
+    AVATARS.forEach(avatar => {
+        // Sprawdzenie Korony (Tylko dla Admina)
+        if (avatar === '👑' && user.email !== ADMIN_EMAIL) return;
+
+        const div = document.createElement('div');
+        div.className = 'avatar-option';
+        div.textContent = avatar;
+        div.onclick = () => saveAvatar(avatar);
+        container.appendChild(div);
+    });
+
+    const modal = document.getElementById('avatar-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function closeAvatarModal() {
+    const modal = document.getElementById('avatar-modal');
+    modal.classList.remove('active');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function saveAvatar(symbol) {
+    const user = auth.currentUser;
+    // Zapisz do bazy
+    db.collection("publicUsers").doc(user.uid).set({
+        avatar: symbol
+    }, { merge: true }).then(() => {
+        // Zaktualizuj widok
+        updateProfileUI(user);
+        closeAvatarModal();
+        // Odśwież profil (opcjonalne, ale bezpieczne)
+        loadProfileStats(); 
+    });
+}
+// ------------------------------
+
 function openChallengeEndModal() {
     const container = document.getElementById('rating-buttons');
     if(container) {
@@ -407,7 +436,6 @@ async function finalizeChallenge(shouldSaveToPlan) {
     try {
         const user = auth.currentUser;
         const result = tempWorkoutResult;
-
         await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
 
         if(result.authorId) {
@@ -440,7 +468,6 @@ async function finalizeChallenge(shouldSaveToPlan) {
         const modal = document.getElementById('challenge-end-modal');
         modal.classList.remove('active');
         setTimeout(() => modal.classList.add('hidden'), 300);
-        
         localStorage.removeItem('activeWorkout');
         window.location.reload();
     } catch (e) {
@@ -452,14 +479,12 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
     const user = auth.currentUser;
     const result = tempWorkoutResult;
     const batch = db.batch();
-
     const historyRef = db.collection("users").doc(user.uid).collection("history").doc();
     let authorName = "Nieznany";
     if (authorId) {
         const authorSnap = await db.collection("publicUsers").doc(authorId).get();
         if(authorSnap.exists) authorName = authorSnap.data().displayName;
     }
-
     batch.set(historyRef, {
         ...result,
         dayName: result.isChallenge ? `🏆 WYZWANIE` : dayMap[result.dayKey],
@@ -468,7 +493,6 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
         originalAuthorName: authorId ? authorName : null,
         pointsEarned: myPoints
     });
-
     const myPublicRef = db.collection("publicUsers").doc(user.uid);
     batch.set(myPublicRef, {
         totalPoints: firebase.firestore.FieldValue.increment(myPoints),
@@ -482,12 +506,11 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
             ratingCount: firebase.firestore.FieldValue.increment(1)
         });
     }
-
     await batch.commit();
 }
 
 /*************************************************************
-  5. POWIADOMIENIA
+  5. MELDUNKI I POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
     const modal = document.getElementById('notifications-modal');
@@ -520,7 +543,6 @@ function loadNotificationsList(tab) {
             .get().then(qs => {
                 container.innerHTML = "";
                 if(qs.empty) { container.innerHTML = "<p style='text-align:center;color:#666'>Brak raportów do oceny.</p>"; return; }
-                
                 qs.forEach(doc => {
                     const data = doc.data();
                     const el = document.createElement('div');
@@ -542,7 +564,6 @@ function loadNotificationsList(tab) {
             .get().then(qs => {
                 container.innerHTML = "";
                 if(qs.empty) { container.innerHTML = "<p style='text-align:center;color:#666'>Brak nowych wiadomości.</p>"; return; }
-
                 qs.forEach(doc => {
                     const data = doc.data();
                     const el = document.createElement('div');
@@ -564,7 +585,6 @@ function loadNotificationsList(tab) {
 function ratePerformer(reportId) {
     const score = prompt("Ile punktów (1-10) dajesz za ten trening?");
     if(!score || isNaN(score) || score < 1 || score > 10) return alert("Podaj liczbę 1-10");
-
     db.collection("challenge_reports").doc(reportId).update({
         status: "RATED",
         bonusPoints: parseInt(score)
@@ -577,13 +597,10 @@ function ratePerformer(reportId) {
 function claimBonusPoints(reportId, points) {
     const user = auth.currentUser;
     const batch = db.batch();
-
     const myRef = db.collection("publicUsers").doc(user.uid);
     batch.update(myRef, { totalPoints: firebase.firestore.FieldValue.increment(points) });
-
     const reportRef = db.collection("challenge_reports").doc(reportId);
     batch.update(reportRef, { status: "COMPLETED" });
-
     batch.commit().then(() => {
         alert(`Odebrano ${points} pkt!`);
         loadNotificationsList('news');
@@ -623,7 +640,6 @@ function checkActiveWorkout() {
 
     if (activeData) {
         if(titleEl) titleEl.style.display = 'none';
-        
         if(timerEl) {
             timerEl.classList.remove('hidden');
             if (timerInterval) clearInterval(timerInterval);
@@ -633,22 +649,18 @@ function checkActiveWorkout() {
                 timerEl.textContent = date.toISOString().substr(11, 8);
             }, 1000);
         }
-
         if (activeData.day === 'challenge') {
             if(shareBtn) shareBtn.style.display = 'none';
             if(currentSelectedDay !== 'challenge' && currentMode === 'plan') {
                 selectDay('challenge');
             }
         }
-        
         updateActionButtons(activeData.day);
     } else {
         if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
-        
-        // FIX: Pasek Dni tylko w Planie/Historii
         if(nav) {
             if (currentMode === 'plan' || currentMode === 'history') {
                 nav.style.display = 'block';
@@ -656,7 +668,6 @@ function checkActiveWorkout() {
                 nav.style.display = 'none';
             }
         }
-        
         updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
     }
@@ -667,7 +678,6 @@ function updateActionButtons(currentViewDay) {
     const container = document.getElementById(`${currentViewDay}-actions`);
     if(!container) return;
     container.innerHTML = '';
-
     if (activeData && activeData.day === currentViewDay) {
         container.innerHTML = `<button class="btn-finish-workout" onclick="finishWorkout('${currentViewDay}')"><i class="fa-solid fa-flag-checkered"></i> ZAKOŃCZ TRENING</button>`;
     } 
@@ -742,7 +752,6 @@ function renderAccordionCard(container, day, doc) {
     const data = doc.data();
     const id = doc.id;
     const logs = data.currentLogs || []; 
-    
     const card = document.createElement('div');
     card.className = 'exercise-card';
     
@@ -800,7 +809,6 @@ function renderAccordionCard(container, day, doc) {
     `;
     container.appendChild(card);
 }
-
 window.toggleCard = function(h) { 
     if(event.target.closest('input') || event.target.closest('button') || event.target.closest('.log-delete-btn')) return;
     h.parentElement.classList.toggle('open'); 
@@ -810,7 +818,21 @@ function updateProfileUI(user) {
     const emailEl = document.getElementById('profile-email');
     const avatarEl = document.getElementById('profile-avatar');
     if(emailEl) emailEl.textContent = user.displayName || user.email;
-    if(avatarEl) avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
+
+    // --- ZMIANA: POBIERANIE AWATARA Z BAZY ---
+    db.collection("publicUsers").doc(user.uid).get().then(doc => {
+        if(doc.exists) {
+            const d = doc.data();
+            if(d.avatar) {
+                avatarEl.textContent = d.avatar; // Pokaż emoji
+                avatarEl.style.fontSize = "3rem"; // Większa ikona
+            } else {
+                // Domyślna litera
+                avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
+                avatarEl.style.fontSize = "2.5rem";
+            }
+        }
+    });
 }
 
 function loadProfileStats() {
@@ -845,7 +867,6 @@ function publishProfileStats(user, total, last, pts) {
     }, { merge: true });
 }
 
-// HISTORIA: GRUPOWANIE + TABELA
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     if(!container) return;
@@ -893,6 +914,8 @@ function renderHistoryCard(container, item) {
         authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
     }
 
+    const titleToShow = data.workoutName ? data.workoutName : (data.dayName || 'Trening');
+
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
         detailsHtml = data.details.map(ex => {
@@ -906,7 +929,7 @@ function renderHistoryCard(container, item) {
                     </tr>
                 `).join('');
             }
-
+            
             return `
                 <div class="history-ex-block">
                     <div class="ex-header" onclick="toggleHistoryExercise(this)">
@@ -928,7 +951,7 @@ function renderHistoryCard(container, item) {
         <div class="history-card-header" onclick="toggleHistoryCard(this)">
             <div class="history-info">
                 ${authorHtml}
-                <h4>${escapeHTML(data.workoutName || data.dayName || 'Trening')}</h4>
+                <h4>${escapeHTML(titleToShow)}</h4>
                 <div class="history-meta">
                     <span>${data.displayDate || data.dateIso.split('T')[0]}</span>
                     <span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span>
@@ -945,8 +968,6 @@ function renderHistoryCard(container, item) {
     `;
     container.appendChild(card);
 }
-
-// Otwieranie szczegółów ćwiczenia w historii
 window.toggleHistoryExercise = function(header) {
     event.stopPropagation(); 
     header.parentElement.classList.toggle('open');
@@ -955,6 +976,7 @@ window.toggleHistoryExercise = function(header) {
 window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
 window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
 
+// --- ZMIANA: POKAŻ AWATAR W SPOŁECZNOŚCI ---
 function loadCommunity() {
     const container = document.getElementById("community-list");
     if(!container) return;
@@ -969,8 +991,15 @@ function loadCommunity() {
             const d = doc.data();
             const card = document.createElement('div');
             card.className = 'user-card';
+            
+            // Sprawdź czy jest awatar, jak nie to litera
+            let avatarContent = d.displayName ? d.displayName[0].toUpperCase() : '?';
+            if (d.avatar) {
+                avatarContent = d.avatar;
+            }
+
             card.innerHTML = `
-                <div class="user-card-avatar">${d.displayName ? d.displayName[0].toUpperCase() : '?'}</div>
+                <div class="user-card-avatar">${avatarContent}</div>
                 <div class="user-card-name">${escapeHTML(d.displayName)}</div>
                 <div class="user-card-stats">
                     <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
@@ -985,7 +1014,17 @@ function loadCommunity() {
 }
 function openPublicProfile(u) {
     viewingUserId = u.uid;
-    document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
+    const avatarEl = document.getElementById('pub-avatar');
+    
+    // Pokaż awatar w publicznym profilu
+    if (u.avatar) {
+        avatarEl.textContent = u.avatar;
+        avatarEl.style.fontSize = "3rem";
+    } else {
+        avatarEl.textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
+        avatarEl.style.fontSize = "2.5rem";
+    }
+
     document.getElementById('pub-name').textContent = u.displayName;
     document.getElementById('pub-total').textContent = u.totalWorkouts;
     document.getElementById('pub-last').textContent = u.lastWorkout || '-';
@@ -1049,7 +1088,6 @@ function openAddModal(){
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     currentModalDay=currentSelectedDay; 
     
-    // Resetujemy edycję
     editInfo = { day: null, docId: null };
     document.getElementById('modal-title').textContent = "Dodaj ćwiczenie";
     document.getElementById('modal-exercise').value = "";
