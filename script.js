@@ -123,11 +123,10 @@ function switchMode(mode) {
         fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
     }
 
-    } 
     if (mode === 'history' && historySection) {
         historySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'block'; 
-        loadHistoryFromFirestore(null);
+        loadHistoryFromFirestore(null); 
     } 
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
