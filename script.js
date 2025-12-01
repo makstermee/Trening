@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       checkActiveWorkout();
       updateProfileUI(user);
-      loadProfileStats();
+      loadProfileStats(); // To załaduje też awatar
       checkNotificationsCount(); 
     } else {
       if(container) container.style.display = 'none';
@@ -110,7 +110,7 @@ function getRankName(points) {
 function switchMode(mode) {
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
-      // --- FIX: Aktualizacja podświetlenia dolnego paska ---
+      // --- Aktualizacja podświetlenia dolnego paska ---
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('active');
         // Sprawdzamy czy przycisk prowadzi do tego trybu
@@ -347,7 +347,7 @@ async function finishWorkout(day) {
             safeAuthorId = activeData.challengeAuthor;
         }
 
-        // NOWOŚĆ: Pobieranie nazwy partii z inputa
+        // Pobieranie nazwy partii z inputa
         let muscleName = "";
         const muscleInput = document.getElementById(`${day}-muscle-group`);
         if (muscleInput) muscleName = muscleInput.value;
@@ -659,7 +659,7 @@ function checkActiveWorkout() {
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         
-                // FIX: Pokaż pasek Dni tylko w Planie lub Historii
+        // Pokaż pasek Dni tylko w Planie lub Historii
         if(nav) {
             if (currentMode === 'plan' || currentMode === 'history') {
                 nav.style.display = 'block';
@@ -667,7 +667,6 @@ function checkActiveWorkout() {
                 nav.style.display = 'none';
             }
         }
-
         
         updateHeaderTitle(); 
         if(currentMode === 'plan') updateActionButtons(currentSelectedDay);
@@ -837,24 +836,39 @@ function loadProfileStats() {
         if(totEl) totEl.textContent = total;
         if(lastEl) lastEl.textContent = last;
         
+        // ZMODYFIKOWANE: Pobieranie awatara
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let pts = 0;
-            if(doc.exists) pts = doc.data().totalPoints || 0;
+            let currentAvatar = (user.displayName ? user.displayName[0] : user.email[0]).toUpperCase(); 
+            
+            if(doc.exists) {
+                const data = doc.data();
+                pts = data.totalPoints || 0;
+                if (data.avatar) currentAvatar = data.avatar;
+            }
+            
             const kudosEl = document.getElementById('profile-kudos');
+            const avatarEl = document.getElementById('profile-avatar');
+            
             if(kudosEl) kudosEl.innerHTML = `${pts} <br><span style='font-size:0.6rem; color:#ffd700'>${getRankName(pts)}</span>`;
-            publishProfileStats(user, total, last, pts);
+            if(avatarEl) avatarEl.textContent = currentAvatar;
+            
+            publishProfileStats(user, total, last, pts, currentAvatar);
         });
     });
 }
-function publishProfileStats(user, total, last, pts) {
-    db.collection("publicUsers").doc(user.uid).set({
+function publishProfileStats(user, total, last, pts, avatar) {
+    const dataToUpdate = {
         displayName: user.displayName || user.email.split('@')[0],
         email: user.email,
         totalWorkouts: total,
         lastWorkout: last,
         totalPoints: pts || 0,
         uid: user.uid
-    }, { merge: true });
+    };
+    if (avatar) dataToUpdate.avatar = avatar;
+    
+    db.collection("publicUsers").doc(user.uid).set(dataToUpdate, { merge: true });
 }
 
 // NOWA HISTORIA: GRUPOWANIE + TABELA
@@ -984,8 +998,9 @@ function loadCommunity() {
             const d = doc.data();
             const card = document.createElement('div');
             card.className = 'user-card';
+            // ZMODYFIKOWANE: Wyświetlanie awatara
             card.innerHTML = `
-                <div class="user-card-avatar">${d.displayName ? d.displayName[0].toUpperCase() : '?'}</div>
+                <div class="user-card-avatar">${d.avatar ? d.avatar : (d.displayName ? d.displayName[0].toUpperCase() : '?')}</div>
                 <div class="user-card-name">${escapeHTML(d.displayName)}</div>
                 <div class="user-card-stats">
                     <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
@@ -1000,7 +1015,8 @@ function loadCommunity() {
 }
 function openPublicProfile(u) {
     viewingUserId = u.uid;
-    document.getElementById('pub-avatar').textContent = u.displayName ? u.displayName[0].toUpperCase() : '?';
+    // ZMODYFIKOWANE: Wyświetlanie awatara w podglądzie
+    document.getElementById('pub-avatar').textContent = u.avatar ? u.avatar : (u.displayName ? u.displayName[0].toUpperCase() : '?');
     document.getElementById('pub-name').textContent = u.displayName;
     document.getElementById('pub-total').textContent = u.totalWorkouts;
     document.getElementById('pub-last').textContent = u.lastWorkout || '-';
@@ -1213,5 +1229,71 @@ function hardResetProfile() {
             alert("Konto usunięte. Żegnaj!");
             location.reload();
         });
+    });
+}
+
+/*************************************************************
+  7. OBSŁUGA AWATARÓW (NOWE)
+*************************************************************/
+const AVATAR_LIST = [
+    "💀", "👽", "💪", "🦁", "🦍", "🐺", "🐗", "🦈", 
+    "🐂", "🐲", "🤖", "👺", "🤡", "💩", "🤴", "🧙‍♂️",
+    "🧛", "🧟", "🏋️", "🥊", "🥋", "⛹️", "🚴", "🤸",
+    "🥇", "🏆", "💣", "🧨", "🔨", "⛏️", "⚙️", "☢️"
+];
+
+function openAvatarModal() {
+    const grid = document.getElementById('avatar-grid-container');
+    const modal = document.getElementById('avatar-modal');
+    
+    // Generowanie siatki tylko raz
+    if (grid.children.length === 0) {
+        AVATAR_LIST.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.className = 'avatar-option'; 
+            // Dodajmy trochę stylu inline, jeśli nie ma w CSS
+            btn.style.fontSize = "2rem";
+            btn.style.background = "none";
+            btn.style.border = "1px solid #333";
+            btn.style.borderRadius = "8px";
+            btn.style.cursor = "pointer";
+            btn.style.padding = "10px";
+            btn.textContent = emoji;
+            btn.onclick = () => saveAvatar(emoji);
+            grid.appendChild(btn);
+        });
+        // Dodaj style grida dynamicznie, jeśli brakuje w CSS
+        grid.style.display = "grid";
+        grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(60px, 1fr))";
+        grid.style.gap = "10px";
+    }
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function closeAvatarModal() {
+    const modal = document.getElementById('avatar-modal');
+    modal.classList.remove('active');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function saveAvatar(emoji) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Aktualizacja w bazie danych (Publiczny profil)
+    db.collection("publicUsers").doc(user.uid).set({
+        avatar: emoji
+    }, { merge: true }).then(() => {
+        // Aktualizacja lokalnego widoku
+        const avatarEl = document.getElementById('profile-avatar');
+        if (avatarEl) avatarEl.textContent = emoji;
+        
+        closeAvatarModal();
+        alert("Awatar zmieniony!");
+    }).catch(e => {
+        console.error(e);
+        alert("Błąd zapisu: " + e.message);
     });
 }
