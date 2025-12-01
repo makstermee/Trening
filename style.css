@@ -15,7 +15,7 @@ body {
     padding-bottom: 90px; overflow-x: hidden;
 }
 
-/* --- SPOŁECZNOŚĆ --- */
+/* SPOŁECZNOŚĆ */
 .community-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -41,11 +41,11 @@ body {
 .user-card-name { font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; }
 .user-card-stats { font-size: 0.8rem; color: var(--text-secondary); }
 
-/* --- LISTA PLANÓW SPOŁECZNOŚCI --- */
+/* LISTA PLANÓW SPOŁECZNOŚCI */
 .shared-plans-section { margin-top: 20px; }
 .shared-plan-item { background: var(--surface-color); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
 
-/* --- LOGOWANIE --- */
+/* LOGOWANIE */
 #login-section { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
 .login-card { background: var(--surface-color); padding: 30px; border-radius: 24px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
 .brand-logo { font-size: 2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 20px; letter-spacing: -1px; }
@@ -58,7 +58,7 @@ body {
 .btn-primary { background: var(--primary-color); width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; color: white; cursor: pointer; }
 .hidden { display: none !important; }
 
-/* --- BANER INSTALACYJNY --- */
+/* BANER INSTALACYJNY */
 .install-banner {
     background: #151515;
     color: white;
@@ -82,7 +82,7 @@ body {
     cursor: pointer;
 }
 
-/* --- UI OGÓLNE --- */
+/* UI OGÓLNE */
 .container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
 .app-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(28, 28, 30, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
 .header-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
@@ -92,7 +92,7 @@ body {
 .pill { background: var(--surface-color); border: none; color: var(--text-secondary); padding: 8px 20px; border-radius: 20px; font-weight: 600; white-space: nowrap; transition: 0.2s; cursor: pointer; }
 .pill.active { background: var(--primary-color); color: white; transform: scale(1.05); }
 
-/* --- KARTY ĆWICZEŃ --- */
+/* KARTY ĆWICZEŃ */
 .content-area { padding: 20px; }
 .day-section { animation: fadeIn 0.3s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -115,7 +115,7 @@ body {
 .plan-label { display: block; font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
 .plan-val { font-weight: 700; color: var(--primary-color); }
 
-/* --- LOGGER (WPISYWANIE SERII) --- */
+/* --- NOWY WYGLĄD LOGOWANIA SERII (POPRAWIONY) --- */
 .logger-section {
     margin-top: 15px;
     background: rgba(0,0,0,0.3);
@@ -153,7 +153,7 @@ body {
     align-items: center;
     justify-content: center;
 }
-/* Lista Serii (Tabela) */
+/* Lista Serii */
 .logs-list {
     display: flex;
     flex-direction: column;
@@ -188,13 +188,13 @@ body {
 .btn-icon:hover { color: white; }
 .btn-delete { color: var(--danger-color); }
 
-/* --- DOLNE PRZYCISKI AKCJI --- */
+/* BOTTOM ACTIONS */
 .bottom-actions { margin-top: 30px; text-align: center; padding-bottom: 30px; }
 .btn-start-workout { background: var(--accent-color); color: black; border: none; padding: 16px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; box-shadow: 0 5px 20px rgba(48, 209, 88, 0.3); cursor: pointer; width: 100%; }
 .btn-finish-workout { background: var(--danger-color); color: white; border: none; padding: 16px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; box-shadow: 0 5px 20px rgba(255, 69, 58, 0.3); cursor: pointer; width: 100%; animation: pulse 2s infinite; }
 @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
-/* --- HISTORIA (PODSTAWOWA KARTA) --- */
+/* HISTORIA */
 .history-title { font-size: 1.2rem; margin-bottom: 20px; }
 .history-card { background: var(--surface-color); border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; }
 .history-card-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
@@ -208,9 +208,9 @@ body {
 .hex-name { color: var(--primary-color); font-weight: 600; }
 .hex-logs { color: #aaa; text-align: right; max-width: 60%; }
 
-/* --- PROFIL --- */
+/* PROFIL */
 .profile-header-card { background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%); border-radius: 20px; padding: 30px 20px; text-align: center; margin-bottom: 20px; border: 1px solid #333; }
-.profile-avatar { width: 80px; height: 80px; background: var(--primary-color); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; color: white; box-shadow: 0 10px 30px rgba(10, 132, 255, 0.3); cursor: pointer; }
+.profile-avatar { width: 80px; height: 80px; background: var(--primary-color); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; color: white; box-shadow: 0 10px 30px rgba(10, 132, 255, 0.3); }
 .profile-stats-row { display: flex; gap: 10px; margin-bottom: 20px; }
 .stat-box { flex: 1; background: var(--surface-color); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #333; }
 .stat-val { display: block; font-size: 1.5rem; font-weight: 800; margin: 5px 0; }
@@ -227,14 +227,35 @@ body {
 .kudos-badge { margin-top: 10px; display: inline-block; background: rgba(255, 215, 0, 0.1); color: #ffd700; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; border: 1px solid rgba(255, 215, 0, 0.3); }
 .full-width { width: 100%; }
 
-/* --- DOLNA NAWIGACJA --- */
+/* BOTTOM NAV */
 .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0 25px; z-index: 900; }
 .nav-item { background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.7rem; cursor: pointer; min-width: 50px; }
 .nav-item i { font-size: 1.4rem; margin-bottom: 2px; transition: 0.2s; }
 .nav-item.active { color: var(--primary-color); }
 .nav-item.active i { transform: translateY(-2px); }
 
-/* --- MODALE --- */
+/* FAB & MODALS */
+.fab-add { 
+    position: fixed; 
+    bottom: 100px; 
+    right: 20px; 
+    width: 60px; 
+    height: 60px; 
+    background: var(--primary-color); 
+    border-radius: 50%; 
+    border: none; 
+    color: white; 
+    font-size: 1.5rem; 
+    box-shadow: 0 10px 30px rgba(10, 132, 255, 0.4); 
+    cursor: pointer; 
+    z-index: 3000; /* ZWIĘKSZONY Z-INDEX */
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: transform 0.2s;
+}
+.fab-add:active { transform: scale(0.9); }
+
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: 0.3s; }
 .modal-overlay.active { opacity: 1; pointer-events: auto; }
 .modal-content { background: var(--surface-color); width: 100%; border-radius: 24px 24px 0 0; padding: 25px; max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: 0.3s; padding-bottom: 50px; }
@@ -250,14 +271,12 @@ body {
 .btn-kudos { width: 100%; padding: 12px; background: #333; color: white; border: 1px solid #444; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 15px; }
 .btn-close-abs { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
 
-/* --- ELEMENTY GÓRNICZE --- */
+/* SZYCHTA I POWIADOMIENIA */
 .history-card.gold-border { border: 2px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.15); }
 .challenge-author-info { font-size: 0.75rem; color: #ffd700; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
 .rating-scale-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 20px 0; }
 .rating-point-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #444; background: #222; color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
 .rating-point-btn.active { background: var(--primary-color); border-color: var(--primary-color); transform: scale(1.15); box-shadow: 0 0 10px var(--primary-color); }
-
-/* --- POWIADOMIENIA --- */
 .notifications-tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #333; }
 .notif-tab { flex: 1; background: none; border: none; color: #888; padding: 10px; cursor: pointer; font-weight: bold; }
 .notif-tab.active { color: white; border-bottom: 2px solid var(--primary-color); }
@@ -267,25 +286,6 @@ body {
 .notif-desc { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; }
 .notif-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .notification-badge { background: #ff453a; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; margin-left: 5px; vertical-align: top; display: none; }
-
-/* --- KARTA WYZWANIA TYGODNIA --- */
-.weekly-challenge-card {
-    background: linear-gradient(135deg, #2c2c2e 0%, #000 100%);
-    border: 2px solid #ffd700;
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    margin-bottom: 30px;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
-    position: relative;
-    overflow: hidden;
-}
-.wc-badge { background: #ffd700; color: black; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; margin-bottom: 10px; display: inline-block; }
-.wc-title { font-size: 1.2rem; font-weight: 800; color: white; margin: 10px 0; }
-.wc-desc { color: #ccc; font-size: 0.9rem; margin-bottom: 15px; line-height: 1.4; }
-.btn-accept-challenge { background: #ffd700; color: black; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 1px; }
-
-/* --- ZASADY I RANGI --- */
 .rules-container { padding-bottom: 20px; }
 .rule-box { background: #242426; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 3px solid var(--primary-color); }
 .rule-box.warning { border-left-color: var(--danger-color); background: rgba(255, 69, 58, 0.05); }
@@ -299,13 +299,8 @@ body {
 .rank-row.gold { border: 1px solid #ffd700; background: rgba(255, 215, 0, 0.1); }
 .rank-row.gold .r-name { color: #ffd700; }
 
-/* --- WYBÓR AWATARA --- */
-.avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 10px; }
-.avatar-option { background: #2c2c2e; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
-.avatar-option:active { transform: scale(0.9); }
-.avatar-option.selected { border-color: var(--primary-color); background: rgba(10, 132, 255, 0.2); }
-
-/* --- NOWA HISTORIA (PODWÓJNY AKORDEON + MIESIĄCE) --- */
+/* NOWA HISTORIA (TABELA I MIESIĄCE) - 
+/* NOWA HISTORIA (PODWÓJNY AKORDEON) */
 .history-month-header {
     font-size: 0.85rem;
     color: var(--text-secondary);
@@ -319,11 +314,12 @@ body {
 
 .history-ex-block {
     margin-bottom: 8px;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.3); /* Ciemniejsze tło dla bloku */
     border-radius: 8px;
     overflow: hidden;
 }
 
+/* Nagłówek ćwiczenia - teraz jest przyciskiem */
 .ex-header {
     font-weight: 600;
     color: #e0e0e0;
@@ -340,7 +336,7 @@ body {
     background: rgba(255,255,255,0.1);
 }
 
-/* To jest kluczowe dla zwijania - domyślnie ukryte */
+/* Tabela ze szczegółami - domyślnie UKRYTA */
 .history-ex-details {
     display: none;
     padding: 10px;
@@ -348,12 +344,13 @@ body {
     border-top: 1px solid #333;
 }
 
-/* Pokazuje się tylko gdy ma klasę .open */
+/* Kiedy blok ma klasę .open - pokaż tabelę */
 .history-ex-block.open .history-ex-details {
     display: block;
     animation: fadeIn 0.2s;
 }
 
+/* Ikonka strzałki */
 .ex-toggle-icon {
     font-size: 0.8rem;
     color: #666;
@@ -365,6 +362,7 @@ body {
     color: var(--primary-color);
 }
 
+/* Styl samej tabeli */
 .history-table {
     width: 100%;
     border-collapse: collapse;
