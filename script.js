@@ -783,7 +783,11 @@ function renderAccordionCard(container, day, doc) {
                     <div class="ex-summary">Cel: ${data.series}s x ${data.reps}r ${data.weight ? `(${data.weight}kg)` : ''}</div>
                 </div>
             </div>
-            <i class="fa-solid fa-chevron-down expand-icon"></i>
+            <div class="header-actions">
+                <i class="fa-solid fa-pen-to-square" style="margin-right:15px; color:#aaa;" onclick="event.stopPropagation(); triggerEdit('${day}', '${id}')"></i>
+                <i class="fa-solid fa-trash" style="margin-right:15px; color:var(--danger-color);" onclick="event.stopPropagation(); deleteCard('${day}', '${id}')"></i>
+                <i class="fa-solid fa-chevron-down expand-icon"></i>
+            </div>
         </div>
         <div class="exercise-card-details">
             <div class="plan-vs-real-grid">
@@ -803,8 +807,16 @@ function renderAccordionCard(container, day, doc) {
                 </div>
                 <div class="logs-list">${logsHtml}</div>
             </div>
+        </div>
+    `;
+    container.appendChild(card);
+}
 
-;
+// Funkcja obsługująca rozwijanie kart
+function toggleCard(header) {
+    const card = header.parentElement;
+    card.classList.toggle('open');
+}
 
 function updateProfileUI(user) {
     const emailEl = document.getElementById('profile-email');
