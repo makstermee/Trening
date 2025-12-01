@@ -40,55 +40,101 @@ let viewingUserId = null;
 let tempWorkoutResult = null; 
 let currentRatingScore = 0;   
 
+// USTAWIENIA APLIKACJI (Audio/Haptic)
+// Ładujemy z pamięci telefonu lub ustawiamy domyślnie na włączone (true)
+let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio: true, haptic: true };
+
 /*************************************************************
-  0. SYSTEM AUDIO I HAPTYKI (NOWOŚĆ 🔊📳)
+  0. SYSTEM AUDIO I HAPTYKI
 *************************************************************/
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function triggerFeedback(type) {
-    // 1. Wibracje (Haptic)
-    if (navigator.vibrate) {
+    // 1. Wibracje (Haptic) - Tylko jeśli włączone w ustawieniach
+    if (appSettings.haptic && navigator.vibrate) {
         if (type === 'light') navigator.vibrate(10); // Kliknięcie
         if (type === 'medium') navigator.vibrate(40); // Zapisanie serii
         if (type === 'heavy') navigator.vibrate([100, 50, 100]); // Sukces/Błąd
         if (type === 'siren') navigator.vibrate([500, 100, 500]); // Syrena
     }
 
-    // 2. Dźwięki (Syntezator)
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    // 2. Dźwięki (Syntezator) - Tylko jeśli włączone w ustawieniach
+    if (appSettings.audio) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
 
-    const now = audioCtx.currentTime;
+        const now = audioCtx.currentTime;
 
-    if (type === 'light') { // Kliknięcie (krótkie pyknięcie)
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, now);
-        gainNode.gain.setValueAtTime(0.05, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-        osc.start(now);
-        osc.stop(now + 0.05);
-    } 
-    else if (type === 'medium') { // Sukces (Ding!)
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-        gainNode.gain.setValueAtTime(0.1, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-        osc.start(now);
-        osc.stop(now + 0.3);
+        if (type === 'light') { // Kliknięcie (krótkie pyknięcie)
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            gainNode.gain.setValueAtTime(0.05, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } 
+        else if (type === 'medium') { // Sukces (Ding!)
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+            gainNode.gain.setValueAtTime(0.1, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+        else if (type === 'siren') { // Syrena Kopalniana
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.linearRampToValueAtTime(600, now + 1); // Narastanie
+            osc.frequency.linearRampToValueAtTime(300, now + 2); // Opadanie
+            gainNode.gain.setValueAtTime(0.2, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + 2.5);
+            osc.start(now);
+            osc.stop(now + 2.5);
+        }
     }
-    else if (type === 'siren') { // Syrena Kopalniana
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.linearRampToValueAtTime(600, now + 1); // Narastanie
-        osc.frequency.linearRampToValueAtTime(300, now + 2); // Opadanie
-        gainNode.gain.setValueAtTime(0.2, now);
-        gainNode.gain.linearRampToValueAtTime(0, now + 2.5);
-        osc.start(now);
-        osc.stop(now + 2.5);
+}
+
+// Funkcja do przełączania ustawień (podpięta pod przyciski w profilu)
+function toggleAppSetting(key) {
+    appSettings[key] = !appSettings[key]; // Odwracamy wartość
+    localStorage.setItem('gympro_settings', JSON.stringify(appSettings)); // Zapisujemy
+    updateSettingsUI(); // Aktualizujemy wygląd przycisków
+    
+    // Feedback, żeby użytkownik wiedział, że działa (tylko jeśli właśnie włączył)
+    if (appSettings[key]) triggerFeedback(key === 'audio' ? 'medium' : 'light');
+}
+
+// Funkcja aktualizująca wygląd przycisków w profilu
+function updateSettingsUI() {
+    const btnAudio = document.getElementById('btn-set-audio');
+    const btnHaptic = document.getElementById('btn-set-haptic');
+    
+    if (btnAudio) {
+        if (appSettings.audio) {
+            btnAudio.style.borderColor = 'var(--accent-color)';
+            btnAudio.style.color = 'var(--accent-color)';
+            btnAudio.innerHTML = `<i class="fa-solid fa-volume-high"></i> Dźwięk: WŁ`;
+        } else {
+            btnAudio.style.borderColor = '#444';
+            btnAudio.style.color = '#666';
+            btnAudio.innerHTML = `<i class="fa-solid fa-volume-xmark"></i> Dźwięk: WYŁ`;
+        }
+    }
+
+    if (btnHaptic) {
+        if (appSettings.haptic) {
+            btnHaptic.style.borderColor = 'var(--accent-color)';
+            btnHaptic.style.color = 'var(--accent-color)';
+            btnHaptic.innerHTML = `<i class="fa-solid fa-mobile-screen-button"></i> Wibracje: WŁ`;
+        } else {
+            btnHaptic.style.borderColor = '#444';
+            btnHaptic.style.color = '#666';
+            btnHaptic.innerHTML = `<i class="fa-solid fa-mobile-button"></i> Wibracje: WYŁ`;
+        }
     }
 }
 
@@ -203,6 +249,7 @@ function switchMode(mode) {
         profileSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
         loadProfileStats(); 
+        updateSettingsUI(); // <-- ODŚWIEŻAMY PRZYCISKI USTAWIEŃ PRZY WEJŚCIU
     } 
     else {
         if(daysNav) daysNav.style.display = 'block'; 
@@ -1385,3 +1432,48 @@ function saveAvatar(emoji) {
         alert("Błąd zapisu: " + e.message);
     });
 }
+
+/*************************************************************
+  8. INSTALACJA APLIKACJI (PWA) - DODAJ NA KOŃCU
+*************************************************************/
+let deferredPrompt; // Tu przechowamy "zaproszenie" od przeglądarki
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // 1. Zatrzymujemy domyślne, nudne okienko przeglądarki
+    e.preventDefault();
+    // 2. Zapisujemy je na później
+    deferredPrompt = e;
+    // 3. Pokazujemy Twój elegancki baner (z index.html)
+    const banner = document.getElementById('install-banner');
+    if (banner) {
+        banner.classList.remove('hidden');
+        triggerFeedback('medium'); // Dźwięk, że coś się pojawiło
+    }
+});
+
+async function installApp() {
+    if (!deferredPrompt) return;
+    triggerFeedback('light'); // Kliknięcie
+
+    // 1. Pokazujemy natywne okienko "Dodaj do ekranu głównego"
+    deferredPrompt.prompt();
+    
+    // 2. Czekamy na decyzję użytkownika
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`Decyzja: ${outcome}`);
+    
+    // 3. Resetujemy zmienną (można jej użyć tylko raz)
+    deferredPrompt = null;
+    
+    // 4. Ukrywamy baner bez względu na decyzję
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.classList.add('hidden');
+}
+
+// Gdy aplikacja zostanie pomyślnie zainstalowana
+window.addEventListener('appinstalled', () => {
+    triggerFeedback('siren'); // Syrena radości - mamy nową apkę!
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.classList.add('hidden');
+    console.log('Szychta zainstalowana na telefonie!');
+});
