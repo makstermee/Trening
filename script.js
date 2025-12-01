@@ -133,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       checkActiveWorkout();
       updateProfileUI(user);
-      loadProfileStats(); // To załaduje też awatar
+      loadProfileStats(); 
       checkNotificationsCount(); 
     } else {
       if(container) container.style.display = 'none';
@@ -160,6 +160,7 @@ function getRankName(points) {
   2. NAWIGACJA
 *************************************************************/
 function switchMode(mode) {
+    triggerFeedback('light'); // Dźwięk kliknięcia
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
       // --- Aktualizacja podświetlenia dolnego paska ---
@@ -211,6 +212,7 @@ function switchMode(mode) {
 }
 
 function selectDay(dayValue) {
+    triggerFeedback('light'); // Dźwięk kliknięcia
     sessionStorage.setItem('GEM_saved_day', dayValue);
     currentSelectedDay = dayValue;
     const selector = document.getElementById('day-selector');
@@ -281,6 +283,7 @@ function updateHeaderTitle() {
   3. TRENING I WYZWANIA
 *************************************************************/
 function startWorkout(day) {
+    triggerFeedback('siren'); // SYRENA NA START
     const now = Date.now();
     const workoutData = { day: day, startTime: now, isChallenge: false };
     localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
@@ -289,6 +292,7 @@ function startWorkout(day) {
 }
 
 async function startChallenge(dayKey, exercisesJson, authorUid) {
+    triggerFeedback('light');
     const user = auth.currentUser;
     if (user.uid === authorUid) return alert("Nie ma punktów za własne wyzwania! Ćwicz normalnie.");
 
@@ -334,7 +338,8 @@ async function startChallenge(dayKey, exercisesJson, authorUid) {
             challengeAuthor: authorUid 
         };
         localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
-
+        
+        triggerFeedback('siren'); // Syrena przy wyzwaniu
         closePublicProfile();
         selectDay("challenge");
         loadCardsDataFromFirestore("challenge");
@@ -356,6 +361,7 @@ async function surrenderChallenge() {
             totalPoints: firebase.firestore.FieldValue.increment(2) 
         });
     }
+    triggerFeedback('heavy'); // Smutna wibracja
     localStorage.removeItem('activeWorkout');
     window.location.reload();
 }
@@ -369,6 +375,7 @@ async function finishWorkout(day) {
     const totalMinutes = (parseInt(parts[0]) * 60) + parseInt(parts[1]);
 
     if (isChallenge && totalMinutes < 10) {
+        triggerFeedback('heavy');
         return alert(`Za krótko, chopie! Szychta musi trwać minimum 10 minut. (Twój czas: ${totalMinutes} min)`);
     }
 
@@ -414,6 +421,8 @@ async function finishWorkout(day) {
             workoutName: muscleName // Zapisujemy to pole!
         };
 
+        triggerFeedback('siren'); // SYRENA NA KONIEC
+
         if (isChallenge) {
             openChallengeEndModal(); 
         } else {
@@ -452,6 +461,7 @@ function openChallengeEndModal() {
 }
 
 function selectRating(score, btn) {
+    triggerFeedback('light');
     currentRatingScore = score;
     document.querySelectorAll('.rating-point-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -459,6 +469,7 @@ function selectRating(score, btn) {
 }
 
 function showDaySelectorForSave() {
+    triggerFeedback('light');
     document.getElementById('save-decision-area').classList.add('hidden');
     document.getElementById('day-selector-area').classList.remove('hidden');
 }
@@ -551,6 +562,7 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
   5. MELDUNKI I POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
+    triggerFeedback('light');
     const modal = document.getElementById('notifications-modal');
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.add('active'), 10);
@@ -564,6 +576,7 @@ function closeNotificationsModal() {
 }
 
 function switchNotifTab(tab) {
+    triggerFeedback('light');
     document.querySelectorAll('.notif-tab').forEach(b => b.classList.remove('active'));
     document.getElementById(`tab-notif-${tab}`).classList.add('active');
     loadNotificationsList(tab);
@@ -623,6 +636,7 @@ function loadNotificationsList(tab) {
 }
 
 function ratePerformer(reportId) {
+    triggerFeedback('light');
     const score = prompt("Ile punktów (1-10) dajesz za ten trening?");
     if(!score || isNaN(score) || score < 1 || score > 10) return alert("Podaj liczbę 1-10");
 
@@ -630,12 +644,14 @@ function ratePerformer(reportId) {
         status: "RATED",
         bonusPoints: parseInt(score)
     }).then(() => {
+        triggerFeedback('medium');
         alert("Wysłano ocenę!");
         loadNotificationsList('todo');
     });
 }
 
 function claimBonusPoints(reportId, points) {
+    triggerFeedback('medium');
     const user = auth.currentUser;
     const batch = db.batch();
 
@@ -750,6 +766,10 @@ function addLog(day, docId) {
     const w = document.getElementById(`log-w-${docId}`).value;
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
+    
+    // FEEDBACK
+    triggerFeedback('medium'); 
+
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) 
@@ -757,6 +777,7 @@ function addLog(day, docId) {
 }
 
 function removeLog(day, docId, w, r, lid) {
+    triggerFeedback('light');
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayRemove({ weight: w, reps: r, id: Number(lid) }) })
@@ -1067,6 +1088,7 @@ function loadCommunity() {
 }
 function openPublicProfile(u) {
     viewingUserId = u.uid;
+    triggerFeedback('light');
     // ZMODYFIKOWANE: Wyświetlanie awatara w podglądzie
     document.getElementById('pub-avatar').textContent = u.avatar ? u.avatar : (u.displayName ? u.displayName[0].toUpperCase() : '?');
     document.getElementById('pub-name').textContent = u.displayName;
@@ -1118,6 +1140,7 @@ function loadSharedPlansForUser(targetUid) {
 }
 function deleteSharedPlan(k) { if(confirm("Usunąć?")) db.collection("publicUsers").doc(auth.currentUser.uid).collection("sharedPlans").doc(k).delete().then(()=>loadSharedPlansForUser(auth.currentUser.uid)); }
 async function shareCurrentDay() {
+    triggerFeedback('medium');
     const d = currentSelectedDay;
     if(!confirm("Udostępnić ten dzień?")) return;
     const u = auth.currentUser;
@@ -1130,6 +1153,7 @@ async function shareCurrentDay() {
 
 function openAddModal(){ 
     if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
+    triggerFeedback('light');
     currentModalDay=currentSelectedDay; 
     
     // Resetujemy edycję
@@ -1149,6 +1173,7 @@ function openAddModal(){
 }
 
 function closeAddModal(){ 
+    triggerFeedback('light');
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('active');
     setTimeout(() => {
@@ -1163,6 +1188,8 @@ function saveFromModal(){
     const w = document.getElementById('modal-weight').value;
     
     if(!ex) return; 
+
+    triggerFeedback('medium');
     
     const d = {
         exercise: ex,
@@ -1181,6 +1208,7 @@ function saveFromModal(){
     loadCardsDataFromFirestore(currentModalDay);
 }
 window.triggerEdit=function(day,id){ 
+    triggerFeedback('light');
     editInfo={day,docId:id}; 
     currentModalDay=day; 
     
@@ -1202,15 +1230,19 @@ window.triggerEdit=function(day,id){
         }
     });
 }
-function deleteCard(d,i){ if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); }
+function deleteCard(d,i){ 
+    triggerFeedback('heavy');
+    if(confirm("Usunąć?")) db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).collection("exercises").doc(i).delete().then(()=>loadCardsDataFromFirestore(d)); 
+}
 function saveMuscleGroups(){ const v=event.target.value; const u=auth.currentUser; db.collection("users").doc(u.uid).collection("days").doc(currentSelectedDay).set({muscleGroup:v},{merge:true}); }
 function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.currentUser.uid).collection("days").doc(d).get().then(doc=>{ if(doc.exists) document.getElementById(`${d}-muscle-group`).value=doc.data().muscleGroup||""; }); }
 
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-async function signIn(){ try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-async function signUp(){ try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
-async function signOut(){ await auth.signOut(); location.reload(); }
+async function signIn(){ triggerFeedback('light'); try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
+async function signUp(){ triggerFeedback('light'); try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
+async function signOut(){ triggerFeedback('light'); await auth.signOut(); location.reload(); }
 async function forceAppUpdate(){ 
+    triggerFeedback('light');
     if(!confirm("Aktualizować?")) return; 
     const regs=await navigator.serviceWorker.getRegistrations(); 
     for(let r of regs) r.unregister(); 
@@ -1218,6 +1250,7 @@ async function forceAppUpdate(){
     location.reload(true); 
 }
 function giveKudos(){
+    triggerFeedback('medium');
     if(!viewingUserId) return;
     const currentUser = auth.currentUser;
     if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
@@ -1295,6 +1328,7 @@ const AVATAR_LIST = [
 ];
 
 function openAvatarModal() {
+    triggerFeedback('light');
     const grid = document.getElementById('avatar-grid-container');
     const modal = document.getElementById('avatar-modal');
     
@@ -1325,6 +1359,7 @@ function openAvatarModal() {
 }
 
 function closeAvatarModal() {
+    triggerFeedback('light');
     const modal = document.getElementById('avatar-modal');
     modal.classList.remove('active');
     setTimeout(() => modal.classList.add('hidden'), 300);
@@ -1333,6 +1368,7 @@ function closeAvatarModal() {
 function saveAvatar(emoji) {
     const user = auth.currentUser;
     if (!user) return;
+    triggerFeedback('medium');
 
     // Aktualizacja w bazie danych (Publiczny profil)
     db.collection("publicUsers").doc(user.uid).set({
