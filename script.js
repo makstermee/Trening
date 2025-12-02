@@ -2,7 +2,7 @@
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
 // *** TUTAJ WPISZ SWÓJ EMAIL ADMINISTRATORA ***
-const ADMIN_EMAILS = ["michalnowicki000@gmail.com"]; // <--- ZMIEŃ TO!
+const ADMIN_EMAILS = ["michalnowicki000@gmail.com"]; // <--- UPEWNIJ SIĘ ŻE TU JEST TWÓJ MAIL!
 
 // 1. Konfiguracja Firebase
 const firebaseConfig = {
@@ -572,6 +572,7 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
+// Funkcja obsługująca rozwijanie kart
 function toggleCard(header) {
     const card = header.parentElement;
     card.classList.toggle('open');
@@ -1140,7 +1141,7 @@ function closeTermsModal() {
 }
 
 /*************************************************************
-  9. ADMIN PANEL LOGIC (NOWOŚĆ)
+  9. ADMIN PANEL LOGIC
 *************************************************************/
 function openAdminModal() {
     triggerFeedback('light');
@@ -1194,46 +1195,61 @@ function openUserInspection(targetUid) {
     db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
         const user = uDoc.data();
         
-        // Pobieramy historię (ostatnie 10 treningów)
-        db.collection("users").doc(targetUid).collection("history").orderBy("dateIso", "desc").limit(10).get().then(hQs => {
-            let historyHtml = '';
-            if(hQs.empty) historyHtml = '<p style="color:#666; font-size:0.8rem;">Brak historii treningów.</p>';
-            else {
-                hQs.forEach(h => {
-                    const hd = h.data();
-                    historyHtml += `
-                    <div class="admin-history-item">
-                        <span style="color:white;">${hd.dateIso.split('T')[0]}</span>
-                        <span style="color:#aaa;">${hd.duration}</span>
-                        <span style="color:var(--primary-color);">${hd.workoutName || 'Trening'}</span>
+        // ZMIANA: Dodano .catch() dla obsługi błędów uprawnień
+        db.collection("users").doc(targetUid).collection("history")
+            .orderBy("dateIso", "desc").limit(10).get()
+            .then(hQs => {
+                let historyHtml = '';
+                if(hQs.empty) historyHtml = '<p style="color:#666; font-size:0.8rem;">Brak historii treningów.</p>';
+                else {
+                    hQs.forEach(h => {
+                        const hd = h.data();
+                        historyHtml += `
+                        <div class="admin-history-item">
+                            <span style="color:white;">${hd.dateIso.split('T')[0]}</span>
+                            <span style="color:#aaa;">${hd.duration}</span>
+                            <span style="color:var(--primary-color);">${hd.workoutName || 'Trening'}</span>
+                        </div>`;
+                    });
+                }
+                renderInspectionView(container, user, targetUid, historyHtml);
+            })
+            .catch(error => {
+                console.error(error);
+                const errorHtml = `
+                    <div style="padding:20px; text-align:center; color:red; border:1px dashed red; border-radius:8px;">
+                        <i class="fa-solid fa-lock" style="font-size:1.5rem; margin-bottom:10px;"></i><br>
+                        Brak dostępu do historii.<br>
+                        <span style="font-size:0.7rem; color:#aaa;">(Wymagana zmiana reguł Firestore)</span>
                     </div>`;
-                });
-            }
-
-            container.innerHTML = `
-                <div style="padding:15px;">
-                    <button onclick="loadAdminUsers()" style="margin-bottom:15px; background:none; border:none; color:#aaa;"><i class="fa-solid fa-arrow-left"></i> Wróć do listy</button>
-                    
-                    <div style="text-align:center; margin-bottom:20px;">
-                        <div style="font-size:3rem;">${user.avatar || '?'}</div>
-                        <h2 style="margin:5px 0;">${user.displayName}</h2>
-                        <p style="color:#666; font-size:0.8rem;">${user.email}</p>
-                    </div>
-
-                    <div style="background:#222; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #444;">
-                        <label style="color:#888; font-size:0.8rem;">PUNKTY (Aktualnie: ${user.totalPoints})</label>
-                        <div style="display:flex; gap:10px; margin-top:5px;">
-                            <input type="number" id="admin-new-points" value="${user.totalPoints}" style="flex:1; background:black; border:1px solid #555; color:white; padding:10px; border-radius:8px;">
-                            <button onclick="saveUserPoints('${targetUid}')" style="background:var(--accent-color); color:black; border:none; padding:0 20px; border-radius:8px; font-weight:bold;">ZAPISZ</button>
-                        </div>
-                    </div>
-
-                    <h4 style="color:#888; margin-bottom:10px;">OSTATNIE TRENINGI:</h4>
-                    ${historyHtml}
-                </div>
-            `;
-        });
+                renderInspectionView(container, user, targetUid, errorHtml);
+            });
     });
+}
+
+function renderInspectionView(container, user, targetUid, historyContent) {
+    container.innerHTML = `
+        <div style="padding:15px;">
+            <button onclick="loadAdminUsers()" style="margin-bottom:15px; background:none; border:none; color:#aaa;"><i class="fa-solid fa-arrow-left"></i> Wróć do listy</button>
+            
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="font-size:3rem;">${user.avatar || '?'}</div>
+                <h2 style="margin:5px 0;">${user.displayName}</h2>
+                <p style="color:#666; font-size:0.8rem;">${user.email}</p>
+            </div>
+
+            <div style="background:#222; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #444;">
+                <label style="color:#888; font-size:0.8rem;">PUNKTY (Aktualnie: ${user.totalPoints})</label>
+                <div style="display:flex; gap:10px; margin-top:5px;">
+                    <input type="number" id="admin-new-points" value="${user.totalPoints}" style="flex:1; background:black; border:1px solid #555; color:white; padding:10px; border-radius:8px;">
+                    <button onclick="saveUserPoints('${targetUid}')" style="background:var(--accent-color); color:black; border:none; padding:0 20px; border-radius:8px; font-weight:bold;">ZAPISZ</button>
+                </div>
+            </div>
+
+            <h4 style="color:#888; margin-bottom:10px;">OSTATNIE TRENINGI:</h4>
+            ${historyContent}
+        </div>
+    `;
 }
 
 function saveUserPoints(targetUid) {
