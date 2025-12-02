@@ -13,14 +13,14 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    // Mechanizm twardego resetu cache przy dużej aktualizacji
-    if (!localStorage.getItem('RESET_AVATARS_V1')) {
+    // Reset cache dla pewności, że stara wersja z wyzwaniami nie zostanie w pamięci
+    if (!localStorage.getItem('CLEAN_SLATE_V3')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('RESET_AVATARS_V1', 'true');
-          console.log("Wyczyszczono cache (Avatars Update).");
+          localStorage.setItem('CLEAN_SLATE_V3', 'true');
+          console.log("Wyczyszczono cache (Wersja Lite).");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -59,8 +59,8 @@
 
   <div class="container">
     <div id="install-banner" class="install-banner hidden">
-        <p>Już teraz zainstaluj aplikację!</p>
-        <button id="install-btn" onclick="installApp()"><i class="fa-solid fa-download"></i> Zainstaluj</button>
+        <p>Zainstaluj aplikację!</p>
+        <button id="install-btn" onclick="installApp()"><i class="fa-solid fa-download"></i> Instaluj</button>
     </div>
     
     <header class="app-header">
@@ -87,7 +87,6 @@
             <button class="pill" onclick="selectDay('friday')">Pt</button>
             <button class="pill" onclick="selectDay('saturday')">Sob</button>
             <button class="pill" onclick="selectDay('sunday')">Nd</button>
-            <button class="pill" id="pill-challenge" onclick="selectDay('challenge')" style="border: 1px solid #ffd700; color: #ffd700;">🏆 SZYCHTA</button>
         </div>
     </div>
 
@@ -99,17 +98,6 @@
         <div id="friday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="friday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="friday-cards"></div><div class="bottom-actions" id="friday-actions"></div></div>
         <div id="saturday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="saturday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="saturday-cards"></div><div class="bottom-actions" id="saturday-actions"></div></div>
         <div id="sunday" class="day-section hidden"><div class="muscle-header"><i class="fa-solid fa-child-reaching"></i><input type="text" id="sunday-muscle-group" placeholder="Partia mięśniowa" oninput="saveMuscleGroups()"/></div><div class="cards-container" id="sunday-cards"></div><div class="bottom-actions" id="sunday-actions"></div></div>
-
-        <div id="challenge" class="day-section hidden">
-            <div class="muscle-header" style="background: linear-gradient(45deg, #b99d08, #ffd700); color:black; display:flex; justify-content:space-between; align-items:center;">
-                <div><i class="fa-solid fa-trophy"></i> <span>SZYCHTA (Wyzwanie)</span></div>
-                <button onclick="surrenderChallenge()" style="background:#000; color:#fff; border:none; padding:5px 10px; border-radius:5px; font-size:0.7rem; cursor:pointer;">
-                    <i class="fa-solid fa-flag"></i> PODDAJĘ SIĘ
-                </button>
-            </div>
-            <div class="cards-container" id="challenge-cards"></div>
-            <div class="bottom-actions" id="challenge-actions"></div>
-        </div>
 
         <div id="history" class="day-section hidden">
             <h2 class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> Historia</h2>
@@ -124,31 +112,20 @@
         </div>
 
         <div id="rules" class="day-section hidden">
-            <h2 class="history-title"><i class="fa-solid fa-book-open"></i> Kodeks Szychty</h2>
+            <h2 class="history-title"><i class="fa-solid fa-book-open"></i> Zasady</h2>
             <div class="rules-container">
                 <div class="rule-box">
                     <h4>1. O co tu chodzi?</h4>
-                    <p>To nie jest zwykły dziennik. Tutaj pniemy się po szczeblach górniczej kariery. Zaczynasz na dole jako <b>Sztrajer</b> (pomocnik), a Twoim celem jest zostanie <b>Skarbnikiem</b> (Legendą Kopalni).</p>
+                    <p>Pniemy się po szczeblach kariery. Zaczynasz jako <b>Sztrajer</b>, a Twoim celem jest zostanie <b>Skarbnikiem</b>.</p>
                 </div>
                 <div class="rule-box">
-                    <h4>2. Wypłata (Jak zarabiać punkty?)</h4>
+                    <h4>2. Punkty</h4>
                     <ul class="rules-list">
-                        <li><b>+2 pkt</b> – Za każdy Twój własny trening.</li>
-                        <li><b>+3 pkt</b> – Za ukończenie <b>Wyzwania</b> (treningu innej osoby).</li>
-                        <li><b>Premia (1-10 pkt)</b> – Po szychcie wysyłasz raport do Autora planu. Jeśli on uzna, że dobrze ćwiczyłeś, przyzna Ci premię!</li>
-                        <li><b>Zapłata dla Autora (1-10 pkt)</b> – Ty też oceniasz plan po treningu. Ile gwiazdek dasz Autorowi, tyle punktów wpadnie na jego konto.</li>
-                    </ul>
-                </div>
-                <div class="rule-box warning">
-                    <h4>3. Żelazne Zasady BHP</h4>
-                    <ul class="rules-list">
-                        <li>⏱️ <b>Minimum 10 minut:</b> Tyle musi trwać Wyzwanie, żeby zostało zaliczone.</li>
-                        <li>🛑 <b>Limity:</b> Możesz zrobić max <b>2 Wyzwania</b> dziennie (i 2 swoje treningi). Szanuj siły!</li>
-                        <li>🤝 <b>Fair Play:</b> Nie ma punktów za robienie własnych Wyzwań.</li>
+                        <li><b>+2 pkt</b> – Za każdy ukończony trening.</li>
                     </ul>
                 </div>
                 <div class="rule-box">
-                    <h4>4. Drabina Awansu (Rangi)</h4>
+                    <h4>3. Drabina Awansu (Rangi)</h4>
                     <div class="ranks-table">
                         <div class="rank-row"><span>0 - 20 pkt</span> <span class="r-name">Sztrajer 🔦</span></div>
                         <div class="rank-row"><span>21 - 100 pkt</span> <span class="r-name">Młody Gwarek ⛏️</span></div>
@@ -179,10 +156,21 @@
             </div>
             
             <div class="settings-group">
+                <h4><i class="fa-solid fa-sliders"></i> Preferencje</h4>
+                <div style="display:flex; gap:10px;">
+                    <button id="btn-set-audio" class="btn-outline full-width" onclick="toggleAppSetting('audio')">
+                        <i class="fa-solid fa-volume-high"></i> Dźwięk
+                    </button>
+                    <button id="btn-set-haptic" class="btn-outline full-width" onclick="toggleAppSetting('haptic')">
+                        <i class="fa-solid fa-mobile-screen-button"></i> Wibracje
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-group">
                 <h4><i class="fa-solid fa-bell"></i> Centrum Meldunków</h4>
                 <button class="btn-outline full-width" onclick="openNotificationsModal()" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>Otwórz Skrzynkę</span>
-                    <span id="profile-notif-badge" class="notification-badge">0</span>
                 </button>
             </div>
 
@@ -192,16 +180,6 @@
                     <i class="fa-solid fa-rotate"></i> SPRAWDŹ I ZAKTUALIZUJ
                 </button>
             </div>
-          <div class="settings-group">
-    <h4><i class="fa-solid fa-sliders"></i> Preferencje</h4>
-    <div style="display:flex; gap:10px;">
-        <button id="btn-set-audio" class="btn-outline full-width" onclick="toggleAppSetting('audio')">
-            <i class="fa-solid fa-volume-high"></i> Dźwięk
-        </button>
-        <button id="btn-set-haptic" class="btn-outline full-width" onclick="toggleAppSetting('haptic')">
-            <i class="fa-solid fa-mobile-screen-button"></i> Wibracje
-        </button>
-    </div>
 
             <div class="settings-group">
                 <h4><i class="fa-solid fa-user-gear"></i> Ustawienia</h4>
@@ -260,35 +238,7 @@
             <div class="shared-plans-section" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
                 <h4 style="margin:0 0 10px 0; color:#888; font-size:0.9rem;">UDOSTĘPNIONE PLANY:</h4>
                 <div id="public-plans-list" style="max-height: 200px; overflow-y: auto;">
-                    <p style="text-align:center; font-size:0.8rem; color:#666;">Ten użytkownik nie udostępnił jeszcze planów.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="challenge-end-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="text-align:center;">
-            <h3>Koniec Szychty! ⚒️</h3>
-            <p style="color:#ccc; font-size:0.9rem;">Wystaw notę dla Sztygara (Autora planu):</p>
-            <div class="rating-scale-container" id="rating-buttons"></div>
-            <div id="save-decision-area" class="hidden" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
-                <p style="margin-bottom:10px;">Zapisać ten plan u siebie?</p>
-                <div style="display:flex; gap:10px; justify-content:center;">
-                    <button class="btn-primary" style="flex:1" onclick="showDaySelectorForSave()">JA, BIORA</button>
-                    <button class="btn-outline" style="flex:1" onclick="finalizeChallenge(false)">NIE</button>
-                </div>
-            </div>
-            <div id="day-selector-area" class="hidden" style="margin-top:15px;">
-                <select id="target-save-day" class="main-input" style="background:#222; color:white; margin-bottom:10px;">
-                    <option value="monday">Poniedziałek</option>
-                    <option value="tuesday">Wtorek</option>
-                    <option value="wednesday">Środa</option>
-                    <option value="thursday">Czwartek</option>
-                    <option value="friday">Piątek</option>
-                    <option value="saturday">Sobota</option>
-                    <option value="sunday">Niedziela</option>
-                </select>
-                <button class="btn-accent full-width" onclick="finalizeChallenge(true)">ZAPISZ PLAN</button>
+                    </div>
             </div>
         </div>
     </div>
@@ -299,12 +249,8 @@
                 <h3>Meldunki</h3>
                 <button onclick="closeNotificationsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="notifications-tabs">
-                <button class="notif-tab active" onclick="switchNotifTab('todo')" id="tab-notif-todo">Do Oceny</button>
-                <button class="notif-tab" onclick="switchNotifTab('news')" id="tab-notif-news">Wiadomości</button>
-            </div>
-            <div id="notif-list-container" style="max-height:300px; overflow-y:auto;">
-                <p style="text-align:center; color:#666; margin-top:20px;">Ładowanie...</p>
+            <div id="notif-list-container" style="max-height:300px; overflow-y:auto; padding-top:20px;">
+                <p style="text-align:center; color:#666; margin-top:20px;">Skrzynka jest pusta.</p>
             </div>
         </div>
     </div>
@@ -340,7 +286,7 @@
 
   </div>
   
-  <script src="script.js?v=AVATAR_UPDATE_1"></script> 
+  <script src="script.js?v=FINAL_CLEAN_V3"></script> 
   
   <script>
     function switchAuthTab(tab) {
