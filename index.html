@@ -13,14 +13,14 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    // Reset cache dla pewności, że stara wersja z wyzwaniami nie zostanie w pamięci
-    if (!localStorage.getItem('CLEAN_SLATE_V3')) {
+    // Reset cache po aktualizacji logowania
+    if (!localStorage.getItem('AUTH_UPDATE_V1')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('CLEAN_SLATE_V3', 'true');
-          console.log("Wyczyszczono cache (Wersja Lite).");
+          localStorage.setItem('AUTH_UPDATE_V1', 'true');
+          console.log("Wyczyszczono cache (Auth Update).");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -37,20 +37,52 @@
 
   <div id="login-section">
     <div class="login-card">
-        <div class="brand-logo"><i class="fa-solid fa-dumbbell"></i> GymPro</div>
+        <div class="brand-logo">
+            <i class="fa-solid fa-dumbbell"></i> 
+            <span>GymPro</span>
+        </div>
+        <p class="brand-subtitle">Twój osobisty dziennik siłowy</p>
+        
         <div class="auth-tabs">
             <button id="tab-login" class="active" onclick="switchAuthTab('login')">Logowanie</button>
             <button id="tab-register" onclick="switchAuthTab('register')">Rejestracja</button>
         </div>
+
         <form id="login-form">
-            <div class="input-group"><i class="fa-solid fa-envelope"></i><input type="email" id="login-email" placeholder="E-mail" required></div>
-            <div class="input-group"><i class="fa-solid fa-lock"></i><input type="password" id="login-password" placeholder="Hasło" required></div>
+            <div class="input-group">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="login-email" placeholder="Adres E-mail" required>
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="login-password" placeholder="Hasło" required>
+            </div>
+            
+            <div class="auth-actions-row">
+                <a href="#" onclick="resetPasswordLogic()" class="forgot-pass-link">Zapomniałeś hasła?</a>
+            </div>
+
             <button type="button" class="btn-primary btn-block" onclick="signIn()">WEJDŹ</button>
             <p id="login-error" class="error-message"></p>
         </form>
+
         <form id="register-form" class="hidden">
-            <div class="input-group"><i class="fa-solid fa-envelope"></i><input type="email" id="register-email" placeholder="E-mail" required></div>
-            <div class="input-group"><i class="fa-solid fa-lock"></i><input type="password" id="register-password" placeholder="Hasło (min. 6 znaków)" required></div>
+            <div class="input-group">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="register-email" placeholder="Adres E-mail" required>
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="register-password" placeholder="Hasło (min. 6 znaków)" required>
+            </div>
+
+            <div class="terms-wrapper">
+                <input type="checkbox" id="terms-check">
+                <label for="terms-check">
+                    Akceptuję <a href="#" onclick="openTermsModal()">Regulamin i Zasady</a>. Rozumiem, że jest to wersja testowa.
+                </label>
+            </div>
+
             <button type="button" class="btn-accent btn-block" onclick="signUp()">DOŁĄCZ</button>
             <p id="register-error" class="error-message"></p>
         </form>
@@ -266,6 +298,26 @@
         </div>
     </div>
 
+    <div id="terms-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h3>Regulamin</h3>
+              <button onclick="closeTermsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body" style="color: #ccc; font-size: 0.9rem; line-height: 1.5;">
+              <p><strong>1. Charakter Aplikacji:</strong> Aplikacja GymPro jest projektem hobbystycznym/edukacyjnym w fazie testowej (BETA).</p>
+              <p><strong>2. Bezpieczeństwo Danych:</strong> Autor dokłada starań, aby zabezpieczyć dane, ale nie gwarantuje zabezpieczeń klasy bankowej. Istnieje ryzyko utraty danych lub ich wycieku.</p>
+              <p><strong>3. Wyłączenie Odpowiedzialności:</strong><br>
+              - Rejestrujesz się na własną odpowiedzialność.<br>
+              - <b>NIE UŻYWAJ</b> haseł, których używasz w bankowości lub innych ważnych serwisach.<br>
+              - Autor nie ponosi odpowiedzialności za szkody wynikłe z użytkowania aplikacji, w tym za ewentualne przejęcie adresu e-mail przez osoby trzecie.</p>
+              <p><strong>4. Dane:</strong> Podajesz tylko e-mail i hasło. Nie przechowujemy danych osobowych typu imię, nazwisko czy adres.</p>
+              <br>
+              <button class="btn-primary full-width" onclick="closeTermsModal()">ROZUMIEM I AKCEPTUJĘ</button>
+          </div>
+      </div>
+    </div>
+
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchMode('plan'); switchBottomNav(this)">
             <i class="fa-solid fa-calendar-day"></i><span>Plan</span>
@@ -286,7 +338,7 @@
 
   </div>
   
-  <script src="script.js?v=FINAL_CLEAN_V3"></script> 
+  <script src="script.js?v=AUTH_FINAL"></script> 
   
   <script>
     function switchAuthTab(tab) {
