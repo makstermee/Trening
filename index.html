@@ -13,14 +13,13 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    // Reset cache po aktualizacji logowania
-    if (!localStorage.getItem('AUTH_UPDATE_V1')) {
+    if (!localStorage.getItem('AUTH_FIX_TERMS_V1')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('AUTH_UPDATE_V1', 'true');
-          console.log("Wyczyszczono cache (Auth Update).");
+          localStorage.setItem('AUTH_FIX_TERMS_V1', 'true');
+          console.log("Wyczyszczono cache (Terms Fix).");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -298,26 +297,6 @@
         </div>
     </div>
 
-    <div id="terms-modal" class="modal-overlay hidden">
-      <div class="modal-content">
-          <div class="modal-header">
-              <h3>Regulamin</h3>
-              <button onclick="closeTermsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div class="modal-body" style="color: #ccc; font-size: 0.9rem; line-height: 1.5;">
-              <p><strong>1. Charakter Aplikacji:</strong> Aplikacja GymPro jest projektem hobbystycznym/edukacyjnym w fazie testowej (BETA).</p>
-              <p><strong>2. Bezpieczeństwo Danych:</strong> Autor dokłada starań, aby zabezpieczyć dane, ale nie gwarantuje zabezpieczeń klasy bankowej. Istnieje ryzyko utraty danych lub ich wycieku.</p>
-              <p><strong>3. Wyłączenie Odpowiedzialności:</strong><br>
-              - Rejestrujesz się na własną odpowiedzialność.<br>
-              - <b>NIE UŻYWAJ</b> haseł, których używasz w bankowości lub innych ważnych serwisach.<br>
-              - Autor nie ponosi odpowiedzialności za szkody wynikłe z użytkowania aplikacji, w tym za ewentualne przejęcie adresu e-mail przez osoby trzecie.</p>
-              <p><strong>4. Dane:</strong> Podajesz tylko e-mail i hasło. Nie przechowujemy danych osobowych typu imię, nazwisko czy adres.</p>
-              <br>
-              <button class="btn-primary full-width" onclick="closeTermsModal()">ROZUMIEM I AKCEPTUJĘ</button>
-          </div>
-      </div>
-    </div>
-
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchMode('plan'); switchBottomNav(this)">
             <i class="fa-solid fa-calendar-day"></i><span>Plan</span>
@@ -336,6 +315,26 @@
         </button>
     </nav>
 
+  </div>
+  
+  <div id="terms-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h3>Regulamin</h3>
+              <button onclick="closeTermsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body" style="color: #ccc; font-size: 0.9rem; line-height: 1.5;">
+              <p><strong>1. Charakter Aplikacji:</strong> Aplikacja GymPro jest projektem hobbystycznym/edukacyjnym w fazie testowej (BETA).</p>
+              <p><strong>2. Bezpieczeństwo Danych:</strong> Autor dokłada starań, aby zabezpieczyć dane, ale nie gwarantuje zabezpieczeń klasy bankowej. Istnieje ryzyko utraty danych lub ich wycieku.</p>
+              <p><strong>3. Wyłączenie Odpowiedzialności:</strong><br>
+              - Rejestrujesz się na własną odpowiedzialność.<br>
+              - <b>NIE UŻYWAJ</b> haseł, których używasz w bankowości lub innych ważnych serwisach.<br>
+              - Autor nie ponosi odpowiedzialności za szkody wynikłe z użytkowania aplikacji, w tym za ewentualne przejęcie adresu e-mail przez osoby trzecie.</p>
+              <p><strong>4. Dane:</strong> Podajesz tylko e-mail i hasło. Nie przechowujemy danych osobowych typu imię, nazwisko czy adres.</p>
+              <br>
+              <button class="btn-primary full-width" onclick="closeTermsModal()">ROZUMIEM I AKCEPTUJĘ</button>
+          </div>
+      </div>
   </div>
   
   <script src="script.js?v=AUTH_FINAL"></script> 
