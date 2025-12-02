@@ -38,7 +38,6 @@ let viewingUserId = null;
 let tempWorkoutResult = null; 
 
 // USTAWIENIA APLIKACJI (Audio/Haptic)
-// Ładujemy z pamięci telefonu lub ustawiamy domyślnie na włączone (true)
 let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio: true, haptic: true };
 
 /*************************************************************
@@ -47,15 +46,13 @@ let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function triggerFeedback(type) {
-    // 1. Wibracje (Haptic) - Tylko jeśli włączone w ustawieniach
     if (appSettings.haptic && navigator.vibrate) {
-        if (type === 'light') navigator.vibrate(10); // Kliknięcie
-        if (type === 'medium') navigator.vibrate(40); // Zapisanie serii
-        if (type === 'heavy') navigator.vibrate([100, 50, 100]); // Sukces/Błąd
-        if (type === 'siren') navigator.vibrate([500, 100, 500]); // Syrena
+        if (type === 'light') navigator.vibrate(10);
+        if (type === 'medium') navigator.vibrate(40);
+        if (type === 'heavy') navigator.vibrate([100, 50, 100]);
+        if (type === 'siren') navigator.vibrate([500, 100, 500]);
     }
 
-    // 2. Dźwięki (Syntezator) - Tylko jeśli włączone w ustawieniach
     if (appSettings.audio) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
@@ -65,7 +62,7 @@ function triggerFeedback(type) {
 
         const now = audioCtx.currentTime;
 
-        if (type === 'light') { // Kliknięcie (krótkie pyknięcie)
+        if (type === 'light') {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(800, now);
             gainNode.gain.setValueAtTime(0.05, now);
@@ -73,7 +70,7 @@ function triggerFeedback(type) {
             osc.start(now);
             osc.stop(now + 0.05);
         } 
-        else if (type === 'medium') { // Sukces (Ding!)
+        else if (type === 'medium') {
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(600, now);
             osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
@@ -82,11 +79,11 @@ function triggerFeedback(type) {
             osc.start(now);
             osc.stop(now + 0.3);
         }
-        else if (type === 'siren') { // Syrena Kopalniana
+        else if (type === 'siren') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(300, now);
-            osc.frequency.linearRampToValueAtTime(600, now + 1); // Narastanie
-            osc.frequency.linearRampToValueAtTime(300, now + 2); // Opadanie
+            osc.frequency.linearRampToValueAtTime(600, now + 1);
+            osc.frequency.linearRampToValueAtTime(300, now + 2);
             gainNode.gain.setValueAtTime(0.2, now);
             gainNode.gain.linearRampToValueAtTime(0, now + 2.5);
             osc.start(now);
@@ -95,17 +92,13 @@ function triggerFeedback(type) {
     }
 }
 
-// Funkcja do przełączania ustawień (podpięta pod przyciski w profilu)
 function toggleAppSetting(key) {
-    appSettings[key] = !appSettings[key]; // Odwracamy wartość
-    localStorage.setItem('gympro_settings', JSON.stringify(appSettings)); // Zapisujemy
-    updateSettingsUI(); // Aktualizujemy wygląd przycisków
-    
-    // Feedback, żeby użytkownik wiedział, że działa (tylko jeśli właśnie włączył)
+    appSettings[key] = !appSettings[key];
+    localStorage.setItem('gympro_settings', JSON.stringify(appSettings));
+    updateSettingsUI();
     if (appSettings[key]) triggerFeedback(key === 'audio' ? 'medium' : 'light');
 }
 
-// Funkcja aktualizująca wygląd przycisków w profilu
 function updateSettingsUI() {
     const btnAudio = document.getElementById('btn-set-audio');
     const btnHaptic = document.getElementById('btn-set-haptic');
@@ -149,13 +142,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
-      // Ładowanie wszystkich dni
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
 
-      // --- INTELIGENTNY START ---
       const lastMode = sessionStorage.getItem('GEM_saved_mode');
       const lastDay = sessionStorage.getItem('GEM_saved_day');
 
@@ -170,7 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
           currentMode = 'plan';
           selectDay(lastDay || todayName);
       }
-      // --------------------------
 
       checkActiveWorkout();
       updateProfileUI(user);
@@ -183,7 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// --- RANGI GÓRNICZE ---
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -201,18 +190,17 @@ function getRankName(points) {
   2. NAWIGACJA
 *************************************************************/
 function switchMode(mode) {
-    triggerFeedback('light'); // Dźwięk kliknięcia
+    triggerFeedback('light');
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
-      // --- Aktualizacja podświetlenia dolnego paska ---
+      
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('active');
-        // Sprawdzamy czy przycisk prowadzi do tego trybu
         if (btn.getAttribute('onclick').includes(`'${mode}'`)) {
             btn.classList.add('active');
         }
     });
-    // -----------------------------------------------------  
+    
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
@@ -244,7 +232,7 @@ function switchMode(mode) {
         profileSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
         loadProfileStats(); 
-        updateSettingsUI(); // <-- ODŚWIEŻAMY PRZYCISKI USTAWIEŃ PRZY WEJŚCIU
+        updateSettingsUI();
     } 
     else {
         if(daysNav) daysNav.style.display = 'block'; 
@@ -254,7 +242,7 @@ function switchMode(mode) {
 }
 
 function selectDay(dayValue) {
-    triggerFeedback('light'); // Dźwięk kliknięcia
+    triggerFeedback('light');
     sessionStorage.setItem('GEM_saved_day', dayValue);
     currentSelectedDay = dayValue;
     const selector = document.getElementById('day-selector');
@@ -313,10 +301,10 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING (SMART DATE LOGIC 🧠)
+  3. TRENING (SMART DATE LOGIC - NAPRAWIONE 🧠)
 *************************************************************/
 function startWorkout(day) {
-    triggerFeedback('siren'); // SYRENA NA START
+    triggerFeedback('siren');
     const now = Date.now();
     const workoutData = { day: day, startTime: now };
     localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
@@ -350,34 +338,30 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
-        // 1. Pobieranie nazwy partii z inputa (np. "Klatka")
         let muscleName = "";
         const muscleInput = document.getElementById(`${day}-muscle-group`);
         if (muscleInput) muscleName = muscleInput.value;
 
-        // 2. DETEKCJA RZECZYWISTEGO DNIA TYGODNIA
-        // Pobieramy numer dnia (0-6) z dzisiejszej daty
+        // --- NAPRAWA DATY: ZAWSZE POBIERZ AKTUALNY DZIEŃ TYGODNIA ---
         const jsDays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
         const todayIndex = new Date().getDay();
-        const actualDayKey = jsDays[todayIndex]; // np. "tuesday"
+        const actualDayKey = jsDays[todayIndex]; // To jest dzień, kiedy faktycznie kończysz trening
 
-        // 3. Budowanie obiektu wyniku
-        // Zapisujemy 'dayKey' jako RZECZYWISTY dzień, żeby wpadło do dobrej historii
-        // Jeśli nie wpisałeś nazwy partii, nazwiemy to "Plan: [Nazwa Planu]", żebyś wiedział, co robiłeś
+        // Zapisujemy 'dayKey' jako RZECZYWISTY dzień, żeby wpadło do dobrej sekcji w Historii
         tempWorkoutResult = {
-            dateIso: new Date().toISOString(),
+            dateIso: new Date().toISOString(), // Data z momentu zakończenia
             duration: timerText,
-            dayKey: actualDayKey, // Zapisujemy jako DZIŚ (np. Wtorek)
-            originalPlanKey: day, // Zapamiętujemy, że to był plan ze Środy (opcjonalnie)
+            dayKey: actualDayKey, // <-- KLUCZOWE: Wymuszamy dzisiejszy dzień
+            originalPlanKey: day, // (Opcjonalnie) info jaki to był plan
             details: exercisesDone,
-            workoutName: muscleName || `Plan: ${dayMap[day]}` // "Klatka" LUB "Plan: Środa"
+            // Jeśli nie wpisałeś nazwy, użyj nazwy planu (np. "Plan: Środa")
+            workoutName: muscleName || `Plan: ${dayMap[day]}` 
         };
 
-        triggerFeedback('siren'); // SYRENA NA KONIEC
+        triggerFeedback('siren'); 
 
-        // Zapisujemy bezpośrednio +2 pkt
         await saveHistoryAndPoints(2); 
-        alert(`Fajrant! Trening zapisany w dniu: ${dayMap[actualDayKey]}`);
+        alert(`Fajrant! Trening zapisany w dniu: ${dayMap[actualDayKey]} (Plan: ${dayMap[day]})`);
         localStorage.removeItem('activeWorkout');
         window.location.reload();
 
@@ -396,7 +380,7 @@ async function saveHistoryAndPoints(myPoints) {
 
     batch.set(historyRef, {
         ...result,
-        dayName: dayMap[result.dayKey], // Zapisze polską nazwę RZECZYWISTEGO dnia
+        dayName: dayMap[result.dayKey], // Zapisze nazwę dnia wykonania (np. Wtorek)
         workoutName: result.workoutName,
         pointsEarned: myPoints
     });
@@ -404,7 +388,7 @@ async function saveHistoryAndPoints(myPoints) {
     const myPublicRef = db.collection("publicUsers").doc(user.uid);
     batch.set(myPublicRef, {
         totalPoints: firebase.firestore.FieldValue.increment(myPoints),
-        lastWorkout: new Date().toISOString()
+        lastWorkout: new Date().toISOString() // Aktualizacja daty ostatniego treningu
     }, { merge: true });
 
     await batch.commit();
@@ -426,7 +410,6 @@ function closeNotificationsModal() {
 }
 
 function checkNotificationsCount() {
-    // Funkcja pusta - brak nowych powiadomień
     const badge = document.getElementById('profile-notif-badge');
     if(badge) badge.style.display = 'none';
 }
@@ -442,7 +425,6 @@ function checkActiveWorkout() {
     const nav = document.getElementById('days-nav-container');
 
     if (activeData) {
-        // --- TRENING TRWA ---
         if(titleEl) titleEl.style.display = 'none';
         
         if(timerEl) {
@@ -457,13 +439,11 @@ function checkActiveWorkout() {
         
         updateActionButtons(activeData.day);
     } else {
-        // --- BRAK TRENINGU ---
         if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         
-        // Pokaż pasek Dni tylko w Planie lub Historii
         if(nav) {
             if (currentMode === 'plan' || currentMode === 'history') {
                 nav.style.display = 'block';
@@ -499,7 +479,6 @@ function addLog(day, docId) {
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
     
-    // FEEDBACK
     triggerFeedback('medium'); 
 
     const user = auth.currentUser;
@@ -606,19 +585,25 @@ function updateProfileUI(user) {
     if(avatarEl) avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
 }
 
+// --- NAPRAWA OSTATNIEGO TRENINGU ---
 function loadProfileStats() {
     const user = auth.currentUser;
-    db.collection("users").doc(user.uid).collection("history").get().then(qs => {
+    // 1. Pobieramy historię posortowaną od najnowszej
+    db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").get().then(qs => {
         const total = qs.size;
         let last = '-';
-        if(!qs.empty) last = qs.docs[0].data().displayDate || qs.docs[0].data().dateIso.split('T')[0];
+        // 2. Bierzemy datę z pierwszego dokumentu (najnowszego)
+        if(!qs.empty) {
+            const latestDoc = qs.docs[0].data();
+            // Wyciągamy tylko datę YYYY-MM-DD
+            last = latestDoc.dateIso ? latestDoc.dateIso.split('T')[0] : latestDoc.displayDate;
+        }
         
         const totEl = document.getElementById('total-workouts');
         const lastEl = document.getElementById('last-workout-date');
         if(totEl) totEl.textContent = total;
         if(lastEl) lastEl.textContent = last;
         
-        // ZMODYFIKOWANE: Pobieranie awatara
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let pts = 0;
             let currentAvatar = (user.displayName ? user.displayName[0] : user.email[0]).toUpperCase(); 
@@ -644,7 +629,7 @@ function publishProfileStats(user, total, last, pts, avatar) {
         displayName: user.displayName || user.email.split('@')[0],
         email: user.email,
         totalWorkouts: total,
-        lastWorkout: last,
+        lastWorkout: last, // Zapisujemy poprawną datę ostatniego treningu
         totalPoints: pts || 0,
         uid: user.uid
     };
@@ -673,11 +658,9 @@ function loadHistoryFromFirestore(dayFilterKey) {
         
         if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
 
-        // Logika grupowania miesiącami
         let currentMonth = "";
         docs.forEach(item => {
              const date = new Date(item.data.dateIso);
-             // Używamy polskiej nazwy miesiąca
              const monthName = date.toLocaleString('pl-PL', { month: 'long', year: 'numeric' }).toUpperCase();
              
              if (monthName !== currentMonth) {
@@ -701,7 +684,6 @@ function renderHistoryCard(container, item) {
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
         detailsHtml = data.details.map(ex => {
-            // Generowanie wierszy tabeli
             let rows = '';
             if (Array.isArray(ex.sets)) {
                 rows = ex.sets.map((s, i) => `
@@ -730,12 +712,14 @@ function renderHistoryCard(container, item) {
         }).join('');
     }
 
+    // Wyświetlanie poprawnej nazwy dnia (np. "Wtorek" zamiast "Plan: Środa" jeśli tak zapisano w dayName)
+    // Ale w nagłówku karty chcemy widzieć nazwę treningu (np. "Plan: Środa")
     card.innerHTML = `
         <div class="history-card-header" onclick="toggleHistoryCard(this)">
             <div class="history-info">
                 <h4>${escapeHTML(data.workoutName || data.dayName || 'Trening')}</h4>
                 <div class="history-meta">
-                    <span>${data.displayDate || data.dateIso.split('T')[0]}</span>
+                    <span>${data.dateIso.split('T')[0]} (${data.dayName})</span>
                     <span><i class="fa-solid fa-stopwatch"></i> ${data.duration}</span>
                 </div>
             </div>
@@ -750,9 +734,9 @@ function renderHistoryCard(container, item) {
     `;
     container.appendChild(card);
 }
-// Nowa funkcja do otwierania pojedynczych ćwiczeń w historii
+
 window.toggleHistoryExercise = function(header) {
-    event.stopPropagation(); // Żeby nie zamykało całej karty dnia
+    event.stopPropagation();
     header.parentElement.classList.toggle('open');
 };
 
@@ -773,7 +757,6 @@ function loadCommunity() {
             const d = doc.data();
             const card = document.createElement('div');
             card.className = 'user-card';
-            // ZMODYFIKOWANE: Wyświetlanie awatara
             card.innerHTML = `
                 <div class="user-card-avatar">${d.avatar ? d.avatar : (d.displayName ? d.displayName[0].toUpperCase() : '?')}</div>
                 <div class="user-card-name">${escapeHTML(d.displayName)}</div>
@@ -791,7 +774,6 @@ function loadCommunity() {
 function openPublicProfile(u) {
     viewingUserId = u.uid;
     triggerFeedback('light');
-    // ZMODYFIKOWANE: Wyświetlanie awatara w podglądzie
     document.getElementById('pub-avatar').textContent = u.avatar ? u.avatar : (u.displayName ? u.displayName[0].toUpperCase() : '?');
     document.getElementById('pub-name').textContent = u.displayName;
     document.getElementById('pub-total').textContent = u.totalWorkouts;
@@ -833,8 +815,6 @@ function loadSharedPlansForUser(targetUid) {
                 let btn = '';
                 if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
                 
-                // USUNIĘTO PRZYCISK "PODEJMIJ WYZWANIE"
-
                 planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
                 container.appendChild(planItem);
             });
@@ -1045,7 +1025,7 @@ function hardResetProfile() {
 }
 
 /*************************************************************
-  7. OBSŁUGA AWATARÓW (NOWE)
+  7. OBSŁUGA AWATARÓW
 *************************************************************/
 const AVATAR_LIST = [
     "💀", "👽", "💪", "🦁", "🦍", "🐺", "🐗", "🦈", 
@@ -1059,12 +1039,10 @@ function openAvatarModal() {
     const grid = document.getElementById('avatar-grid-container');
     const modal = document.getElementById('avatar-modal');
     
-    // Generowanie siatki tylko raz
     if (grid.children.length === 0) {
         AVATAR_LIST.forEach(emoji => {
             const btn = document.createElement('button');
             btn.className = 'avatar-option'; 
-            // Dodajmy trochę stylu inline, jeśli nie ma w CSS
             btn.style.fontSize = "2rem";
             btn.style.background = "none";
             btn.style.border = "1px solid #333";
@@ -1075,7 +1053,6 @@ function openAvatarModal() {
             btn.onclick = () => saveAvatar(emoji);
             grid.appendChild(btn);
         });
-        // Dodaj style grida dynamicznie, jeśli brakuje w CSS
         grid.style.display = "grid";
         grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(60px, 1fr))";
         grid.style.gap = "10px";
@@ -1097,11 +1074,9 @@ function saveAvatar(emoji) {
     if (!user) return;
     triggerFeedback('medium');
 
-    // Aktualizacja w bazie danych (Publiczny profil)
     db.collection("publicUsers").doc(user.uid).set({
         avatar: emoji
     }, { merge: true }).then(() => {
-        // Aktualizacja lokalnego widoku
         const avatarEl = document.getElementById('profile-avatar');
         if (avatarEl) avatarEl.textContent = emoji;
         
@@ -1114,45 +1089,35 @@ function saveAvatar(emoji) {
 }
 
 /*************************************************************
-  8. INSTALACJA APLIKACJI (PWA) - DODAJ NA KOŃCU
+  8. INSTALACJA APLIKACJI (PWA)
 *************************************************************/
-let deferredPrompt; // Tu przechowamy "zaproszenie" od przeglądarki
+let deferredPrompt; 
 
 window.addEventListener('beforeinstallprompt', (e) => {
-    // 1. Zatrzymujemy domyślne, nudne okienko przeglądarki
     e.preventDefault();
-    // 2. Zapisujemy je na później
     deferredPrompt = e;
-    // 3. Pokazujemy Twój elegancki baner (z index.html)
     const banner = document.getElementById('install-banner');
     if (banner) {
         banner.classList.remove('hidden');
-        triggerFeedback('medium'); // Dźwięk, że coś się pojawiło
+        triggerFeedback('medium'); 
     }
 });
 
 async function installApp() {
     if (!deferredPrompt) return;
-    triggerFeedback('light'); // Kliknięcie
+    triggerFeedback('light'); 
 
-    // 1. Pokazujemy natywne okienko "Dodaj do ekranu głównego"
     deferredPrompt.prompt();
-    
-    // 2. Czekamy na decyzję użytkownika
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`Decyzja: ${outcome}`);
-    
-    // 3. Resetujemy zmienną (można jej użyć tylko raz)
     deferredPrompt = null;
     
-    // 4. Ukrywamy baner bez względu na decyzję
     const banner = document.getElementById('install-banner');
     if (banner) banner.classList.add('hidden');
 }
 
-// Gdy aplikacja zostanie pomyślnie zainstalowana
 window.addEventListener('appinstalled', () => {
-    triggerFeedback('siren'); // Syrena radości - mamy nową apkę!
+    triggerFeedback('siren'); 
     const banner = document.getElementById('install-banner');
     if (banner) banner.classList.add('hidden');
     console.log('Szychta zainstalowana na telefonie!');
