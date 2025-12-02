@@ -354,7 +354,6 @@ async function finishWorkout(day) {
 
         triggerFeedback('siren'); 
 
-        // Zapisujemy bezpośrednio +2 pkt
         await saveHistoryAndPoints(2); 
         alert("Fajrant! Trening zaliczony (+2 pkt).");
         localStorage.removeItem('activeWorkout');
@@ -390,7 +389,7 @@ async function saveHistoryAndPoints(myPoints) {
 }
 
 /*************************************************************
-  5. MELDUNKI (SZKIELET)
+  5. MELDUNKI I POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
     triggerFeedback('light');
@@ -405,7 +404,6 @@ function closeNotificationsModal() {
 }
 
 function checkNotificationsCount() {
-    // Funkcja pusta - brak nowych powiadomień
     const badge = document.getElementById('profile-notif-badge');
     if(badge) badge.style.display = 'none';
 }
@@ -907,7 +905,32 @@ function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.curren
 
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 async function signIn(){ triggerFeedback('light'); try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-async function signUp(){ triggerFeedback('light'); try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
+
+// --- REJESTRACJA Z CHECKBOXEM ---
+async function signUp(){ 
+    triggerFeedback('light'); 
+    
+    const email = document.getElementById('register-email').value;
+    const pass = document.getElementById('register-password').value;
+    const terms = document.getElementById('terms-check').checked; // Sprawdzamy czy zaznaczono
+
+    if(!email || !pass) return alert("Podaj e-mail i hasło.");
+    
+    // Walidacja Regulaminu
+    if(!terms) {
+        triggerFeedback('heavy'); 
+        return alert("Musisz zaakceptować Regulamin, aby założyć konto.");
+    }
+
+    try{ 
+        await auth.createUserWithEmailAndPassword(email, pass); 
+        switchAuthTab('login'); 
+        alert("Konto założone! Możesz się zalogować."); 
+    } catch(e){
+        alert("Błąd: " + e.message);
+    } 
+}
+
 async function signOut(){ triggerFeedback('light'); await auth.signOut(); location.reload(); }
 async function forceAppUpdate(){ 
     triggerFeedback('light');
@@ -1083,3 +1106,41 @@ window.addEventListener('appinstalled', () => {
     if (banner) banner.classList.add('hidden');
     console.log('Szychta zainstalowana na telefonie!');
 });
+
+// --- RESET HASŁA I REGULAMIN (NOWE) ---
+
+function resetPasswordLogic() {
+    triggerFeedback('light');
+    const email = document.getElementById('login-email').value;
+    
+    if (!email) {
+        triggerFeedback('medium');
+        return alert("Wpisz swój adres e-mail w polu logowania, a potem kliknij 'Zapomniałeś hasła?', abyśmy wiedzieli, gdzie wysłać link.");
+    }
+
+    if (!confirm(`Wysłać link do resetowania hasła na adres: ${email}?`)) return;
+
+    auth.sendPasswordResetEmail(email)
+        .then(() => {
+            triggerFeedback('medium'); 
+            alert("E-mail wysłany! Sprawdź skrzynkę (również SPAM).");
+        })
+        .catch((error) => {
+            triggerFeedback('heavy');
+            alert("Błąd: " + error.message);
+        });
+}
+
+function openTermsModal() {
+    triggerFeedback('light');
+    const modal = document.getElementById('terms-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function closeTermsModal() {
+    triggerFeedback('light');
+    const modal = document.getElementById('terms-modal');
+    modal.classList.remove('active');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
