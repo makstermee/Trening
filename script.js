@@ -1,6 +1,9 @@
 /*************************************************************
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
+// *** TUTAJ WPISZ SWÓJ EMAIL ADMINISTRATORA ***
+const ADMIN_EMAILS = ["michalnowicki000@gmail.com"]; // <--- ZMIEŃ TO!
+
 // 1. Konfiguracja Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDNt_K6lkFKHZeFXyBMLOpePge967aAEh8",
@@ -301,7 +304,7 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING (SMART DATE LOGIC - NAPRAWIONE 🧠)
+  3. TRENING (SMART DATE LOGIC)
 *************************************************************/
 function startWorkout(day) {
     triggerFeedback('siren');
@@ -342,26 +345,23 @@ async function finishWorkout(day) {
         const muscleInput = document.getElementById(`${day}-muscle-group`);
         if (muscleInput) muscleName = muscleInput.value;
 
-        // --- NAPRAWA DATY: ZAWSZE POBIERZ AKTUALNY DZIEŃ TYGODNIA ---
         const jsDays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
         const todayIndex = new Date().getDay();
-        const actualDayKey = jsDays[todayIndex]; // To jest dzień, kiedy faktycznie kończysz trening
+        const actualDayKey = jsDays[todayIndex];
 
-        // Zapisujemy 'dayKey' jako RZECZYWISTY dzień, żeby wpadło do dobrej sekcji w Historii
         tempWorkoutResult = {
-            dateIso: new Date().toISOString(), // Data z momentu zakończenia
+            dateIso: new Date().toISOString(),
             duration: timerText,
-            dayKey: actualDayKey, // <-- KLUCZOWE: Wymuszamy dzisiejszy dzień
-            originalPlanKey: day, // (Opcjonalnie) info jaki to był plan
+            dayKey: actualDayKey, 
+            originalPlanKey: day, 
             details: exercisesDone,
-            // Jeśli nie wpisałeś nazwy, użyj nazwy planu (np. "Plan: Środa")
             workoutName: muscleName || `Plan: ${dayMap[day]}` 
         };
 
         triggerFeedback('siren'); 
 
         await saveHistoryAndPoints(2); 
-        alert(`Fajrant! Trening zapisany w dniu: ${dayMap[actualDayKey]} (Plan: ${dayMap[day]})`);
+        alert(`Fajrant! Trening zapisany w dniu: ${dayMap[actualDayKey]}`);
         localStorage.removeItem('activeWorkout');
         window.location.reload();
 
@@ -380,7 +380,7 @@ async function saveHistoryAndPoints(myPoints) {
 
     batch.set(historyRef, {
         ...result,
-        dayName: dayMap[result.dayKey], // Zapisze nazwę dnia wykonania (np. Wtorek)
+        dayName: dayMap[result.dayKey], 
         workoutName: result.workoutName,
         pointsEarned: myPoints
     });
@@ -388,7 +388,7 @@ async function saveHistoryAndPoints(myPoints) {
     const myPublicRef = db.collection("publicUsers").doc(user.uid);
     batch.set(myPublicRef, {
         totalPoints: firebase.firestore.FieldValue.increment(myPoints),
-        lastWorkout: new Date().toISOString() // Aktualizacja daty ostatniego treningu
+        lastWorkout: new Date().toISOString()
     }, { merge: true });
 
     await batch.commit();
@@ -572,7 +572,6 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
-// Funkcja obsługująca rozwijanie kart
 function toggleCard(header) {
     const card = header.parentElement;
     card.classList.toggle('open');
@@ -583,19 +582,25 @@ function updateProfileUI(user) {
     const avatarEl = document.getElementById('profile-avatar');
     if(emailEl) emailEl.textContent = user.displayName || user.email;
     if(avatarEl) avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
+    
+    // POKAŻ PRZYCISK ADMINA JEŚLI USER JEST NA LIŚCIE
+    const adminBtn = document.getElementById('btn-admin-panel');
+    if (adminBtn) {
+        if (ADMIN_EMAILS.includes(user.email)) {
+            adminBtn.classList.remove('hidden');
+        } else {
+            adminBtn.classList.add('hidden');
+        }
+    }
 }
 
-// --- NAPRAWA OSTATNIEGO TRENINGU ---
 function loadProfileStats() {
     const user = auth.currentUser;
-    // 1. Pobieramy historię posortowaną od najnowszej
     db.collection("users").doc(user.uid).collection("history").orderBy("dateIso", "desc").get().then(qs => {
         const total = qs.size;
         let last = '-';
-        // 2. Bierzemy datę z pierwszego dokumentu (najnowszego)
         if(!qs.empty) {
             const latestDoc = qs.docs[0].data();
-            // Wyciągamy tylko datę YYYY-MM-DD
             last = latestDoc.dateIso ? latestDoc.dateIso.split('T')[0] : latestDoc.displayDate;
         }
         
@@ -629,7 +634,7 @@ function publishProfileStats(user, total, last, pts, avatar) {
         displayName: user.displayName || user.email.split('@')[0],
         email: user.email,
         totalWorkouts: total,
-        lastWorkout: last, // Zapisujemy poprawną datę ostatniego treningu
+        lastWorkout: last,
         totalPoints: pts || 0,
         uid: user.uid
     };
@@ -712,8 +717,6 @@ function renderHistoryCard(container, item) {
         }).join('');
     }
 
-    // Wyświetlanie poprawnej nazwy dnia (np. "Wtorek" zamiast "Plan: Środa" jeśli tak zapisano w dayName)
-    // Ale w nagłówku karty chcemy widzieć nazwę treningu (np. "Plan: Środa")
     card.innerHTML = `
         <div class="history-card-header" onclick="toggleHistoryCard(this)">
             <div class="history-info">
@@ -921,32 +924,7 @@ function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.curren
 
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 async function signIn(){ triggerFeedback('light'); try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-
-// --- REJESTRACJA Z CHECKBOXEM ---
-async function signUp(){ 
-    triggerFeedback('light'); 
-    
-    const email = document.getElementById('register-email').value;
-    const pass = document.getElementById('register-password').value;
-    const terms = document.getElementById('terms-check').checked; // Sprawdzamy czy zaznaczono
-
-    if(!email || !pass) return alert("Podaj e-mail i hasło.");
-    
-    // Walidacja Regulaminu
-    if(!terms) {
-        triggerFeedback('heavy'); 
-        return alert("Musisz zaakceptować Regulamin, aby założyć konto.");
-    }
-
-    try{ 
-        await auth.createUserWithEmailAndPassword(email, pass); 
-        switchAuthTab('login'); 
-        alert("Konto założone! Możesz się zalogować."); 
-    } catch(e){
-        alert("Błąd: " + e.message);
-    } 
-}
-
+async function signUp(){ triggerFeedback('light'); try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
 async function signOut(){ triggerFeedback('light'); await auth.signOut(); location.reload(); }
 async function forceAppUpdate(){ 
     triggerFeedback('light');
@@ -1123,7 +1101,7 @@ window.addEventListener('appinstalled', () => {
     console.log('Szychta zainstalowana na telefonie!');
 });
 
-// --- RESET HASŁA I REGULAMIN (NOWE) ---
+// --- RESET HASŁA I REGULAMIN ---
 
 function resetPasswordLogic() {
     triggerFeedback('light');
@@ -1159,4 +1137,111 @@ function closeTermsModal() {
     const modal = document.getElementById('terms-modal');
     modal.classList.remove('active');
     setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+/*************************************************************
+  9. ADMIN PANEL LOGIC (NOWOŚĆ)
+*************************************************************/
+function openAdminModal() {
+    triggerFeedback('light');
+    const modal = document.getElementById('admin-modal');
+    const content = document.getElementById('admin-content-area');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('active'), 10);
+    
+    content.innerHTML = '<p style="text-align:center; padding:20px; color:#666;">Ładowanie górników...</p>';
+    loadAdminUsers();
+}
+
+function closeAdminModal() {
+    triggerFeedback('light');
+    const modal = document.getElementById('admin-modal');
+    modal.classList.remove('active');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function loadAdminUsers() {
+    const container = document.getElementById('admin-content-area');
+    db.collection("publicUsers").orderBy("totalPoints", "desc").get().then(qs => {
+        let html = '<div style="padding:15px;">';
+        qs.forEach(doc => {
+            const u = doc.data();
+            html += `
+            <div class="admin-user-row">
+                <div class="admin-user-info">
+                    <div style="font-size:1.2rem;">${u.avatar || '?'}</div>
+                    <div>
+                        <div style="font-weight:bold; color:white;">${u.displayName}</div>
+                        <div style="font-size:0.75rem; color:#888;">${u.email}</div>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="color:#ffd700; font-weight:bold;">${u.totalPoints} pkt</div>
+                    <button onclick="openUserInspection('${u.uid}')" style="background:#333; border:1px solid #555; color:white; padding:4px 8px; border-radius:4px; margin-top:4px; font-size:0.7rem;">EDYTUJ</button>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    });
+}
+
+function openUserInspection(targetUid) {
+    triggerFeedback('light');
+    const container = document.getElementById('admin-content-area');
+    container.innerHTML = '<p style="text-align:center; padding:20px;">Pobieranie akt...</p>';
+
+    db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
+        const user = uDoc.data();
+        
+        // Pobieramy historię (ostatnie 10 treningów)
+        db.collection("users").doc(targetUid).collection("history").orderBy("dateIso", "desc").limit(10).get().then(hQs => {
+            let historyHtml = '';
+            if(hQs.empty) historyHtml = '<p style="color:#666; font-size:0.8rem;">Brak historii treningów.</p>';
+            else {
+                hQs.forEach(h => {
+                    const hd = h.data();
+                    historyHtml += `
+                    <div class="admin-history-item">
+                        <span style="color:white;">${hd.dateIso.split('T')[0]}</span>
+                        <span style="color:#aaa;">${hd.duration}</span>
+                        <span style="color:var(--primary-color);">${hd.workoutName || 'Trening'}</span>
+                    </div>`;
+                });
+            }
+
+            container.innerHTML = `
+                <div style="padding:15px;">
+                    <button onclick="loadAdminUsers()" style="margin-bottom:15px; background:none; border:none; color:#aaa;"><i class="fa-solid fa-arrow-left"></i> Wróć do listy</button>
+                    
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <div style="font-size:3rem;">${user.avatar || '?'}</div>
+                        <h2 style="margin:5px 0;">${user.displayName}</h2>
+                        <p style="color:#666; font-size:0.8rem;">${user.email}</p>
+                    </div>
+
+                    <div style="background:#222; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #444;">
+                        <label style="color:#888; font-size:0.8rem;">PUNKTY (Aktualnie: ${user.totalPoints})</label>
+                        <div style="display:flex; gap:10px; margin-top:5px;">
+                            <input type="number" id="admin-new-points" value="${user.totalPoints}" style="flex:1; background:black; border:1px solid #555; color:white; padding:10px; border-radius:8px;">
+                            <button onclick="saveUserPoints('${targetUid}')" style="background:var(--accent-color); color:black; border:none; padding:0 20px; border-radius:8px; font-weight:bold;">ZAPISZ</button>
+                        </div>
+                    </div>
+
+                    <h4 style="color:#888; margin-bottom:10px;">OSTATNIE TRENINGI:</h4>
+                    ${historyHtml}
+                </div>
+            `;
+        });
+    });
+}
+
+function saveUserPoints(targetUid) {
+    const newPts = parseInt(document.getElementById('admin-new-points').value);
+    if(isNaN(newPts)) return alert("Błąd liczby");
+    
+    triggerFeedback('medium');
+    db.collection("publicUsers").doc(targetUid).update({ totalPoints: newPts }).then(() => {
+        alert("Punkty zaktualizowane!");
+    });
 }
