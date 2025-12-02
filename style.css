@@ -10,9 +10,19 @@
 }
 
 body {
-    margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-color);
-    color: var(--text-primary); -webkit-tap-highlight-color: transparent;
-    padding-bottom: 90px; overflow-x: hidden;
+    margin: 0; 
+    font-family: 'Inter', sans-serif; 
+    
+    /* --- NOWE TŁO DLA CAŁEJ APLIKACJI --- */
+    background: radial-gradient(circle at top right, #1a2a3a 0%, #000000 70%);
+    background-attachment: fixed; /* Tło stoi w miejscu przy przewijaniu */
+    background-color: #000000; /* Zabezpieczenie */
+    min-height: 100vh;
+    
+    color: var(--text-primary); 
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: 90px; 
+    overflow-x: hidden;
 }
 
 /* SPOŁECZNOŚĆ */
@@ -45,9 +55,10 @@ body {
 .shared-plans-section { margin-top: 20px; }
 .shared-plan-item { background: var(--surface-color); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
 
-/* LOGOWANIE I REJESTRACJA - NOWY WYGLĄD */
+/* LOGOWANIE I REJESTRACJA */
 #login-section { 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    /* Tło logowania takie samo jak body, dla spójności */
     background: radial-gradient(circle at top right, #1a2a3a 0%, #000000 70%);
     z-index: 2000; display: flex; align-items: center; justify-content: center; 
     padding: 20px; box-sizing: border-box; 
@@ -61,13 +72,13 @@ body {
 .brand-logo { font-size: 2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 5px; letter-spacing: -1px; }
 .brand-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0; margin-bottom: 25px; font-weight: 300; }
 
-.auth-tabs { display: flex; background: var(--bg-color); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+.auth-tabs { display: flex; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
 .auth-tabs button { flex: 1; background: none; border: none; color: var(--text-secondary); padding: 8px; border-radius: 8px; }
-.auth-tabs button.active { background: var(--surface-color); color: white; }
+.auth-tabs button.active { background: var(--surface-color); color: white; border: 1px solid #333; }
 
 .input-group { position: relative; margin-bottom: 15px; }
 .input-group i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
-.input-group input { width: 100%; background: var(--bg-color); border: none; padding: 14px 14px 14px 45px; border-radius: 12px; color: white; box-sizing: border-box; }
+.input-group input { width: 100%; background: var(--bg-color); border: 1px solid #333; padding: 14px 14px 14px 45px; border-radius: 12px; color: white; box-sizing: border-box; }
 
 .forgot-pass-link {
     color: var(--text-secondary);
@@ -133,8 +144,8 @@ body {
 .days-scroll-wrapper { overflow-x: auto; padding: 10px 20px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .days-scroll-wrapper::-webkit-scrollbar { display: none; }
 .days-pills { display: flex; gap: 10px; }
-.pill { background: var(--surface-color); border: none; color: var(--text-secondary); padding: 8px 20px; border-radius: 20px; font-weight: 600; white-space: nowrap; transition: 0.2s; cursor: pointer; }
-.pill.active { background: var(--primary-color); color: white; transform: scale(1.05); }
+.pill { background: var(--surface-color); border: 1px solid #333; color: var(--text-secondary); padding: 8px 20px; border-radius: 20px; font-weight: 600; white-space: nowrap; transition: 0.2s; cursor: pointer; }
+.pill.active { background: var(--primary-color); border-color: var(--primary-color); color: white; transform: scale(1.05); }
 
 /* KARTY ĆWICZEŃ */
 .content-area { padding: 20px; }
@@ -155,7 +166,7 @@ body {
 .open .exercise-card-details { display: block; }
 
 .plan-vs-real-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-.plan-box { background: var(--bg-color); padding: 10px; border-radius: 8px; text-align: center; }
+.plan-box { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
 .plan-label { display: block; font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
 .plan-val { font-weight: 700; color: var(--primary-color); }
 
