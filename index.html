@@ -13,13 +13,13 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    if (!localStorage.getItem('AUTH_FIX_TERMS_V1')) {
+    if (!localStorage.getItem('ADMIN_V1_INIT')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('AUTH_FIX_TERMS_V1', 'true');
-          console.log("Wyczyszczono cache (Terms Fix).");
+          localStorage.setItem('ADMIN_V1_INIT', 'true');
+          console.log("Wyczyszczono cache (Admin Update).");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -56,11 +56,9 @@
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="login-password" placeholder="Hasło" required>
             </div>
-            
             <div class="auth-actions-row">
                 <a href="#" onclick="resetPasswordLogic()" class="forgot-pass-link">Zapomniałeś hasła?</a>
             </div>
-
             <button type="button" class="btn-primary btn-block" onclick="signIn()">WEJDŹ</button>
             <p id="login-error" class="error-message"></p>
         </form>
@@ -74,14 +72,12 @@
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="register-password" placeholder="Hasło (min. 6 znaków)" required>
             </div>
-
             <div class="terms-wrapper">
                 <input type="checkbox" id="terms-check">
                 <label for="terms-check">
                     Akceptuję <a href="#" onclick="openTermsModal()">Regulamin i Zasady</a>. Rozumiem, że jest to wersja testowa.
                 </label>
             </div>
-
             <button type="button" class="btn-accent btn-block" onclick="signUp()">DOŁĄCZ</button>
             <p id="register-error" class="error-message"></p>
         </form>
@@ -228,6 +224,11 @@
                 <button class="btn-hard-reset" onclick="hardResetProfile()"><i class="fa-solid fa-skull"></i> USUŃ KONTO</button>
             </div>
 
+            <button id="btn-admin-panel" class="hidden" onclick="openAdminModal()" 
+                style="width:100%; padding:15px; margin-bottom:10px; background:#300000; color:#ff453a; border:1px solid #ff453a; border-radius:12px; font-weight:800; cursor:pointer;">
+                <i class="fa-solid fa-user-secret"></i> BIURO SZTYGARA ⚒️
+            </button>
+
             <button class="btn-logout-big" onclick="signOut()"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj się</button>
         </div>
     </div>
@@ -265,11 +266,9 @@
             <button id="btn-give-kudos" class="btn-kudos" onclick="giveKudos()">
                 <i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!
             </button>
-            
             <div class="shared-plans-section" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
                 <h4 style="margin:0 0 10px 0; color:#888; font-size:0.9rem;">UDOSTĘPNIONE PLANY:</h4>
-                <div id="public-plans-list" style="max-height: 200px; overflow-y: auto;">
-                    </div>
+                <div id="public-plans-list" style="max-height: 200px; overflow-y: auto;"></div>
             </div>
         </div>
     </div>
@@ -292,7 +291,34 @@
                 <h3>Wybierz Awatar</h3>
                 <button onclick="closeAvatarModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="avatar-grid" id="avatar-grid-container">
+            <div class="avatar-grid" id="avatar-grid-container"></div>
+        </div>
+    </div>
+
+    <div id="terms-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h3>Regulamin</h3>
+              <button onclick="closeTermsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body" style="color: #ccc; font-size: 0.9rem; line-height: 1.5;">
+              <p><strong>1. Charakter Aplikacji:</strong> Aplikacja GymPro jest projektem hobbystycznym/edukacyjnym w fazie testowej (BETA).</p>
+              <p><strong>2. Bezpieczeństwo Danych:</strong> Autor dokłada starań, aby zabezpieczyć dane, ale nie gwarantuje zabezpieczeń klasy bankowej. Istnieje ryzyko utraty danych lub ich wycieku.</p>
+              <p><strong>3. Wyłączenie Odpowiedzialności:</strong><br>- Rejestrujesz się na własną odpowiedzialność.<br>- <b>NIE UŻYWAJ</b> haseł, których używasz w bankowości lub innych ważnych serwisach.<br>- Autor nie ponosi odpowiedzialności za szkody wynikłe z użytkowania aplikacji.</p>
+              <p><strong>4. Dane:</strong> Podajesz tylko e-mail i hasło.</p>
+              <br>
+              <button class="btn-primary full-width" onclick="closeTermsModal()">ROZUMIEM I AKCEPTUJĘ</button>
+          </div>
+      </div>
+    </div>
+
+    <div id="admin-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="height:90vh; display:flex; flex-direction:column;">
+            <div class="modal-header" style="flex-shrink:0;">
+                <h3 style="color:#ff453a;">BIURO SZTYGARA ⚒️</h3>
+                <button onclick="closeAdminModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="admin-content-area" style="flex:1; overflow-y:auto;">
                 </div>
         </div>
     </div>
@@ -317,27 +343,7 @@
 
   </div>
   
-  <div id="terms-modal" class="modal-overlay hidden">
-      <div class="modal-content">
-          <div class="modal-header">
-              <h3>Regulamin</h3>
-              <button onclick="closeTermsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div class="modal-body" style="color: #ccc; font-size: 0.9rem; line-height: 1.5;">
-              <p><strong>1. Charakter Aplikacji:</strong> Aplikacja GymPro jest projektem hobbystycznym/edukacyjnym w fazie testowej (BETA).</p>
-              <p><strong>2. Bezpieczeństwo Danych:</strong> Autor dokłada starań, aby zabezpieczyć dane, ale nie gwarantuje zabezpieczeń klasy bankowej. Istnieje ryzyko utraty danych lub ich wycieku.</p>
-              <p><strong>3. Wyłączenie Odpowiedzialności:</strong><br>
-              - Rejestrujesz się na własną odpowiedzialność.<br>
-              - <b>NIE UŻYWAJ</b> haseł, których używasz w bankowości lub innych ważnych serwisach.<br>
-              - Autor nie ponosi odpowiedzialności za szkody wynikłe z użytkowania aplikacji, w tym za ewentualne przejęcie adresu e-mail przez osoby trzecie.</p>
-              <p><strong>4. Dane:</strong> Podajesz tylko e-mail i hasło. Nie przechowujemy danych osobowych typu imię, nazwisko czy adres.</p>
-              <br>
-              <button class="btn-primary full-width" onclick="closeTermsModal()">ROZUMIEM I AKCEPTUJĘ</button>
-          </div>
-      </div>
-  </div>
-  
-  <script src="script.js?v=AUTH_FINAL"></script> 
+  <script src="script.js?v=ADMIN_ADDED"></script> 
   
   <script>
     function switchAuthTab(tab) {
