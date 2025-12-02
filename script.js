@@ -23,8 +23,7 @@ const auth = firebase.auth();
 // 2. Mapy i Zmienne
 const dayMap = { 
     monday: "Poniedziałek", tuesday: "Wtorek", wednesday: "Środa", 
-    thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela",
-    challenge: "🏆 WYZWANIE" 
+    thursday: "Czwartek", friday: "Piątek", saturday: "Sobota", sunday: "Niedziela"
 };
 const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
@@ -36,12 +35,9 @@ let currentMode = 'plan';
 let currentSelectedDay = 'monday'; 
 let viewingUserId = null; 
 
-// Zmienne do obsługi wyzwań
 let tempWorkoutResult = null; 
-let currentRatingScore = 0;   
 
 // USTAWIENIA APLIKACJI (Audio/Haptic)
-// Ładujemy z pamięci telefonu lub ustawiamy domyślnie na włączone (true)
 let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio: true, haptic: true };
 
 /*************************************************************
@@ -50,15 +46,15 @@ let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function triggerFeedback(type) {
-    // 1. Wibracje (Haptic) - Tylko jeśli włączone w ustawieniach
+    // 1. Wibracje
     if (appSettings.haptic && navigator.vibrate) {
-        if (type === 'light') navigator.vibrate(10); // Kliknięcie
-        if (type === 'medium') navigator.vibrate(40); // Zapisanie serii
-        if (type === 'heavy') navigator.vibrate([100, 50, 100]); // Sukces/Błąd
-        if (type === 'siren') navigator.vibrate([500, 100, 500]); // Syrena
+        if (type === 'light') navigator.vibrate(10);
+        if (type === 'medium') navigator.vibrate(40);
+        if (type === 'heavy') navigator.vibrate([100, 50, 100]);
+        if (type === 'siren') navigator.vibrate([500, 100, 500]);
     }
 
-    // 2. Dźwięki (Syntezator) - Tylko jeśli włączone w ustawieniach
+    // 2. Dźwięki
     if (appSettings.audio) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
@@ -68,7 +64,7 @@ function triggerFeedback(type) {
 
         const now = audioCtx.currentTime;
 
-        if (type === 'light') { // Kliknięcie (krótkie pyknięcie)
+        if (type === 'light') {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(800, now);
             gainNode.gain.setValueAtTime(0.05, now);
@@ -76,7 +72,7 @@ function triggerFeedback(type) {
             osc.start(now);
             osc.stop(now + 0.05);
         } 
-        else if (type === 'medium') { // Sukces (Ding!)
+        else if (type === 'medium') {
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(600, now);
             osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
@@ -85,11 +81,11 @@ function triggerFeedback(type) {
             osc.start(now);
             osc.stop(now + 0.3);
         }
-        else if (type === 'siren') { // Syrena Kopalniana
+        else if (type === 'siren') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(300, now);
-            osc.frequency.linearRampToValueAtTime(600, now + 1); // Narastanie
-            osc.frequency.linearRampToValueAtTime(300, now + 2); // Opadanie
+            osc.frequency.linearRampToValueAtTime(600, now + 1);
+            osc.frequency.linearRampToValueAtTime(300, now + 2);
             gainNode.gain.setValueAtTime(0.2, now);
             gainNode.gain.linearRampToValueAtTime(0, now + 2.5);
             osc.start(now);
@@ -98,17 +94,13 @@ function triggerFeedback(type) {
     }
 }
 
-// Funkcja do przełączania ustawień (podpięta pod przyciski w profilu)
 function toggleAppSetting(key) {
-    appSettings[key] = !appSettings[key]; // Odwracamy wartość
-    localStorage.setItem('gympro_settings', JSON.stringify(appSettings)); // Zapisujemy
-    updateSettingsUI(); // Aktualizujemy wygląd przycisków
-    
-    // Feedback, żeby użytkownik wiedział, że działa (tylko jeśli właśnie włączył)
+    appSettings[key] = !appSettings[key];
+    localStorage.setItem('gympro_settings', JSON.stringify(appSettings));
+    updateSettingsUI();
     if (appSettings[key]) triggerFeedback(key === 'audio' ? 'medium' : 'light');
 }
 
-// Funkcja aktualizująca wygląd przycisków w profilu
 function updateSettingsUI() {
     const btnAudio = document.getElementById('btn-set-audio');
     const btnHaptic = document.getElementById('btn-set-haptic');
@@ -152,15 +144,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
-      // Ładowanie wszystkich dni
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
-      // Ładowanie Szychty (zawsze)
-      loadCardsDataFromFirestore('challenge');
 
-      // --- INTELIGENTNY START ---
       const lastMode = sessionStorage.getItem('GEM_saved_mode');
       const lastDay = sessionStorage.getItem('GEM_saved_day');
 
@@ -175,7 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
           currentMode = 'plan';
           selectDay(lastDay || todayName);
       }
-      // --------------------------
 
       checkActiveWorkout();
       updateProfileUI(user);
@@ -188,7 +175,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// --- RANGI GÓRNICZE ---
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -206,18 +192,17 @@ function getRankName(points) {
   2. NAWIGACJA
 *************************************************************/
 function switchMode(mode) {
-    triggerFeedback('light'); // Dźwięk kliknięcia
+    triggerFeedback('light');
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
-      // --- Aktualizacja podświetlenia dolnego paska ---
+      
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('active');
-        // Sprawdzamy czy przycisk prowadzi do tego trybu
         if (btn.getAttribute('onclick').includes(`'${mode}'`)) {
             btn.classList.add('active');
         }
     });
-    // -----------------------------------------------------  
+    
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
@@ -228,7 +213,7 @@ function switchMode(mode) {
     document.querySelectorAll(".day-section").forEach(sec => sec.classList.add("hidden"));
     
     if(fab) {
-        fab.style.display = (mode === 'plan' && currentSelectedDay !== 'challenge') ? 'flex' : 'none';
+        fab.style.display = (mode === 'plan') ? 'flex' : 'none';
     }
 
     if (mode === 'history' && historySection) {
@@ -249,7 +234,7 @@ function switchMode(mode) {
         profileSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
         loadProfileStats(); 
-        updateSettingsUI(); // <-- ODŚWIEŻAMY PRZYCISKI USTAWIEŃ PRZY WEJŚCIU
+        updateSettingsUI();
     } 
     else {
         if(daysNav) daysNav.style.display = 'block'; 
@@ -259,7 +244,7 @@ function switchMode(mode) {
 }
 
 function selectDay(dayValue) {
-    triggerFeedback('light'); // Dźwięk kliknięcia
+    triggerFeedback('light');
     sessionStorage.setItem('GEM_saved_day', dayValue);
     currentSelectedDay = dayValue;
     const selector = document.getElementById('day-selector');
@@ -267,29 +252,20 @@ function selectDay(dayValue) {
     
     document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     
-    if (dayValue === 'challenge') {
-        const chBtn = document.getElementById('pill-challenge');
-        if(chBtn) chBtn.classList.add('active');
-    } else {
-        const idx = allDays.indexOf(dayValue);
-        if (idx !== -1) {
-            const pills = document.querySelectorAll('.days-pills .pill:not(#pill-challenge)');
-            if(pills[idx]) pills[idx].classList.add('active');
-        }
+    const idx = allDays.indexOf(dayValue);
+    if (idx !== -1) {
+        const pills = document.querySelectorAll('.days-pills .pill');
+        if(pills[idx]) pills[idx].classList.add('active');
     }
 
     const fab = document.getElementById('fab-add');
     if (fab) {
-        if (dayValue === 'challenge') {
-            fab.style.display = 'none';
-        } else {
-            fab.style.display = (currentMode === 'plan') ? 'flex' : 'none';
-        }
+        fab.style.display = (currentMode === 'plan') ? 'flex' : 'none';
     }
 
     if (currentMode === 'plan') showPlanSection(dayValue);
     else if (currentMode === 'history') {
-        loadHistoryFromFirestore(dayValue === 'challenge' ? null : dayValue);
+        loadHistoryFromFirestore(dayValue);
     }
     updateHeaderTitle();
 }
@@ -318,7 +294,7 @@ function updateHeaderTitle() {
 
     if (currentMode === 'plan') {
         titleEl.textContent = `Plan: ${polishName}`;
-        if(shareBtn && currentSelectedDay !== 'challenge') shareBtn.classList.remove('hidden'); 
+        if(shareBtn) shareBtn.classList.remove('hidden'); 
     }
     else if (currentMode === 'history') titleEl.textContent = `Historia: ${polishName}`;
     else if (currentMode === 'community') titleEl.textContent = `Społeczność`;
@@ -327,104 +303,20 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING I WYZWANIA
+  3. TRENING
 *************************************************************/
 function startWorkout(day) {
-    triggerFeedback('siren'); // SYRENA NA START
+    triggerFeedback('siren');
     const now = Date.now();
-    const workoutData = { day: day, startTime: now, isChallenge: false };
+    const workoutData = { day: day, startTime: now };
     localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
     checkActiveWorkout();
     alert("Szychta rozpoczęta! Do roboty 💪");
 }
 
-async function startChallenge(dayKey, exercisesJson, authorUid) {
-    triggerFeedback('light');
-    const user = auth.currentUser;
-    if (user.uid === authorUid) return alert("Nie ma punktów za własne wyzwania! Ćwicz normalnie.");
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const historySnap = await db.collection("users").doc(user.uid).collection("history")
-        .where("dateIso", ">=", todayStr).get();
-
-    let challengeCount = 0;
-    let challengeAuthors = new Set();
-
-    historySnap.forEach(doc => {
-        const d = doc.data();
-        if (d.isChallenge) {
-            challengeCount++;
-            if(d.originalAuthorId) challengeAuthors.add(d.originalAuthorId);
-        }
-    });
-
-    if (challengeCount >= 2) return alert("Koniec szychty na dziś! Limit wyzwań (2) wykorzystany.");
-    if (challengeAuthors.has(authorUid)) return alert("Już robiłeś trening tego Hajera dzisiaj! Wybierz kogoś innego.");
-
-    if (!confirm("Bierzesz to na klatę? Zaczynamy wyzwanie!")) return;
-
-    try {
-        const exercises = JSON.parse(exercisesJson);
-        const batch = db.batch();
-        
-        const challengeRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
-        const oldData = await challengeRef.get();
-        oldData.forEach(doc => batch.delete(doc.ref));
-
-        exercises.forEach(ex => {
-            const newDocRef = challengeRef.doc();
-            batch.set(newDocRef, { ...ex, notes: "Wyzwanie", order: Date.now() });
-        });
-
-        await batch.commit();
-
-        const workoutData = { 
-            day: "challenge", 
-            startTime: Date.now(), 
-            isChallenge: true, 
-            challengeAuthor: authorUid 
-        };
-        localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
-        
-        triggerFeedback('siren'); // Syrena przy wyzwaniu
-        closePublicProfile();
-        selectDay("challenge");
-        loadCardsDataFromFirestore("challenge");
-        checkActiveWorkout();
-
-    } catch (e) {
-        console.error(e);
-        alert("Błąd: " + e.message);
-    }
-}
-
-async function surrenderChallenge() {
-    if(!confirm("Poddajesz się? 0 pkt dla Ciebie, a Autor dostanie +2 pkt za pokonanie Cię. Na pewno?")) return;
-    const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-    const authorId = (activeData && activeData.challengeAuthor) || null;
-
-    if(authorId) {
-        db.collection("publicUsers").doc(authorId).update({
-            totalPoints: firebase.firestore.FieldValue.increment(2) 
-        });
-    }
-    triggerFeedback('heavy'); // Smutna wibracja
-    localStorage.removeItem('activeWorkout');
-    window.location.reload();
-}
-
 async function finishWorkout(day) {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-    const isChallenge = activeData && activeData.isChallenge;
-
     const timerText = document.getElementById('workout-timer').textContent; 
-    const parts = timerText.split(':');
-    const totalMinutes = (parseInt(parts[0]) * 60) + parseInt(parts[1]);
-
-    if (isChallenge && totalMinutes < 10) {
-        triggerFeedback('heavy');
-        return alert(`Za krótko, chopie! Szychta musi trwać minimum 10 minut. (Twój czas: ${totalMinutes} min)`);
-    }
 
     if(!confirm("Fajrant? (Zakończyć trening)")) return;
 
@@ -448,12 +340,6 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
-        let safeAuthorId = null;
-        if(activeData && activeData.challengeAuthor) {
-            safeAuthorId = activeData.challengeAuthor;
-        }
-
-        // Pobieranie nazwy partii z inputa
         let muscleName = "";
         const muscleInput = document.getElementById(`${day}-muscle-group`);
         if (muscleInput) muscleName = muscleInput.value;
@@ -463,128 +349,34 @@ async function finishWorkout(day) {
             duration: timerText,
             dayKey: day,
             details: exercisesDone,
-            isChallenge: !!isChallenge,
-            authorId: safeAuthorId,
-            workoutName: muscleName // Zapisujemy to pole!
+            workoutName: muscleName
         };
 
-        triggerFeedback('siren'); // SYRENA NA KONIEC
+        triggerFeedback('siren'); 
 
-        if (isChallenge) {
-            openChallengeEndModal(); 
-        } else {
-            await saveHistoryAndPoints(2, null, 0); 
-            alert("Fajrant! Trening własny zaliczony (+2 pkt).");
-            localStorage.removeItem('activeWorkout');
-            window.location.reload();
-        }
+        // Zapisujemy bezpośrednio +2 pkt
+        await saveHistoryAndPoints(2); 
+        alert("Fajrant! Trening zaliczony (+2 pkt).");
+        localStorage.removeItem('activeWorkout');
+        window.location.reload();
+
     } catch (e) {
         console.error(e);
         alert("BŁĄD ZAPISU: " + e.message);
     }
 }
 
-/*************************************************************
-  4. OBSŁUGA MODALA I RAPORTOWANIA
-*************************************************************/
-function openChallengeEndModal() {
-    const container = document.getElementById('rating-buttons');
-    if(container) {
-        container.innerHTML = '';
-        for(let i=1; i<=10; i++) {
-            const btn = document.createElement('button');
-            btn.className = 'rating-point-btn';
-            btn.textContent = i;
-            btn.onclick = () => selectRating(i, btn);
-            container.appendChild(btn);
-        }
-    }
-    document.getElementById('save-decision-area').classList.add('hidden');
-    document.getElementById('day-selector-area').classList.add('hidden');
-    
-    const modal = document.getElementById('challenge-end-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.add('active'), 10);
-}
-
-function selectRating(score, btn) {
-    triggerFeedback('light');
-    currentRatingScore = score;
-    document.querySelectorAll('.rating-point-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('save-decision-area').classList.remove('hidden');
-}
-
-function showDaySelectorForSave() {
-    triggerFeedback('light');
-    document.getElementById('save-decision-area').classList.add('hidden');
-    document.getElementById('day-selector-area').classList.remove('hidden');
-}
-
-async function finalizeChallenge(shouldSaveToPlan) {
-    try {
-        const user = auth.currentUser;
-        const result = tempWorkoutResult;
-
-        await saveHistoryAndPoints(3, result.authorId, currentRatingScore);
-
-        if(result.authorId) {
-            await db.collection("challenge_reports").add({
-                authorId: result.authorId,      
-                performerId: user.uid,          
-                performerName: user.displayName || "Górnik",
-                workoutDate: new Date().toISOString(),
-                details: result.details,        
-                duration: result.duration,
-                status: "PENDING",              
-                performerRatingGiven: currentRatingScore 
-            });
-        }
-
-        if (shouldSaveToPlan) {
-            const targetDay = document.getElementById('target-save-day').value;
-            const sourceRef = db.collection("users").doc(user.uid).collection("days").doc("challenge").collection("exercises");
-            const targetRef = db.collection("users").doc(user.uid).collection("days").doc(targetDay).collection("exercises");
-            const snap = await sourceRef.get();
-            const batch = db.batch();
-            snap.forEach(doc => {
-                const d = doc.data();
-                batch.set(targetRef.doc(), { ...d, notes: "Zapisane z wyzwania" });
-            });
-            await batch.commit();
-            alert(`Plan dodany do: ${dayMap[targetDay]}`);
-        }
-
-        const modal = document.getElementById('challenge-end-modal');
-        modal.classList.remove('active');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        
-        localStorage.removeItem('activeWorkout');
-        window.location.reload();
-    } catch (e) {
-        alert("Błąd podczas kończenia: " + e.message);
-    }
-}
-
-async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
+async function saveHistoryAndPoints(myPoints) {
     const user = auth.currentUser;
     const result = tempWorkoutResult;
     const batch = db.batch();
 
     const historyRef = db.collection("users").doc(user.uid).collection("history").doc();
-    let authorName = "Nieznany";
-    if (authorId) {
-        const authorSnap = await db.collection("publicUsers").doc(authorId).get();
-        if(authorSnap.exists) authorName = authorSnap.data().displayName;
-    }
 
     batch.set(historyRef, {
         ...result,
-        dayName: result.isChallenge ? `🏆 WYZWANIE` : dayMap[result.dayKey],
-        // Jeśli workoutName jest pusty, użyj dayName
+        dayName: dayMap[result.dayKey],
         workoutName: result.workoutName || dayMap[result.dayKey],
-        originalAuthorId: authorId || null,
-        originalAuthorName: authorId ? authorName : null,
         pointsEarned: myPoints
     });
 
@@ -594,145 +386,28 @@ async function saveHistoryAndPoints(myPoints, authorId, ratingPoints) {
         lastWorkout: new Date().toISOString()
     }, { merge: true });
 
-    if (authorId && ratingPoints > 0) {
-        const authorRef = db.collection("publicUsers").doc(authorId);
-        batch.update(authorRef, {
-            totalPoints: firebase.firestore.FieldValue.increment(ratingPoints),
-            ratingCount: firebase.firestore.FieldValue.increment(1)
-        });
-    }
-
     await batch.commit();
 }
 
 /*************************************************************
-  5. MELDUNKI I POWIADOMIENIA
+  5. MELDUNKI (SZKIELET)
 *************************************************************/
 function openNotificationsModal() {
     triggerFeedback('light');
     const modal = document.getElementById('notifications-modal');
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.add('active'), 10);
-    switchNotifTab('todo'); 
 }
 function closeNotificationsModal() {
     const modal = document.getElementById('notifications-modal');
     modal.classList.remove('active');
     setTimeout(() => modal.classList.add('hidden'), 300);
-    checkNotificationsCount(); 
-}
-
-function switchNotifTab(tab) {
-    triggerFeedback('light');
-    document.querySelectorAll('.notif-tab').forEach(b => b.classList.remove('active'));
-    document.getElementById(`tab-notif-${tab}`).classList.add('active');
-    loadNotificationsList(tab);
-}
-
-function loadNotificationsList(tab) {
-    const container = document.getElementById('notif-list-container');
-    container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam...</p>';
-    const user = auth.currentUser;
-
-    if (tab === 'todo') {
-        db.collection("challenge_reports")
-            .where("authorId", "==", user.uid)
-            .where("status", "==", "PENDING")
-            .get().then(qs => {
-                container.innerHTML = "";
-                if(qs.empty) { container.innerHTML = "<p style='text-align:center;color:#666'>Brak raportów do oceny.</p>"; return; }
-                
-                qs.forEach(doc => {
-                    const data = doc.data();
-                    const el = document.createElement('div');
-                    el.className = 'notification-item action-needed';
-                    el.innerHTML = `
-                        <div class="notif-title">⚒️ ${escapeHTML(data.performerName)} ukończył Twój plan!</div>
-                        <div class="notif-desc">Czas: ${data.duration}. Ocenił Cię na: ${data.performerRatingGiven}/10.</div>
-                        <div class="notif-actions">
-                            <button class="btn-small" onclick="ratePerformer('${doc.id}')">OCEŃ GO</button>
-                        </div>
-                    `;
-                    container.appendChild(el);
-                });
-            });
-    } else {
-        db.collection("challenge_reports")
-            .where("performerId", "==", user.uid)
-            .where("status", "==", "RATED") 
-            .get().then(qs => {
-                container.innerHTML = "";
-                if(qs.empty) { container.innerHTML = "<p style='text-align:center;color:#666'>Brak nowych wiadomości.</p>"; return; }
-
-                qs.forEach(doc => {
-                    const data = doc.data();
-                    const el = document.createElement('div');
-                    el.className = 'notification-item';
-                    el.style.borderColor = 'var(--primary-color)';
-                    el.innerHTML = `
-                        <div class="notif-title">💰 Wypłata Przyszła!</div>
-                        <div class="notif-desc">Sztygar ocenił Twój trening na: <b>${data.bonusPoints} pkt</b>.</div>
-                        <div class="notif-actions">
-                            <button class="btn-small" style="background:var(--accent-color); color:black;" onclick="claimBonusPoints('${doc.id}', ${data.bonusPoints})">ODBIERZ PKT</button>
-                        </div>
-                    `;
-                    container.appendChild(el);
-                });
-            });
-    }
-}
-
-function ratePerformer(reportId) {
-    triggerFeedback('light');
-    const score = prompt("Ile punktów (1-10) dajesz za ten trening?");
-    if(!score || isNaN(score) || score < 1 || score > 10) return alert("Podaj liczbę 1-10");
-
-    db.collection("challenge_reports").doc(reportId).update({
-        status: "RATED",
-        bonusPoints: parseInt(score)
-    }).then(() => {
-        triggerFeedback('medium');
-        alert("Wysłano ocenę!");
-        loadNotificationsList('todo');
-    });
-}
-
-function claimBonusPoints(reportId, points) {
-    triggerFeedback('medium');
-    const user = auth.currentUser;
-    const batch = db.batch();
-
-    const myRef = db.collection("publicUsers").doc(user.uid);
-    batch.update(myRef, { totalPoints: firebase.firestore.FieldValue.increment(points) });
-
-    const reportRef = db.collection("challenge_reports").doc(reportId);
-    batch.update(reportRef, { status: "COMPLETED" });
-
-    batch.commit().then(() => {
-        alert(`Odebrano ${points} pkt!`);
-        loadNotificationsList('news');
-        checkNotificationsCount();
-    });
 }
 
 function checkNotificationsCount() {
-    const user = auth.currentUser;
-    if(!user) return;
-    Promise.all([
-        db.collection("challenge_reports").where("authorId", "==", user.uid).where("status", "==", "PENDING").get(),
-        db.collection("challenge_reports").where("performerId", "==", user.uid).where("status", "==", "RATED").get()
-    ]).then(([res1, res2]) => {
-        const count = res1.size + res2.size;
-        const badge = document.getElementById('profile-notif-badge');
-        if(badge) {
-            if(count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    });
+    // Funkcja pusta - brak nowych powiadomień
+    const badge = document.getElementById('profile-notif-badge');
+    if(badge) badge.style.display = 'none';
 }
 
 /*************************************************************
@@ -746,7 +421,6 @@ function checkActiveWorkout() {
     const nav = document.getElementById('days-nav-container');
 
     if (activeData) {
-        // --- TRENING TRWA ---
         if(titleEl) titleEl.style.display = 'none';
         
         if(timerEl) {
@@ -758,23 +432,14 @@ function checkActiveWorkout() {
                 timerEl.textContent = date.toISOString().substr(11, 8);
             }, 1000);
         }
-
-        if (activeData.day === 'challenge') {
-            if(shareBtn) shareBtn.style.display = 'none';
-            if(currentSelectedDay !== 'challenge' && currentMode === 'plan') {
-                selectDay('challenge');
-            }
-        }
         
         updateActionButtons(activeData.day);
     } else {
-        // --- BRAK TRENINGU ---
         if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         
-        // Pokaż pasek Dni tylko w Planie lub Historii
         if(nav) {
             if (currentMode === 'plan' || currentMode === 'history') {
                 nav.style.display = 'block';
@@ -798,11 +463,7 @@ function updateActionButtons(currentViewDay) {
         container.innerHTML = `<button class="btn-finish-workout" onclick="finishWorkout('${currentViewDay}')"><i class="fa-solid fa-flag-checkered"></i> ZAKOŃCZ TRENING</button>`;
     } 
     else if (!activeData) {
-        if (currentViewDay === 'challenge') {
-            container.innerHTML = ''; 
-        } else {
-            container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
-        }
+        container.innerHTML = `<button class="btn-start-workout" onclick="startWorkout('${currentViewDay}')"><i class="fa-solid fa-play"></i> START TRENINGU</button>`;
     } 
     else if (activeData && activeData.day !== currentViewDay) {
         container.innerHTML = `<p style="text-align:center; color:#666;">Trening trwa w: ${dayMap[activeData.day]}</p>`;
@@ -814,7 +475,6 @@ function addLog(day, docId) {
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
     
-    // FEEDBACK
     triggerFeedback('medium'); 
 
     const user = auth.currentUser;
@@ -835,35 +495,12 @@ function loadCardsDataFromFirestore(day) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
 
-    if (day === 'challenge') {
-        const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
-        if (!activeData || activeData.day !== 'challenge') {
-            container.innerHTML = `
-                <div style="text-align:center; padding: 40px 20px; color: #888;">
-                    <i class="fa-solid fa-bed" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;"></i>
-                    <h3 style="margin:0; color:#ccc;">Cisza na kopalni</h3>
-                    <p style="font-size:0.9rem; margin-top:10px;">Aktualnie nie podjąłeś żadnego wyzwania.</p>
-                    <button class="btn-primary" onclick="switchMode('community')" style="margin-top:20px; background:var(--surface-color); border:1px solid #444;">
-                        <i class="fa-solid fa-magnifying-glass"></i> Znajdź Wyzwanie
-                    </button>
-                </div>
-            `;
-            const actionsDiv = document.getElementById('challenge-actions');
-            if(actionsDiv) actionsDiv.innerHTML = '';
-            return;
-        }
-    }
-
     const user = auth.currentUser;
     if(!user) return;
     
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").orderBy("order", "asc").get()
     .then(qs => {
         container.innerHTML = ""; 
-        if(qs.empty && day === 'challenge') { 
-            container.innerHTML="<p style='text-align:center; padding:20px;'>Błąd danych wyzwania. Spróbuj odświeżyć.</p>"; 
-            return; 
-        }
         if(qs.empty) return;
         qs.forEach(doc => renderAccordionCard(container, day, doc));
     });
@@ -931,7 +568,6 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
-// Funkcja obsługująca rozwijanie kart
 function toggleCard(header) {
     const card = header.parentElement;
     card.classList.toggle('open');
@@ -956,7 +592,6 @@ function loadProfileStats() {
         if(totEl) totEl.textContent = total;
         if(lastEl) lastEl.textContent = last;
         
-        // ZMODYFIKOWANE: Pobieranie awatara
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let pts = 0;
             let currentAvatar = (user.displayName ? user.displayName[0] : user.email[0]).toUpperCase(); 
@@ -1011,11 +646,9 @@ function loadHistoryFromFirestore(dayFilterKey) {
         
         if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
 
-        // Logika grupowania miesiącami
         let currentMonth = "";
         docs.forEach(item => {
              const date = new Date(item.data.dateIso);
-             // Używamy polskiej nazwy miesiąca
              const monthName = date.toLocaleString('pl-PL', { month: 'long', year: 'numeric' }).toUpperCase();
              
              if (monthName !== currentMonth) {
@@ -1034,17 +667,11 @@ function renderHistoryCard(container, item) {
     const data = item.data;
     const id = item.id;
     const card = document.createElement('div');
-    card.className = `history-card ${data.isChallenge ? 'gold-border' : ''}`;
+    card.className = `history-card`;
     
-    let authorHtml = '';
-    if (data.isChallenge && data.originalAuthorName) {
-        authorHtml = `<div class="challenge-author-info"><i class="fa-solid fa-crown"></i> Plan od: ${escapeHTML(data.originalAuthorName)} (+${data.pointsEarned||0} pkt)</div>`;
-    }
-
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
         detailsHtml = data.details.map(ex => {
-            // Generowanie wierszy tabeli
             let rows = '';
             if (Array.isArray(ex.sets)) {
                 rows = ex.sets.map((s, i) => `
@@ -1056,7 +683,6 @@ function renderHistoryCard(container, item) {
                 `).join('');
             }
 
-            // Zwracamy blok z nagłówkiem (klikowalnym) i ukrytą tabelą
             return `
                 <div class="history-ex-block">
                     <div class="ex-header" onclick="toggleHistoryExercise(this)">
@@ -1077,7 +703,6 @@ function renderHistoryCard(container, item) {
     card.innerHTML = `
         <div class="history-card-header" onclick="toggleHistoryCard(this)">
             <div class="history-info">
-                ${authorHtml}
                 <h4>${escapeHTML(data.workoutName || data.dayName || 'Trening')}</h4>
                 <div class="history-meta">
                     <span>${data.displayDate || data.dateIso.split('T')[0]}</span>
@@ -1095,9 +720,9 @@ function renderHistoryCard(container, item) {
     `;
     container.appendChild(card);
 }
-// Nowa funkcja do otwierania pojedynczych ćwiczeń w historii
+
 window.toggleHistoryExercise = function(header) {
-    event.stopPropagation(); // Żeby nie zamykało całej karty dnia
+    event.stopPropagation();
     header.parentElement.classList.toggle('open');
 };
 
@@ -1118,7 +743,6 @@ function loadCommunity() {
             const d = doc.data();
             const card = document.createElement('div');
             card.className = 'user-card';
-            // ZMODYFIKOWANE: Wyświetlanie awatara
             card.innerHTML = `
                 <div class="user-card-avatar">${d.avatar ? d.avatar : (d.displayName ? d.displayName[0].toUpperCase() : '?')}</div>
                 <div class="user-card-name">${escapeHTML(d.displayName)}</div>
@@ -1136,7 +760,6 @@ function loadCommunity() {
 function openPublicProfile(u) {
     viewingUserId = u.uid;
     triggerFeedback('light');
-    // ZMODYFIKOWANE: Wyświetlanie awatara w podglądzie
     document.getElementById('pub-avatar').textContent = u.avatar ? u.avatar : (u.displayName ? u.displayName[0].toUpperCase() : '?');
     document.getElementById('pub-name').textContent = u.displayName;
     document.getElementById('pub-total').textContent = u.totalWorkouts;
@@ -1167,7 +790,7 @@ function loadSharedPlansForUser(targetUid) {
 
         db.collection("publicUsers").doc(targetUid).collection("sharedPlans").get().then(qs => {
             container.innerHTML = rankHtml;
-            if(qs.empty) { container.innerHTML += "<p style='text-align:center;color:#666;font-size:0.8rem;'>Brak planów na szychcie.</p>"; return; }
+            if(qs.empty) { container.innerHTML += "<p style='text-align:center;color:#666;font-size:0.8rem;'>Brak planów.</p>"; return; }
             qs.forEach(doc => {
                 const data = doc.data();
                 const planItem = document.createElement('div');
@@ -1177,8 +800,7 @@ function loadSharedPlansForUser(targetUid) {
                 
                 let btn = '';
                 if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
-                else btn = `<button onclick='startChallenge("${data.dayKey}", ${JSON.stringify(JSON.stringify(data.exercises))}, "${targetUid}")' style="width:100%;margin-top:10px;background:#ffd700;color:black;border:none;padding:8px;font-weight:bold;border-radius:4px;cursor:pointer;">PODEJMIJ WYZWANIE</button>`;
-
+                
                 planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
                 container.appendChild(planItem);
             });
@@ -1195,11 +817,10 @@ async function shareCurrentDay() {
     let ex=[]; s.forEach(doc=>ex.push(doc.data()));
     if(ex.length===0) return alert("Pusto!");
     await db.collection("publicUsers").doc(u.uid).collection("sharedPlans").doc(d).set({ dayKey:d, dayName:dayMap[d], exercises:ex });
-    alert("Opublikowano na Szychcie!");
+    alert("Opublikowano!");
 }
 
 function openAddModal(){ 
-    if(currentSelectedDay === 'challenge') return alert("Tu nie dodajemy ćwiczeń ręcznie!");
     triggerFeedback('light');
     currentModalDay=currentSelectedDay; 
     
@@ -1365,7 +986,7 @@ function hardResetProfile() {
 }
 
 /*************************************************************
-  7. OBSŁUGA AWATARÓW (NOWE)
+  7. OBSŁUGA AWATARÓW
 *************************************************************/
 const AVATAR_LIST = [
     "💀", "👽", "💪", "🦁", "🦍", "🐺", "🐗", "🦈", 
@@ -1379,12 +1000,10 @@ function openAvatarModal() {
     const grid = document.getElementById('avatar-grid-container');
     const modal = document.getElementById('avatar-modal');
     
-    // Generowanie siatki tylko raz
     if (grid.children.length === 0) {
         AVATAR_LIST.forEach(emoji => {
             const btn = document.createElement('button');
             btn.className = 'avatar-option'; 
-            // Dodajmy trochę stylu inline, jeśli nie ma w CSS
             btn.style.fontSize = "2rem";
             btn.style.background = "none";
             btn.style.border = "1px solid #333";
@@ -1395,7 +1014,6 @@ function openAvatarModal() {
             btn.onclick = () => saveAvatar(emoji);
             grid.appendChild(btn);
         });
-        // Dodaj style grida dynamicznie, jeśli brakuje w CSS
         grid.style.display = "grid";
         grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(60px, 1fr))";
         grid.style.gap = "10px";
@@ -1417,11 +1035,9 @@ function saveAvatar(emoji) {
     if (!user) return;
     triggerFeedback('medium');
 
-    // Aktualizacja w bazie danych (Publiczny profil)
     db.collection("publicUsers").doc(user.uid).set({
         avatar: emoji
     }, { merge: true }).then(() => {
-        // Aktualizacja lokalnego widoku
         const avatarEl = document.getElementById('profile-avatar');
         if (avatarEl) avatarEl.textContent = emoji;
         
@@ -1434,45 +1050,35 @@ function saveAvatar(emoji) {
 }
 
 /*************************************************************
-  8. INSTALACJA APLIKACJI (PWA) - DODAJ NA KOŃCU
+  8. INSTALACJA APLIKACJI (PWA)
 *************************************************************/
-let deferredPrompt; // Tu przechowamy "zaproszenie" od przeglądarki
+let deferredPrompt; 
 
 window.addEventListener('beforeinstallprompt', (e) => {
-    // 1. Zatrzymujemy domyślne, nudne okienko przeglądarki
     e.preventDefault();
-    // 2. Zapisujemy je na później
     deferredPrompt = e;
-    // 3. Pokazujemy Twój elegancki baner (z index.html)
     const banner = document.getElementById('install-banner');
     if (banner) {
         banner.classList.remove('hidden');
-        triggerFeedback('medium'); // Dźwięk, że coś się pojawiło
+        triggerFeedback('medium'); 
     }
 });
 
 async function installApp() {
     if (!deferredPrompt) return;
-    triggerFeedback('light'); // Kliknięcie
+    triggerFeedback('light'); 
 
-    // 1. Pokazujemy natywne okienko "Dodaj do ekranu głównego"
     deferredPrompt.prompt();
-    
-    // 2. Czekamy na decyzję użytkownika
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`Decyzja: ${outcome}`);
-    
-    // 3. Resetujemy zmienną (można jej użyć tylko raz)
     deferredPrompt = null;
     
-    // 4. Ukrywamy baner bez względu na decyzję
     const banner = document.getElementById('install-banner');
     if (banner) banner.classList.add('hidden');
 }
 
-// Gdy aplikacja zostanie pomyślnie zainstalowana
 window.addEventListener('appinstalled', () => {
-    triggerFeedback('siren'); // Syrena radości - mamy nową apkę!
+    triggerFeedback('siren'); 
     const banner = document.getElementById('install-banner');
     if (banner) banner.classList.add('hidden');
     console.log('Szychta zainstalowana na telefonie!');
