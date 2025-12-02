@@ -38,6 +38,7 @@ let viewingUserId = null;
 let tempWorkoutResult = null; 
 
 // USTAWIENIA APLIKACJI (Audio/Haptic)
+// Ładujemy z pamięci telefonu lub ustawiamy domyślnie na włączone (true)
 let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio: true, haptic: true };
 
 /*************************************************************
@@ -46,15 +47,15 @@ let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function triggerFeedback(type) {
-    // 1. Wibracje
+    // 1. Wibracje (Haptic) - Tylko jeśli włączone w ustawieniach
     if (appSettings.haptic && navigator.vibrate) {
-        if (type === 'light') navigator.vibrate(10);
-        if (type === 'medium') navigator.vibrate(40);
-        if (type === 'heavy') navigator.vibrate([100, 50, 100]);
-        if (type === 'siren') navigator.vibrate([500, 100, 500]);
+        if (type === 'light') navigator.vibrate(10); // Kliknięcie
+        if (type === 'medium') navigator.vibrate(40); // Zapisanie serii
+        if (type === 'heavy') navigator.vibrate([100, 50, 100]); // Sukces/Błąd
+        if (type === 'siren') navigator.vibrate([500, 100, 500]); // Syrena
     }
 
-    // 2. Dźwięki
+    // 2. Dźwięki (Syntezator) - Tylko jeśli włączone w ustawieniach
     if (appSettings.audio) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
@@ -64,7 +65,7 @@ function triggerFeedback(type) {
 
         const now = audioCtx.currentTime;
 
-        if (type === 'light') {
+        if (type === 'light') { // Kliknięcie (krótkie pyknięcie)
             osc.type = 'sine';
             osc.frequency.setValueAtTime(800, now);
             gainNode.gain.setValueAtTime(0.05, now);
@@ -72,7 +73,7 @@ function triggerFeedback(type) {
             osc.start(now);
             osc.stop(now + 0.05);
         } 
-        else if (type === 'medium') {
+        else if (type === 'medium') { // Sukces (Ding!)
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(600, now);
             osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
@@ -81,11 +82,11 @@ function triggerFeedback(type) {
             osc.start(now);
             osc.stop(now + 0.3);
         }
-        else if (type === 'siren') {
+        else if (type === 'siren') { // Syrena Kopalniana
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(300, now);
-            osc.frequency.linearRampToValueAtTime(600, now + 1);
-            osc.frequency.linearRampToValueAtTime(300, now + 2);
+            osc.frequency.linearRampToValueAtTime(600, now + 1); // Narastanie
+            osc.frequency.linearRampToValueAtTime(300, now + 2); // Opadanie
             gainNode.gain.setValueAtTime(0.2, now);
             gainNode.gain.linearRampToValueAtTime(0, now + 2.5);
             osc.start(now);
@@ -94,13 +95,17 @@ function triggerFeedback(type) {
     }
 }
 
+// Funkcja do przełączania ustawień (podpięta pod przyciski w profilu)
 function toggleAppSetting(key) {
-    appSettings[key] = !appSettings[key];
-    localStorage.setItem('gympro_settings', JSON.stringify(appSettings));
-    updateSettingsUI();
+    appSettings[key] = !appSettings[key]; // Odwracamy wartość
+    localStorage.setItem('gympro_settings', JSON.stringify(appSettings)); // Zapisujemy
+    updateSettingsUI(); // Aktualizujemy wygląd przycisków
+    
+    // Feedback, żeby użytkownik wiedział, że działa (tylko jeśli właśnie włączył)
     if (appSettings[key]) triggerFeedback(key === 'audio' ? 'medium' : 'light');
 }
 
+// Funkcja aktualizująca wygląd przycisków w profilu
 function updateSettingsUI() {
     const btnAudio = document.getElementById('btn-set-audio');
     const btnHaptic = document.getElementById('btn-set-haptic');
@@ -144,11 +149,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if(container) container.style.display = 'block';
       if(loginSec) loginSec.style.display = 'none';
       
+      // Ładowanie wszystkich dni
       allDays.forEach(day => {
         loadCardsDataFromFirestore(day);
         loadMuscleGroupFromFirestore(day);
       });
 
+      // --- INTELIGENTNY START ---
       const lastMode = sessionStorage.getItem('GEM_saved_mode');
       const lastDay = sessionStorage.getItem('GEM_saved_day');
 
@@ -163,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
           currentMode = 'plan';
           selectDay(lastDay || todayName);
       }
+      // --------------------------
 
       checkActiveWorkout();
       updateProfileUI(user);
@@ -175,6 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// --- RANGI GÓRNICZE ---
 function getRankName(points) {
     if (points <= 20) return "Sztrajer 🔦"; 
     if (points <= 100) return "Młody Gwarek ⛏️";
@@ -192,17 +201,18 @@ function getRankName(points) {
   2. NAWIGACJA
 *************************************************************/
 function switchMode(mode) {
-    triggerFeedback('light');
+    triggerFeedback('light'); // Dźwięk kliknięcia
     sessionStorage.setItem('GEM_saved_mode', mode);
     currentMode = mode;
-      
+      // --- Aktualizacja podświetlenia dolnego paska ---
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('active');
+        // Sprawdzamy czy przycisk prowadzi do tego trybu
         if (btn.getAttribute('onclick').includes(`'${mode}'`)) {
             btn.classList.add('active');
         }
     });
-    
+    // -----------------------------------------------------  
     const historySection = document.getElementById('history');
     const communitySection = document.getElementById('community');
     const rulesSection = document.getElementById('rules');
@@ -234,7 +244,7 @@ function switchMode(mode) {
         profileSection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
         loadProfileStats(); 
-        updateSettingsUI();
+        updateSettingsUI(); // <-- ODŚWIEŻAMY PRZYCISKI USTAWIEŃ PRZY WEJŚCIU
     } 
     else {
         if(daysNav) daysNav.style.display = 'block'; 
@@ -244,7 +254,7 @@ function switchMode(mode) {
 }
 
 function selectDay(dayValue) {
-    triggerFeedback('light');
+    triggerFeedback('light'); // Dźwięk kliknięcia
     sessionStorage.setItem('GEM_saved_day', dayValue);
     currentSelectedDay = dayValue;
     const selector = document.getElementById('day-selector');
@@ -303,10 +313,10 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING
+  3. TRENING (SMART DATE LOGIC 🧠)
 *************************************************************/
 function startWorkout(day) {
-    triggerFeedback('siren');
+    triggerFeedback('siren'); // SYRENA NA START
     const now = Date.now();
     const workoutData = { day: day, startTime: now };
     localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
@@ -340,22 +350,34 @@ async function finishWorkout(day) {
 
         await batch.commit();
 
+        // 1. Pobieranie nazwy partii z inputa (np. "Klatka")
         let muscleName = "";
         const muscleInput = document.getElementById(`${day}-muscle-group`);
         if (muscleInput) muscleName = muscleInput.value;
 
+        // 2. DETEKCJA RZECZYWISTEGO DNIA TYGODNIA
+        // Pobieramy numer dnia (0-6) z dzisiejszej daty
+        const jsDays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+        const todayIndex = new Date().getDay();
+        const actualDayKey = jsDays[todayIndex]; // np. "tuesday"
+
+        // 3. Budowanie obiektu wyniku
+        // Zapisujemy 'dayKey' jako RZECZYWISTY dzień, żeby wpadło do dobrej historii
+        // Jeśli nie wpisałeś nazwy partii, nazwiemy to "Plan: [Nazwa Planu]", żebyś wiedział, co robiłeś
         tempWorkoutResult = {
             dateIso: new Date().toISOString(),
             duration: timerText,
-            dayKey: day,
+            dayKey: actualDayKey, // Zapisujemy jako DZIŚ (np. Wtorek)
+            originalPlanKey: day, // Zapamiętujemy, że to był plan ze Środy (opcjonalnie)
             details: exercisesDone,
-            workoutName: muscleName
+            workoutName: muscleName || `Plan: ${dayMap[day]}` // "Klatka" LUB "Plan: Środa"
         };
 
-        triggerFeedback('siren'); 
+        triggerFeedback('siren'); // SYRENA NA KONIEC
 
+        // Zapisujemy bezpośrednio +2 pkt
         await saveHistoryAndPoints(2); 
-        alert("Fajrant! Trening zaliczony (+2 pkt).");
+        alert(`Fajrant! Trening zapisany w dniu: ${dayMap[actualDayKey]}`);
         localStorage.removeItem('activeWorkout');
         window.location.reload();
 
@@ -374,8 +396,8 @@ async function saveHistoryAndPoints(myPoints) {
 
     batch.set(historyRef, {
         ...result,
-        dayName: dayMap[result.dayKey],
-        workoutName: result.workoutName || dayMap[result.dayKey],
+        dayName: dayMap[result.dayKey], // Zapisze polską nazwę RZECZYWISTEGO dnia
+        workoutName: result.workoutName,
         pointsEarned: myPoints
     });
 
@@ -404,6 +426,7 @@ function closeNotificationsModal() {
 }
 
 function checkNotificationsCount() {
+    // Funkcja pusta - brak nowych powiadomień
     const badge = document.getElementById('profile-notif-badge');
     if(badge) badge.style.display = 'none';
 }
@@ -419,6 +442,7 @@ function checkActiveWorkout() {
     const nav = document.getElementById('days-nav-container');
 
     if (activeData) {
+        // --- TRENING TRWA ---
         if(titleEl) titleEl.style.display = 'none';
         
         if(timerEl) {
@@ -433,11 +457,13 @@ function checkActiveWorkout() {
         
         updateActionButtons(activeData.day);
     } else {
+        // --- BRAK TRENINGU ---
         if(titleEl) titleEl.style.display = 'block';
         if(shareBtn) shareBtn.style.display = ''; 
         if(timerEl) timerEl.classList.add('hidden');
         if (timerInterval) clearInterval(timerInterval);
         
+        // Pokaż pasek Dni tylko w Planie lub Historii
         if(nav) {
             if (currentMode === 'plan' || currentMode === 'history') {
                 nav.style.display = 'block';
@@ -473,6 +499,7 @@ function addLog(day, docId) {
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
     
+    // FEEDBACK
     triggerFeedback('medium'); 
 
     const user = auth.currentUser;
@@ -566,6 +593,7 @@ function renderAccordionCard(container, day, doc) {
     container.appendChild(card);
 }
 
+// Funkcja obsługująca rozwijanie kart
 function toggleCard(header) {
     const card = header.parentElement;
     card.classList.toggle('open');
@@ -590,6 +618,7 @@ function loadProfileStats() {
         if(totEl) totEl.textContent = total;
         if(lastEl) lastEl.textContent = last;
         
+        // ZMODYFIKOWANE: Pobieranie awatara
         db.collection("publicUsers").doc(user.uid).get().then(doc => {
             let pts = 0;
             let currentAvatar = (user.displayName ? user.displayName[0] : user.email[0]).toUpperCase(); 
@@ -644,9 +673,11 @@ function loadHistoryFromFirestore(dayFilterKey) {
         
         if (docs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#666;">Brak historii.</p>`; return; }
 
+        // Logika grupowania miesiącami
         let currentMonth = "";
         docs.forEach(item => {
              const date = new Date(item.data.dateIso);
+             // Używamy polskiej nazwy miesiąca
              const monthName = date.toLocaleString('pl-PL', { month: 'long', year: 'numeric' }).toUpperCase();
              
              if (monthName !== currentMonth) {
@@ -670,6 +701,7 @@ function renderHistoryCard(container, item) {
     let detailsHtml = '';
     if (data.details && Array.isArray(data.details)) {
         detailsHtml = data.details.map(ex => {
+            // Generowanie wierszy tabeli
             let rows = '';
             if (Array.isArray(ex.sets)) {
                 rows = ex.sets.map((s, i) => `
@@ -718,9 +750,9 @@ function renderHistoryCard(container, item) {
     `;
     container.appendChild(card);
 }
-
+// Nowa funkcja do otwierania pojedynczych ćwiczeń w historii
 window.toggleHistoryExercise = function(header) {
-    event.stopPropagation();
+    event.stopPropagation(); // Żeby nie zamykało całej karty dnia
     header.parentElement.classList.toggle('open');
 };
 
@@ -741,6 +773,7 @@ function loadCommunity() {
             const d = doc.data();
             const card = document.createElement('div');
             card.className = 'user-card';
+            // ZMODYFIKOWANE: Wyświetlanie awatara
             card.innerHTML = `
                 <div class="user-card-avatar">${d.avatar ? d.avatar : (d.displayName ? d.displayName[0].toUpperCase() : '?')}</div>
                 <div class="user-card-name">${escapeHTML(d.displayName)}</div>
@@ -758,6 +791,7 @@ function loadCommunity() {
 function openPublicProfile(u) {
     viewingUserId = u.uid;
     triggerFeedback('light');
+    // ZMODYFIKOWANE: Wyświetlanie awatara w podglądzie
     document.getElementById('pub-avatar').textContent = u.avatar ? u.avatar : (u.displayName ? u.displayName[0].toUpperCase() : '?');
     document.getElementById('pub-name').textContent = u.displayName;
     document.getElementById('pub-total').textContent = u.totalWorkouts;
@@ -799,6 +833,8 @@ function loadSharedPlansForUser(targetUid) {
                 let btn = '';
                 if(isMyProfile) btn = `<button onclick="deleteSharedPlan('${data.dayKey}')" style="float:right;color:red;background:none;border:none;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>`;
                 
+                // USUNIĘTO PRZYCISK "PODEJMIJ WYZWANIE"
+
                 planItem.innerHTML = `<div style="font-weight:bold; color:white;">${data.dayName}</div>${btn}<div style="margin-top:5px;">${exList}</div>`;
                 container.appendChild(planItem);
             });
@@ -1009,7 +1045,7 @@ function hardResetProfile() {
 }
 
 /*************************************************************
-  7. OBSŁUGA AWATARÓW
+  7. OBSŁUGA AWATARÓW (NOWE)
 *************************************************************/
 const AVATAR_LIST = [
     "💀", "👽", "💪", "🦁", "🦍", "🐺", "🐗", "🦈", 
@@ -1023,10 +1059,12 @@ function openAvatarModal() {
     const grid = document.getElementById('avatar-grid-container');
     const modal = document.getElementById('avatar-modal');
     
+    // Generowanie siatki tylko raz
     if (grid.children.length === 0) {
         AVATAR_LIST.forEach(emoji => {
             const btn = document.createElement('button');
             btn.className = 'avatar-option'; 
+            // Dodajmy trochę stylu inline, jeśli nie ma w CSS
             btn.style.fontSize = "2rem";
             btn.style.background = "none";
             btn.style.border = "1px solid #333";
@@ -1037,6 +1075,7 @@ function openAvatarModal() {
             btn.onclick = () => saveAvatar(emoji);
             grid.appendChild(btn);
         });
+        // Dodaj style grida dynamicznie, jeśli brakuje w CSS
         grid.style.display = "grid";
         grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(60px, 1fr))";
         grid.style.gap = "10px";
@@ -1058,9 +1097,11 @@ function saveAvatar(emoji) {
     if (!user) return;
     triggerFeedback('medium');
 
+    // Aktualizacja w bazie danych (Publiczny profil)
     db.collection("publicUsers").doc(user.uid).set({
         avatar: emoji
     }, { merge: true }).then(() => {
+        // Aktualizacja lokalnego widoku
         const avatarEl = document.getElementById('profile-avatar');
         if (avatarEl) avatarEl.textContent = emoji;
         
@@ -1073,35 +1114,45 @@ function saveAvatar(emoji) {
 }
 
 /*************************************************************
-  8. INSTALACJA APLIKACJI (PWA)
+  8. INSTALACJA APLIKACJI (PWA) - DODAJ NA KOŃCU
 *************************************************************/
-let deferredPrompt; 
+let deferredPrompt; // Tu przechowamy "zaproszenie" od przeglądarki
 
 window.addEventListener('beforeinstallprompt', (e) => {
+    // 1. Zatrzymujemy domyślne, nudne okienko przeglądarki
     e.preventDefault();
+    // 2. Zapisujemy je na później
     deferredPrompt = e;
+    // 3. Pokazujemy Twój elegancki baner (z index.html)
     const banner = document.getElementById('install-banner');
     if (banner) {
         banner.classList.remove('hidden');
-        triggerFeedback('medium'); 
+        triggerFeedback('medium'); // Dźwięk, że coś się pojawiło
     }
 });
 
 async function installApp() {
     if (!deferredPrompt) return;
-    triggerFeedback('light'); 
+    triggerFeedback('light'); // Kliknięcie
 
+    // 1. Pokazujemy natywne okienko "Dodaj do ekranu głównego"
     deferredPrompt.prompt();
+    
+    // 2. Czekamy na decyzję użytkownika
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`Decyzja: ${outcome}`);
+    
+    // 3. Resetujemy zmienną (można jej użyć tylko raz)
     deferredPrompt = null;
     
+    // 4. Ukrywamy baner bez względu na decyzję
     const banner = document.getElementById('install-banner');
     if (banner) banner.classList.add('hidden');
 }
 
+// Gdy aplikacja zostanie pomyślnie zainstalowana
 window.addEventListener('appinstalled', () => {
-    triggerFeedback('siren'); 
+    triggerFeedback('siren'); // Syrena radości - mamy nową apkę!
     const banner = document.getElementById('install-banner');
     if (banner) banner.classList.add('hidden');
     console.log('Szychta zainstalowana na telefonie!');
