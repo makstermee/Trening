@@ -45,16 +45,60 @@ body {
 .shared-plans-section { margin-top: 20px; }
 .shared-plan-item { background: var(--surface-color); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
 
-/* LOGOWANIE */
-#login-section { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-.login-card { background: var(--surface-color); padding: 30px; border-radius: 24px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-.brand-logo { font-size: 2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 20px; letter-spacing: -1px; }
+/* LOGOWANIE I REJESTRACJA - NOWY WYGLĄD */
+#login-section { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: radial-gradient(circle at top right, #1a2a3a 0%, #000000 70%);
+    z-index: 2000; display: flex; align-items: center; justify-content: center; 
+    padding: 20px; box-sizing: border-box; 
+}
+.login-card { 
+    background: var(--surface-color); padding: 30px; border-radius: 24px; 
+    width: 100%; max-width: 400px; text-align: center; 
+    border: 1px solid #333;
+    box-shadow: 0 0 50px rgba(10, 132, 255, 0.1);
+}
+.brand-logo { font-size: 2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 5px; letter-spacing: -1px; }
+.brand-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0; margin-bottom: 25px; font-weight: 300; }
+
 .auth-tabs { display: flex; background: var(--bg-color); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
 .auth-tabs button { flex: 1; background: none; border: none; color: var(--text-secondary); padding: 8px; border-radius: 8px; }
 .auth-tabs button.active { background: var(--surface-color); color: white; }
+
 .input-group { position: relative; margin-bottom: 15px; }
 .input-group i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
 .input-group input { width: 100%; background: var(--bg-color); border: none; padding: 14px 14px 14px 45px; border-radius: 12px; color: white; box-sizing: border-box; }
+
+.forgot-pass-link {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-decoration: none;
+    display: block;
+    text-align: right;
+    margin-bottom: 15px;
+    margin-top: 5px;
+}
+
+.terms-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+    text-align: left;
+    font-size: 0.8rem;
+    color: #ccc;
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+}
+.terms-wrapper input {
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-color);
+}
+.terms-wrapper a { color: var(--accent-color); text-decoration: underline; font-weight: bold; }
+
 .btn-primary { background: var(--primary-color); width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; color: white; cursor: pointer; }
 .hidden { display: none !important; }
 
@@ -115,7 +159,7 @@ body {
 .plan-label { display: block; font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
 .plan-val { font-weight: 700; color: var(--primary-color); }
 
-/* --- NOWY WYGLĄD LOGOWANIA SERII (POPRAWIONY) --- */
+/* LOGGER SERII */
 .logger-section {
     margin-top: 15px;
     background: rgba(0,0,0,0.3);
@@ -248,7 +292,7 @@ body {
     font-size: 1.5rem; 
     box-shadow: 0 10px 30px rgba(10, 132, 255, 0.4); 
     cursor: pointer; 
-    z-index: 3000; /* ZWIĘKSZONY Z-INDEX */
+    z-index: 3000; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
@@ -271,15 +315,7 @@ body {
 .btn-kudos { width: 100%; padding: 12px; background: #333; color: white; border: 1px solid #444; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 15px; }
 .btn-close-abs { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
 
-/* SZYCHTA I POWIADOMIENIA */
-.history-card.gold-border { border: 2px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.15); }
-.challenge-author-info { font-size: 0.75rem; color: #ffd700; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-.rating-scale-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 20px 0; }
-.rating-point-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #444; background: #222; color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
-.rating-point-btn.active { background: var(--primary-color); border-color: var(--primary-color); transform: scale(1.15); box-shadow: 0 0 10px var(--primary-color); }
-.notifications-tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #333; }
-.notif-tab { flex: 1; background: none; border: none; color: #888; padding: 10px; cursor: pointer; font-weight: bold; }
-.notif-tab.active { color: white; border-bottom: 2px solid var(--primary-color); }
+/* POWIADOMIENIA I ZASADY */
 .notification-item { background: #242426; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--accent-color); text-align: left; }
 .notification-item.action-needed { border-left: 3px solid #ffd700; }
 .notif-title { font-weight: bold; font-size: 0.9rem; color: #fff; margin-bottom: 4px; }
@@ -288,7 +324,6 @@ body {
 .notification-badge { background: #ff453a; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; margin-left: 5px; vertical-align: top; display: none; }
 .rules-container { padding-bottom: 20px; }
 .rule-box { background: #242426; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 3px solid var(--primary-color); }
-.rule-box.warning { border-left-color: var(--danger-color); background: rgba(255, 69, 58, 0.05); }
 .rule-box h4 { margin: 0 0 10px 0; color: white; font-size: 1rem; }
 .rule-box p { color: #ccc; font-size: 0.9rem; line-height: 1.4; margin: 0; }
 .rules-list { margin: 0; padding-left: 20px; color: #ccc; font-size: 0.85rem; }
@@ -299,7 +334,6 @@ body {
 .rank-row.gold { border: 1px solid #ffd700; background: rgba(255, 215, 0, 0.1); }
 .rank-row.gold .r-name { color: #ffd700; }
 
-/* NOWA HISTORIA (TABELA I MIESIĄCE) - 
 /* NOWA HISTORIA (PODWÓJNY AKORDEON) */
 .history-month-header {
     font-size: 0.85rem;
@@ -314,12 +348,11 @@ body {
 
 .history-ex-block {
     margin-bottom: 8px;
-    background: rgba(0,0,0,0.3); /* Ciemniejsze tło dla bloku */
+    background: rgba(0,0,0,0.3);
     border-radius: 8px;
     overflow: hidden;
 }
 
-/* Nagłówek ćwiczenia - teraz jest przyciskiem */
 .ex-header {
     font-weight: 600;
     color: #e0e0e0;
@@ -332,11 +365,8 @@ body {
     background: rgba(255,255,255,0.03);
 }
 
-.ex-header:active {
-    background: rgba(255,255,255,0.1);
-}
+.ex-header:active { background: rgba(255,255,255,0.1); }
 
-/* Tabela ze szczegółami - domyślnie UKRYTA */
 .history-ex-details {
     display: none;
     padding: 10px;
@@ -344,47 +374,12 @@ body {
     border-top: 1px solid #333;
 }
 
-/* Kiedy blok ma klasę .open - pokaż tabelę */
-.history-ex-block.open .history-ex-details {
-    display: block;
-    animation: fadeIn 0.2s;
-}
+.history-ex-block.open .history-ex-details { display: block; animation: fadeIn 0.2s; }
 
-/* Ikonka strzałki */
-.ex-toggle-icon {
-    font-size: 0.8rem;
-    color: #666;
-    transition: transform 0.3s;
-}
+.ex-toggle-icon { font-size: 0.8rem; color: #666; transition: transform 0.3s; }
+.history-ex-block.open .ex-toggle-icon { transform: rotate(180deg); color: var(--primary-color); }
 
-.history-ex-block.open .ex-toggle-icon {
-    transform: rotate(180deg);
-    color: var(--primary-color);
-}
-
-/* Styl samej tabeli */
-.history-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-}
-
-.history-table th {
-    text-align: left;
-    color: #666;
-    font-weight: normal;
-    padding: 4px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-}
-
-.history-table td {
-    padding: 6px 4px;
-    border-bottom: 1px solid #222;
-    color: #ccc;
-}
-
-.history-table td.strong {
-    color: var(--primary-color);
-    font-weight: bold;
-}
+.history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.history-table th { text-align: left; color: #666; font-weight: normal; padding: 4px; font-size: 0.75rem; text-transform: uppercase; }
+.history-table td { padding: 6px 4px; border-bottom: 1px solid #222; color: #ccc; }
+.history-table td.strong { color: var(--primary-color); font-weight: bold; }
