@@ -2,7 +2,7 @@
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
 // *** TUTAJ WPISZ SWÓJ EMAIL ADMINISTRATORA ***
-const ADMIN_EMAILS = ["TWOJ_EMAIL@GMAIL.COM"]; 
+const ADMIN_EMAILS = ["michalnowicki000@gmail.com"]; 
 
 // 1. Konfiguracja Firebase
 const firebaseConfig = {
@@ -225,7 +225,7 @@ function switchMode(mode) {
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
-        loadCommunity();
+        loadCommunity(); // <-- TUTAJ BĘDZIE NOWA LOGIKA CZASU
     } 
     else if (mode === 'rules' && rulesSection) {
         rulesSection.classList.remove('hidden');
@@ -304,13 +304,23 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING (SMART DATE LOGIC)
+  3. TRENING (Z WYSYŁANIEM STATUSU DO SPOŁECZNOŚCI)
 *************************************************************/
 function startWorkout(day) {
     triggerFeedback('siren');
     const now = Date.now();
     const workoutData = { day: day, startTime: now };
     localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
+    
+    // --- NOWOŚĆ: Wyślij status "TRENUJE" do chmury ---
+    const user = auth.currentUser;
+    if (user) {
+        db.collection("publicUsers").doc(user.uid).update({
+            currentWorkoutStart: new Date().toISOString()
+        });
+    }
+    // -------------------------------------------------
+
     checkActiveWorkout();
     alert("Szychta rozpoczęta! Do roboty 💪");
 }
@@ -362,6 +372,12 @@ async function finishWorkout(day) {
 
         await saveHistoryAndPoints(2); 
         alert(`Fajrant! Trening zapisany w dniu: ${dayMap[actualDayKey]}`);
+        
+        // --- NOWOŚĆ: Wyczyść status treningu ---
+        db.collection("publicUsers").doc(user.uid).update({
+            currentWorkoutStart: null // Usuwamy znacznik czasu
+        });
+        
         localStorage.removeItem('activeWorkout');
         window.location.reload();
 
@@ -395,7 +411,7 @@ async function saveHistoryAndPoints(myPoints) {
 }
 
 /*************************************************************
-  5. MELDUNKI I POWIADOMIENIA (NOWE: KUDOS)
+  5. MELDUNKI I POWIADOMIENIA
 *************************************************************/
 function openNotificationsModal() {
     triggerFeedback('light');
@@ -408,7 +424,6 @@ function openNotificationsModal() {
     container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam pocztę...</p>';
     
     const user = auth.currentUser;
-    // Pobieramy ostatnie 20 lajków
     db.collection("users").doc(user.uid).collection("givenKudos").orderBy("date", "desc").limit(20).get()
     .then(async (qs) => {
         if(qs.empty) {
@@ -416,12 +431,10 @@ function openNotificationsModal() {
             return;
         }
 
-        container.innerHTML = ""; // Czyścimy loader
-        
-        // Zbieramy Promise'y do pobrania danych o użytkownikach (ich nicki i avatary)
+        container.innerHTML = ""; 
         const promises = [];
         qs.forEach(doc => {
-            const giverId = doc.id; // ID dokumentu to ID użytkownika który dał lajka
+            const giverId = doc.id; 
             const date = doc.data().date;
             
             const p = db.collection("publicUsers").doc(giverId).get().then(uDoc => {
@@ -435,7 +448,6 @@ function openNotificationsModal() {
 
         const results = await Promise.all(promises);
         
-        // Renderujemy listę
         results.forEach(u => {
             if (u) {
                 const item = document.createElement('div');
@@ -632,7 +644,6 @@ function renderAccordionCard(container, day, doc, openCardId) {
     container.appendChild(card);
 }
 
-// Funkcja obsługująca rozwijanie kart
 function toggleCard(header) {
     const card = header.parentElement;
     card.classList.toggle('open');
@@ -644,7 +655,6 @@ function updateProfileUI(user) {
     if(emailEl) emailEl.textContent = user.displayName || user.email;
     if(avatarEl) avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
     
-    // POKAŻ PRZYCISK ADMINA JEŚLI USER JEST NA LIŚCIE
     const adminBtn = document.getElementById('btn-admin-panel');
     if (adminBtn) {
         if (ADMIN_EMAILS.includes(user.email)) {
@@ -704,7 +714,6 @@ function publishProfileStats(user, total, last, pts, avatar) {
     db.collection("publicUsers").doc(user.uid).set(dataToUpdate, { merge: true });
 }
 
-// NOWA HISTORIA: GRUPOWANIE + TABELA
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     if(!container) return;
@@ -807,6 +816,7 @@ window.toggleHistoryExercise = function(header) {
 window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
 window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
 
+// --- NOWA LOGIKA SPOŁECZNOŚCI (STATUS TRENINGU) ---
 function loadCommunity() {
     const container = document.getElementById("community-list");
     if(!container) return;
@@ -821,12 +831,32 @@ function loadCommunity() {
             const d = doc.data();
             const card = document.createElement('div');
             card.className = 'user-card';
+            
+            // --- OBLICZANIE STATUSU (CZASU) ---
+            let statusHtml = `<span class="status-badge status-offline">Ostatnio: ${d.lastWorkout || 'Dawno temu'}</span>`;
+            
+            if (d.currentWorkoutStart) {
+                const start = new Date(d.currentWorkoutStart);
+                const now = new Date();
+                const diffMs = now - start;
+                const hours = Math.floor(diffMs / 3600000);
+                const mins = Math.floor((diffMs % 3600000) / 60000);
+                
+                // Zabezpieczenie: Jeśli trening trwa > 4h, uznajemy że zapomniał wyłączyć
+                if (hours < 4) {
+                    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
+                    statusHtml = `<span class="status-badge status-active">🟢 Trenuje: ${timeStr}</span>`;
+                }
+            }
+            // -----------------------------------
+
             card.innerHTML = `
                 <div class="user-card-avatar">${d.avatar ? d.avatar : (d.displayName ? d.displayName[0].toUpperCase() : '?')}</div>
                 <div class="user-card-name">${escapeHTML(d.displayName)}</div>
                 <div class="user-card-stats">
                     <div style="color:#ffd700; font-size:0.8rem; margin-bottom:5px;">${getRankName(d.totalPoints||0)}</div>
                     <div>${d.totalPoints || 0} pkt</div>
+                    ${statusHtml}
                 </div>`;
             card.onclick = () => openPublicProfile(d);
             container.appendChild(card);
@@ -835,6 +865,7 @@ function loadCommunity() {
         container.innerHTML = `<p style="text-align:center; color:#666;">Błąd pobierania: ${e.message}</p>`;
     });
 }
+
 function openPublicProfile(u) {
     viewingUserId = u.uid;
     triggerFeedback('light');
@@ -1255,7 +1286,6 @@ function openUserInspection(targetUid) {
     db.collection("publicUsers").doc(targetUid).get().then(uDoc => {
         const user = uDoc.data();
         
-        // ZMIANA: Dodano .catch() dla obsługi błędów uprawnień
         db.collection("users").doc(targetUid).collection("history")
             .orderBy("dateIso", "desc").limit(10).get()
             .then(hQs => {
