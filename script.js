@@ -2,7 +2,7 @@
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
 // *** TUTAJ WPISZ SWÓJ EMAIL ADMINISTRATORA ***
-const ADMIN_EMAILS = ["michalnowicki000@gmail.com"]; // <--- UPEWNIJ SIĘ ŻE TU JEST TWÓJ MAIL!
+const ADMIN_EMAILS = ["TWOJ_EMAIL@GMAIL.COM"]; 
 
 // 1. Konfiguracja Firebase
 const firebaseConfig = {
@@ -415,7 +415,7 @@ function checkNotificationsCount() {
 }
 
 /*************************************************************
-  6. FUNKCJE POMOCNICZE UI
+  6. FUNKCJE POMOCNICZE UI (POPRAWIONE ZWIJANIE KART)
 *************************************************************/
 function checkActiveWorkout() {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
@@ -484,7 +484,7 @@ function addLog(day, docId) {
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) 
-      .then(() => loadCardsDataFromFirestore(day));
+      .then(() => loadCardsDataFromFirestore(day, docId)); // <--- PRZEKAZUJEMY docId
 }
 
 function removeLog(day, docId, w, r, lid) {
@@ -492,10 +492,11 @@ function removeLog(day, docId, w, r, lid) {
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayRemove({ weight: w, reps: r, id: Number(lid) }) })
-      .then(() => loadCardsDataFromFirestore(day));
+      .then(() => loadCardsDataFromFirestore(day, docId)); // <--- PRZEKAZUJEMY docId
 }
 
-function loadCardsDataFromFirestore(day) {
+// Funkcja ładowania kart przyjmuje teraz opcjonalne ID karty, która ma być otwarta
+function loadCardsDataFromFirestore(day, openCardId = null) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
 
@@ -506,17 +507,23 @@ function loadCardsDataFromFirestore(day) {
     .then(qs => {
         container.innerHTML = ""; 
         if(qs.empty) return;
-        qs.forEach(doc => renderAccordionCard(container, day, doc));
+        // Przekazujemy openCardId dalej do funkcji renderującej
+        qs.forEach(doc => renderAccordionCard(container, day, doc, openCardId));
     });
 }
 
-function renderAccordionCard(container, day, doc) {
+function renderAccordionCard(container, day, doc, openCardId) {
     const data = doc.data();
     const id = doc.id;
     const logs = data.currentLogs || []; 
     
     const card = document.createElement('div');
     card.className = 'exercise-card';
+    
+    // Jeśli ID tej karty zgadza się z ID ostatnio edytowanej, dodajemy klasę 'open'
+    if (id === openCardId) {
+        card.classList.add('open');
+    }
     
     let logsHtml = logs.map((l, index) => `
         <div class="log-row-item">
@@ -845,7 +852,7 @@ function openAddModal(){
     // Resetujemy edycję
     editInfo = { day: null, docId: null };
     document.getElementById('modal-title').textContent = "Dodaj ćwiczenie";
-    document.getElementById('modal-exercise').value = "";
+    document.getElementById('modal-exercise').value = data.exercise || "";
     document.getElementById('modal-series').value = "";
     document.getElementById('modal-reps').value = "";
     document.getElementById('modal-weight').value = "";
@@ -925,7 +932,32 @@ function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.curren
 
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 async function signIn(){ triggerFeedback('light'); try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-async function signUp(){ triggerFeedback('light'); try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
+
+// --- REJESTRACJA Z CHECKBOXEM ---
+async function signUp(){ 
+    triggerFeedback('light'); 
+    
+    const email = document.getElementById('register-email').value;
+    const pass = document.getElementById('register-password').value;
+    const terms = document.getElementById('terms-check').checked; // Sprawdzamy czy zaznaczono
+
+    if(!email || !pass) return alert("Podaj e-mail i hasło.");
+    
+    // Walidacja Regulaminu
+    if(!terms) {
+        triggerFeedback('heavy'); 
+        return alert("Musisz zaakceptować Regulamin, aby założyć konto.");
+    }
+
+    try{ 
+        await auth.createUserWithEmailAndPassword(email, pass); 
+        switchAuthTab('login'); 
+        alert("Konto założone! Możesz się zalogować."); 
+    } catch(e){
+        alert("Błąd: " + e.message);
+    } 
+}
+
 async function signOut(){ triggerFeedback('light'); await auth.signOut(); location.reload(); }
 async function forceAppUpdate(){ 
     triggerFeedback('light');
