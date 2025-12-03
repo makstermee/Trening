@@ -2,7 +2,7 @@
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
 // *** TUTAJ WPISZ SWÓJ EMAIL ADMINISTRATORA ***
-const ADMIN_EMAILS = ["michalnowicki000@gmail.com"]; 
+const ADMIN_EMAILS = ["TWOJ_EMAIL@GMAIL.COM"]; 
 
 // 1. Konfiguracja Firebase
 const firebaseConfig = {
@@ -395,14 +395,70 @@ async function saveHistoryAndPoints(myPoints) {
 }
 
 /*************************************************************
-  5. MELDUNKI I POWIADOMIENIA
+  5. MELDUNKI I POWIADOMIENIA (NOWE: KUDOS)
 *************************************************************/
 function openNotificationsModal() {
     triggerFeedback('light');
     const modal = document.getElementById('notifications-modal');
+    const container = document.getElementById('notif-list-container');
+    
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.add('active'), 10);
+    
+    container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam pocztę...</p>';
+    
+    const user = auth.currentUser;
+    // Pobieramy ostatnie 20 lajków
+    db.collection("users").doc(user.uid).collection("givenKudos").orderBy("date", "desc").limit(20).get()
+    .then(async (qs) => {
+        if(qs.empty) {
+            container.innerHTML = '<p style="text-align:center; color:#666; margin-top:20px;">Skrzynka jest pusta.<br>Nikt nie przybił jeszcze piątki.</p>';
+            return;
+        }
+
+        container.innerHTML = ""; // Czyścimy loader
+        
+        // Zbieramy Promise'y do pobrania danych o użytkownikach (ich nicki i avatary)
+        const promises = [];
+        qs.forEach(doc => {
+            const giverId = doc.id; // ID dokumentu to ID użytkownika który dał lajka
+            const date = doc.data().date;
+            
+            const p = db.collection("publicUsers").doc(giverId).get().then(uDoc => {
+                if (uDoc.exists) {
+                    return { ...uDoc.data(), dateGiven: date };
+                }
+                return null;
+            });
+            promises.push(p);
+        });
+
+        const results = await Promise.all(promises);
+        
+        // Renderujemy listę
+        results.forEach(u => {
+            if (u) {
+                const item = document.createElement('div');
+                item.className = 'notification-item';
+                item.style.borderColor = 'var(--primary-color)';
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="font-size:1.5rem;">${u.avatar || '?'}</div>
+                        <div>
+                            <div class="notif-title" style="color:var(--primary-color);">✋ Piątka od: ${escapeHTML(u.displayName)}</div>
+                            <div class="notif-desc">Dnia: ${u.dateGiven}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            }
+        });
+    })
+    .catch(e => {
+        container.innerHTML = `<p style="text-align:center; color:red;">Błąd: ${e.message}</p>`;
+    });
 }
+
 function closeNotificationsModal() {
     const modal = document.getElementById('notifications-modal');
     modal.classList.remove('active');
@@ -415,7 +471,7 @@ function checkNotificationsCount() {
 }
 
 /*************************************************************
-  6. FUNKCJE POMOCNICZE UI (POPRAWIONE ZWIJANIE KART)
+  6. FUNKCJE POMOCNICZE UI
 *************************************************************/
 function checkActiveWorkout() {
     const activeData = JSON.parse(localStorage.getItem('activeWorkout'));
@@ -484,7 +540,7 @@ function addLog(day, docId) {
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) 
-      .then(() => loadCardsDataFromFirestore(day, docId)); // <--- PRZEKAZUJEMY docId
+      .then(() => loadCardsDataFromFirestore(day, docId)); 
 }
 
 function removeLog(day, docId, w, r, lid) {
@@ -492,10 +548,9 @@ function removeLog(day, docId, w, r, lid) {
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayRemove({ weight: w, reps: r, id: Number(lid) }) })
-      .then(() => loadCardsDataFromFirestore(day, docId)); // <--- PRZEKAZUJEMY docId
+      .then(() => loadCardsDataFromFirestore(day, docId)); 
 }
 
-// Funkcja ładowania kart przyjmuje teraz opcjonalne ID karty, która ma być otwarta
 function loadCardsDataFromFirestore(day, openCardId = null) {
     const container = document.getElementById(`${day}-cards`);
     if(!container) return;
@@ -507,7 +562,6 @@ function loadCardsDataFromFirestore(day, openCardId = null) {
     .then(qs => {
         container.innerHTML = ""; 
         if(qs.empty) return;
-        // Przekazujemy openCardId dalej do funkcji renderującej
         qs.forEach(doc => renderAccordionCard(container, day, doc, openCardId));
     });
 }
@@ -520,7 +574,6 @@ function renderAccordionCard(container, day, doc, openCardId) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     
-    // Jeśli ID tej karty zgadza się z ID ostatnio edytowanej, dodajemy klasę 'open'
     if (id === openCardId) {
         card.classList.add('open');
     }
@@ -852,7 +905,7 @@ function openAddModal(){
     // Resetujemy edycję
     editInfo = { day: null, docId: null };
     document.getElementById('modal-title').textContent = "Dodaj ćwiczenie";
-    document.getElementById('modal-exercise').value = data.exercise || "";
+    document.getElementById('modal-exercise').value = "";
     document.getElementById('modal-series').value = "";
     document.getElementById('modal-reps').value = "";
     document.getElementById('modal-weight').value = "";
@@ -932,32 +985,7 @@ function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.curren
 
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 async function signIn(){ triggerFeedback('light'); try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-
-// --- REJESTRACJA Z CHECKBOXEM ---
-async function signUp(){ 
-    triggerFeedback('light'); 
-    
-    const email = document.getElementById('register-email').value;
-    const pass = document.getElementById('register-password').value;
-    const terms = document.getElementById('terms-check').checked; // Sprawdzamy czy zaznaczono
-
-    if(!email || !pass) return alert("Podaj e-mail i hasło.");
-    
-    // Walidacja Regulaminu
-    if(!terms) {
-        triggerFeedback('heavy'); 
-        return alert("Musisz zaakceptować Regulamin, aby założyć konto.");
-    }
-
-    try{ 
-        await auth.createUserWithEmailAndPassword(email, pass); 
-        switchAuthTab('login'); 
-        alert("Konto założone! Możesz się zalogować."); 
-    } catch(e){
-        alert("Błąd: " + e.message);
-    } 
-}
-
+async function signUp(){ triggerFeedback('light'); try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
 async function signOut(){ triggerFeedback('light'); await auth.signOut(); location.reload(); }
 async function forceAppUpdate(){ 
     triggerFeedback('light');
