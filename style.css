@@ -392,6 +392,36 @@ body {
     background: rgba(0,0,0,0.2);
     border-top: 1px solid #333;
 }
+/* --- STATUS UŻYTKOWNIKA W SPOŁECZNOŚCI --- */
+.status-badge {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.status-active {
+    color: #30d158; /* Zielony */
+    background: rgba(48, 209, 88, 0.1);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+    font-weight: bold;
+    animation: pulse-green 2s infinite;
+}
+
+.status-offline {
+    color: #888;
+    font-size: 0.7rem;
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); }
+    70% { box-shadow: 0 0 0 5px rgba(48, 209, 88, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); }
+}
+
 
 .history-ex-block.open .history-ex-details { display: block; animation: fadeIn 0.2s; }
 
