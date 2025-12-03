@@ -2,7 +2,7 @@
   ZMIENNE GLOBALNE I KONFIGURACJA
 *************************************************************/
 // *** TUTAJ WPISZ SWÓJ EMAIL ADMINISTRATORA ***
-const ADMIN_EMAILS = ["TWOJ_EMAIL@GMAIL.COM"]; 
+const ADMIN_EMAILS = ["michalnowicki000@gmail.com"]; 
 
 // 1. Konfiguracja Firebase
 const firebaseConfig = {
