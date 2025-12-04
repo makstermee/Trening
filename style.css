@@ -22,6 +22,43 @@ body {
     overflow-x: hidden;
 }
 
+/* PASEK STOPERA (REST TIMER) */
+.rest-timer-bar {
+    position: fixed;
+    bottom: 80px; /* Nad dolnym menu */
+    left: 20px;
+    right: 20px;
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 2900; /* Poniżej FAB */
+    animation: slideUp 0.3s ease-out;
+}
+@keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.timer-info {
+    display: flex;
+    flex-direction: column;
+}
+.timer-controls {
+    display: flex;
+    gap: 10px;
+}
+.timer-controls button {
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
 /* SPOŁECZNOŚĆ */
 .community-grid {
     display: grid;
@@ -47,6 +84,36 @@ body {
 }
 .user-card-name { font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; }
 .user-card-stats { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* STATUS UŻYTKOWNIKA W SPOŁECZNOŚCI */
+.status-badge {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.status-active {
+    color: #30d158; /* Zielony */
+    background: rgba(48, 209, 88, 0.1);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+    font-weight: bold;
+    animation: pulse-green 2s infinite;
+}
+
+.status-offline {
+    color: #888;
+    font-size: 0.7rem;
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); }
+    70% { box-shadow: 0 0 0 5px rgba(48, 209, 88, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); }
+}
 
 /* LISTA PLANÓW SPOŁECZNOŚCI */
 .shared-plans-section { margin-top: 20px; }
@@ -334,25 +401,6 @@ body {
 .btn-kudos { width: 100%; padding: 12px; background: #333; color: white; border: 1px solid #444; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 15px; }
 .btn-close-abs { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
 
-/* POWIADOMIENIA I ZASADY */
-.notification-item { background: #242426; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--accent-color); text-align: left; }
-.notification-item.action-needed { border-left: 3px solid #ffd700; }
-.notif-title { font-weight: bold; font-size: 0.9rem; color: #fff; margin-bottom: 4px; }
-.notif-desc { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; }
-.notif-actions { display: flex; gap: 10px; justify-content: flex-end; }
-.notification-badge { background: #ff453a; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; margin-left: 5px; vertical-align: top; display: none; }
-.rules-container { padding-bottom: 20px; }
-.rule-box { background: #242426; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 3px solid var(--primary-color); }
-.rule-box h4 { margin: 0 0 10px 0; color: white; font-size: 1rem; }
-.rule-box p { color: #ccc; font-size: 0.9rem; line-height: 1.4; margin: 0; }
-.rules-list { margin: 0; padding-left: 20px; color: #ccc; font-size: 0.85rem; }
-.rules-list li { margin-bottom: 5px; }
-.ranks-table { display: flex; flex-direction: column; gap: 8px; }
-.rank-row { display: flex; justify-content: space-between; background: #1a1a1a; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #888; }
-.rank-row .r-name { color: white; font-weight: bold; }
-.rank-row.gold { border: 1px solid #ffd700; background: rgba(255, 215, 0, 0.1); }
-.rank-row.gold .r-name { color: #ffd700; }
-
 /* NOWA HISTORIA (PODWÓJNY AKORDEON) */
 .history-month-header {
     font-size: 0.85rem;
@@ -392,36 +440,6 @@ body {
     background: rgba(0,0,0,0.2);
     border-top: 1px solid #333;
 }
-/* --- STATUS UŻYTKOWNIKA W SPOŁECZNOŚCI --- */
-.status-badge {
-    font-size: 0.75rem;
-    margin-top: 4px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 2px 8px;
-    border-radius: 10px;
-}
-
-.status-active {
-    color: #30d158; /* Zielony */
-    background: rgba(48, 209, 88, 0.1);
-    border: 1px solid rgba(48, 209, 88, 0.3);
-    font-weight: bold;
-    animation: pulse-green 2s infinite;
-}
-
-.status-offline {
-    color: #888;
-    font-size: 0.7rem;
-}
-
-@keyframes pulse-green {
-    0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); }
-    70% { box-shadow: 0 0 0 5px rgba(48, 209, 88, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); }
-}
-
 
 .history-ex-block.open .history-ex-details { display: block; animation: fadeIn 0.2s; }
 
