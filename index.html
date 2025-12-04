@@ -13,13 +13,13 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    if (!localStorage.getItem('ADMIN_V1_INIT')) {
+    if (!localStorage.getItem('TIMER_UPDATE_V1')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('ADMIN_V1_INIT', 'true');
-          console.log("Wyczyszczono cache (Admin Update).");
+          localStorage.setItem('TIMER_UPDATE_V1', 'true');
+          console.log("Wyczyszczono cache (Timer Update).");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -56,9 +56,11 @@
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="login-password" placeholder="Hasło" required>
             </div>
+            
             <div class="auth-actions-row">
                 <a href="#" onclick="resetPasswordLogic()" class="forgot-pass-link">Zapomniałeś hasła?</a>
             </div>
+
             <button type="button" class="btn-primary btn-block" onclick="signIn()">WEJDŹ</button>
             <p id="login-error" class="error-message"></p>
         </form>
@@ -72,12 +74,14 @@
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="register-password" placeholder="Hasło (min. 6 znaków)" required>
             </div>
+
             <div class="terms-wrapper">
                 <input type="checkbox" id="terms-check">
                 <label for="terms-check">
                     Akceptuję <a href="#" onclick="openTermsModal()">Regulamin i Zasady</a>. Rozumiem, że jest to wersja testowa.
                 </label>
             </div>
+
             <button type="button" class="btn-accent btn-block" onclick="signUp()">DOŁĄCZ</button>
             <p id="register-error" class="error-message"></p>
         </form>
@@ -245,6 +249,11 @@
                     <div class="input-wrapper"><label>Powt.</label><input type="number" id="modal-reps" placeholder="10"></div>
                     <div class="input-wrapper"><label>Kg</label><input type="number" id="modal-weight" placeholder="0"></div>
                 </div>
+                <div class="input-wrapper" style="margin-bottom:15px;">
+                    <label>Stoper (czas w sek.) - Puste = brak</label>
+                    <input type="number" id="modal-rest" placeholder="np. 90" style="width:100%;background:#000;border:1px solid #333;padding:12px;border-radius:10px;color:white;text-align:center;">
+                </div>
+                
                 <input type="text" id="modal-notes" placeholder="Notatki (opcjonalne)" class="input-modal">
                 <button id="modal-save-btn" class="btn-primary btn-modal-save" onclick="saveFromModal()">ZAPISZ</button>
             </div>
@@ -266,6 +275,7 @@
             <button id="btn-give-kudos" class="btn-kudos" onclick="giveKudos()">
                 <i class="fa-solid fa-hand-spock"></i> PRZYBIJ PIĄTKĘ!
             </button>
+            
             <div class="shared-plans-section" style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
                 <h4 style="margin:0 0 10px 0; color:#888; font-size:0.9rem;">UDOSTĘPNIONE PLANY:</h4>
                 <div id="public-plans-list" style="max-height: 200px; overflow-y: auto;"></div>
@@ -318,8 +328,18 @@
                 <h3 style="color:#ff453a;">BIURO SZTYGARA ⚒️</h3>
                 <button onclick="closeAdminModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="admin-content-area" style="flex:1; overflow-y:auto;">
-                </div>
+            <div id="admin-content-area" style="flex:1; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <div id="rest-timer-bar" class="rest-timer-bar hidden">
+        <div class="timer-info">
+            <span style="font-size:0.7rem; color:#aaa;">PRZERWA</span>
+            <span id="timer-display" style="font-size:1.5rem; font-weight:bold; color:white;">00:00</span>
+        </div>
+        <div class="timer-controls">
+            <button onclick="addTime(30)" style="background:#333; color:white;">+30s</button>
+            <button onclick="stopRestTimer()" style="background:#ff453a; color:white;"><i class="fa-solid fa-xmark"></i></button>
         </div>
     </div>
 
@@ -343,7 +363,7 @@
 
   </div>
   
-  <script src="script.js?v=ADMIN_ADDED"></script> 
+  <script src="script.js?v=TIMER_ADDED_V1"></script> 
   
   <script>
     function switchAuthTab(tab) {
