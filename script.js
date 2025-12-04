@@ -33,6 +33,9 @@ const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","
 let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
+// NOWE: Zmienna dla stopera przerw
+let restTimerInterval = null;
+let restTimeRemaining = 0;
 
 let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
@@ -225,7 +228,7 @@ function switchMode(mode) {
     else if (mode === 'community' && communitySection) {
         communitySection.classList.remove('hidden');
         if(daysNav) daysNav.style.display = 'none'; 
-        loadCommunity(); // <-- TUTAJ BĘDZIE NOWA LOGIKA CZASU
+        loadCommunity(); 
     } 
     else if (mode === 'rules' && rulesSection) {
         rulesSection.classList.remove('hidden');
@@ -304,7 +307,7 @@ function updateHeaderTitle() {
 }
 
 /*************************************************************
-  3. TRENING (Z WYSYŁANIEM STATUSU DO SPOŁECZNOŚCI)
+  3. TRENING 
 *************************************************************/
 function startWorkout(day) {
     triggerFeedback('siren');
@@ -312,14 +315,12 @@ function startWorkout(day) {
     const workoutData = { day: day, startTime: now };
     localStorage.setItem('activeWorkout', JSON.stringify(workoutData));
     
-    // --- NOWOŚĆ: Wyślij status "TRENUJE" do chmury ---
     const user = auth.currentUser;
     if (user) {
         db.collection("publicUsers").doc(user.uid).update({
             currentWorkoutStart: new Date().toISOString()
         });
     }
-    // -------------------------------------------------
 
     checkActiveWorkout();
     alert("Szychta rozpoczęta! Do roboty 💪");
@@ -373,9 +374,8 @@ async function finishWorkout(day) {
         await saveHistoryAndPoints(2); 
         alert(`Fajrant! Trening zapisany w dniu: ${dayMap[actualDayKey]}`);
         
-        // --- NOWOŚĆ: Wyczyść status treningu ---
         db.collection("publicUsers").doc(user.uid).update({
-            currentWorkoutStart: null // Usuwamy znacznik czasu
+            currentWorkoutStart: null
         });
         
         localStorage.removeItem('activeWorkout');
@@ -542,7 +542,7 @@ function updateActionButtons(currentViewDay) {
     }
 }
 
-function addLog(day, docId) {
+function addLog(day, docId, restTime) { // NOWOŚĆ: Przyjmujemy restTime
     const w = document.getElementById(`log-w-${docId}`).value;
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
@@ -552,7 +552,13 @@ function addLog(day, docId) {
     const user = auth.currentUser;
     db.collection("users").doc(user.uid).collection("days").doc(day).collection("exercises").doc(docId)
       .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) 
-      .then(() => loadCardsDataFromFirestore(day, docId)); 
+      .then(() => {
+          loadCardsDataFromFirestore(day, docId);
+          // URUCHAMIANIE STOPERA
+          if (restTime && restTime > 0) {
+              startRestTimer(restTime);
+          }
+      }); 
 }
 
 function removeLog(day, docId, w, r, lid) {
@@ -606,13 +612,16 @@ function renderAccordionCard(container, day, doc, openCardId) {
         logsHtml = `<div style="text-align:center; color:#555; font-size:0.8rem; padding:5px;">Brak wpisów. Dodaj pierwszą serię!</div>`;
     }
     
+    // Używamy zdefiniowanego czasu przerwy (data.restTime) lub 0
+    const restTime = data.restTime || 0;
+
     card.innerHTML = `
         <div class="exercise-card-header" onclick="toggleCard(this)">
             <div class="header-left">
                 <i class="fa-solid fa-bars drag-handle"></i>
                 <div>
                     <div class="ex-title">${escapeHTML(data.exercise)}</div>
-                    <div class="ex-summary">Cel: ${data.series}s x ${data.reps}r ${data.weight ? `(${data.weight}kg)` : ''}</div>
+                    <div class="ex-summary">Cel: ${data.series}s x ${data.reps}r ${data.weight ? `(${data.weight}kg)` : ''} ${restTime > 0 ? `| ⏱️ ${restTime}s` : ''}</div>
                 </div>
             </div>
             <div class="header-actions">
@@ -633,7 +642,7 @@ function renderAccordionCard(container, day, doc, openCardId) {
                 <div class="logger-input-row">
                     <input type="number" id="log-w-${id}" placeholder="kg" value="${data.weight || ''}">
                     <input type="number" id="log-r-${id}" placeholder="powt." value="${data.reps || ''}">
-                    <button class="btn-add-log" onclick="addLog('${day}', '${id}')">
+                    <button class="btn-add-log" onclick="addLog('${day}', '${id}', ${restTime})">
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
@@ -644,6 +653,7 @@ function renderAccordionCard(container, day, doc, openCardId) {
     container.appendChild(card);
 }
 
+// Funkcja obsługująca rozwijanie kart
 function toggleCard(header) {
     const card = header.parentElement;
     card.classList.toggle('open');
@@ -655,6 +665,7 @@ function updateProfileUI(user) {
     if(emailEl) emailEl.textContent = user.displayName || user.email;
     if(avatarEl) avatarEl.textContent = (user.email ? user.email[0] : 'U').toUpperCase();
     
+    // POKAŻ PRZYCISK ADMINA JEŚLI USER JEST NA LIŚCIE
     const adminBtn = document.getElementById('btn-admin-panel');
     if (adminBtn) {
         if (ADMIN_EMAILS.includes(user.email)) {
@@ -714,6 +725,7 @@ function publishProfileStats(user, total, last, pts, avatar) {
     db.collection("publicUsers").doc(user.uid).set(dataToUpdate, { merge: true });
 }
 
+// NOWA HISTORIA: GRUPOWANIE + TABELA
 function loadHistoryFromFirestore(dayFilterKey) {
     const container = document.getElementById("history-list");
     if(!container) return;
@@ -842,7 +854,6 @@ function loadCommunity() {
                 const hours = Math.floor(diffMs / 3600000);
                 const mins = Math.floor((diffMs % 3600000) / 60000);
                 
-                // Zabezpieczenie: Jeśli trening trwa > 4h, uznajemy że zapomniał wyłączyć
                 if (hours < 4) {
                     const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
                     statusHtml = `<span class="status-badge status-active">🟢 Trenuje: ${timeStr}</span>`;
@@ -941,6 +952,7 @@ function openAddModal(){
     document.getElementById('modal-reps').value = "";
     document.getElementById('modal-weight').value = "";
     document.getElementById('modal-notes').value = "";
+    document.getElementById('modal-rest').value = ""; // Reset pola przerwy
 
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden'); 
@@ -963,6 +975,7 @@ function saveFromModal(){
     const s = document.getElementById('modal-series').value; 
     const r = document.getElementById('modal-reps').value; 
     const w = document.getElementById('modal-weight').value;
+    const rest = document.getElementById('modal-rest').value;
     
     if(!ex) return; 
 
@@ -974,6 +987,7 @@ function saveFromModal(){
         reps: r,
         weight: w, 
         notes: document.getElementById('modal-notes').value,
+        restTime: rest ? parseInt(rest) : 0, // Zapisujemy czas przerwy
         order: Date.now()
     }; 
     
@@ -999,6 +1013,7 @@ window.triggerEdit=function(day,id){
             document.getElementById('modal-reps').value = data.reps;
             document.getElementById('modal-weight').value = data.weight || "";
             document.getElementById('modal-notes').value = data.notes || "";
+            document.getElementById('modal-rest').value = data.restTime || ""; // Ładujemy czas przerwy
             document.getElementById('modal-title').textContent = "Edytuj ćwiczenie";
             
             const modal = document.getElementById('modal-overlay');
@@ -1350,4 +1365,47 @@ function saveUserPoints(targetUid) {
     db.collection("publicUsers").doc(targetUid).update({ totalPoints: newPts }).then(() => {
         alert("Punkty zaktualizowane!");
     });
+}
+
+/*************************************************************
+  10. REST TIMER LOGIC (NOWOŚĆ)
+*************************************************************/
+function startRestTimer(seconds) {
+    // Jeśli stoper już chodzi, zatrzymaj go
+    if (restTimerInterval) clearInterval(restTimerInterval);
+    
+    restTimeRemaining = seconds;
+    updateRestTimerDisplay();
+    
+    // Pokaż pasek
+    document.getElementById('rest-timer-bar').classList.remove('hidden');
+    
+    restTimerInterval = setInterval(() => {
+        restTimeRemaining--;
+        if (restTimeRemaining <= 0) {
+            clearInterval(restTimerInterval);
+            triggerFeedback('siren'); // KONIEC CZASU!
+            stopRestTimer();
+        } else {
+            updateRestTimerDisplay();
+        }
+    }, 1000);
+}
+
+function stopRestTimer() {
+    if (restTimerInterval) clearInterval(restTimerInterval);
+    document.getElementById('rest-timer-bar').classList.add('hidden');
+}
+
+function addTime(secs) {
+    triggerFeedback('light');
+    restTimeRemaining += secs;
+    updateRestTimerDisplay();
+}
+
+function updateRestTimerDisplay() {
+    const mins = Math.floor(restTimeRemaining / 60);
+    const secs = restTimeRemaining % 60;
+    const timeStr = `${mins}:${secs < 10 ? '0'+secs : secs}`;
+    document.getElementById('timer-display').textContent = timeStr;
 }
