@@ -22,41 +22,50 @@ body {
     overflow-x: hidden;
 }
 
-/* PASEK STOPERA (REST TIMER) */
+/* PASEK STOPERA (POPRAWIONY - MAŁA PASTYLKA PO LEWEJ) */
 .rest-timer-bar {
     position: fixed;
-    bottom: 80px; /* Nad dolnym menu */
-    left: 20px;
-    right: 20px;
+    bottom: 90px; /* Nieco wyżej nad menu */
+    left: 15px;   /* Przyklejony do lewej krawędzi */
+    right: auto;  /* WAŻNE: Nie rozciągamy do prawej! */
+    width: auto;  /* Szerokość dopasowana do treści */
+    
     background: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(10px);
     border: 1px solid #333;
-    border-radius: 16px;
-    padding: 10px 20px;
+    border-radius: 30px; /* Zaokrąglony kształt pastylki */
+    padding: 8px 15px;   /* Zmniejszony padding */
+    
     display: flex;
-    justify-content: space-between;
+    gap: 15px;
     align-items: center;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    z-index: 2900; /* Poniżej FAB */
-    animation: slideUp 0.3s ease-out;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+    z-index: 2900; 
+    animation: slideInLeft 0.3s ease-out;
 }
-@keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+@keyframes slideInLeft { 
+    from { transform: translateX(-50px); opacity: 0; } 
+    to { transform: translateX(0); opacity: 1; } 
+}
 
 .timer-info {
     display: flex;
     flex-direction: column;
+    justify-content: center;
 }
 .timer-controls {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    align-items: center;
 }
 .timer-controls button {
     border: none;
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 6px 12px; /* Mniejsze przyciski */
+    border-radius: 15px;
     font-weight: bold;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 /* SPOŁECZNOŚĆ */
