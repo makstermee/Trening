@@ -13,13 +13,14 @@
   <link rel="stylesheet" href="style.css" />
 
   <script>
-    if (!localStorage.getItem('TIMER_UPDATE_V1')) {
+    // Reset cache dla aktualizacji "Social Update"
+    if (!localStorage.getItem('SOCIAL_UPDATE_V1')) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) { registration.unregister(); }
           caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
-          localStorage.setItem('TIMER_UPDATE_V1', 'true');
-          console.log("Wyczyszczono cache (Timer Update).");
+          localStorage.setItem('SOCIAL_UPDATE_V1', 'true');
+          console.log("Wyczyszczono cache (Social Update).");
           setTimeout(() => window.location.reload(), 100);
         });
       }
@@ -153,6 +154,7 @@
                     <h4>2. Punkty</h4>
                     <ul class="rules-list">
                         <li><b>+2 pkt</b> – Za każdy ukończony trening.</li>
+                        <li><b>+1-3 pkt</b> – Za wymianę piątki (zależnie od passy dni z rzędu!).</li>
                     </ul>
                 </div>
                 <div class="rule-box">
@@ -186,6 +188,19 @@
                 <div class="stat-box"><i class="fa-solid fa-calendar-check"></i><span class="stat-val" id="last-workout-date">-</span><span class="stat-label">Ostatni</span></div>
             </div>
             
+            <div class="settings-group" style="margin-top:10px; border: 1px solid var(--accent-color);">
+                <button class="btn-outline full-width" onclick="openNotificationsModal()" style="display:flex; justify-content:space-between; align-items:center; border:none; padding:5px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="inbox-icon-wrapper" style="position:relative;">
+                            <i class="fa-solid fa-envelope" style="font-size:1.5rem; color:var(--accent-color);"></i>
+                            <span id="profile-btn-badge" class="notification-badge hidden">0</span>
+                        </div>
+                        <span style="font-weight:bold; font-size:1rem;">SKRZYNKA ODBIORCZA</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#666;"></i>
+                </button>
+            </div>
+
             <div class="settings-group">
                 <h4><i class="fa-solid fa-sliders"></i> Preferencje</h4>
                 <div style="display:flex; gap:10px;">
@@ -196,13 +211,6 @@
                         <i class="fa-solid fa-mobile-screen-button"></i> Wibracje
                     </button>
                 </div>
-            </div>
-
-            <div class="settings-group">
-                <h4><i class="fa-solid fa-bell"></i> Centrum Meldunków</h4>
-                <button class="btn-outline full-width" onclick="openNotificationsModal()" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Otwórz Skrzynkę</span>
-                </button>
             </div>
 
             <div class="settings-group">
@@ -250,7 +258,7 @@
                     <div class="input-wrapper"><label>Kg</label><input type="number" id="modal-weight" placeholder="0"></div>
                 </div>
                 <div class="input-wrapper" style="margin-bottom:15px;">
-                    </laspan> Przerwa (czas w sek.) - Puste = brak</label>
+                    <label>Przerwa (czas w sek.) - Puste = brak</label>
                     <input type="number" id="modal-rest" placeholder="np. 90" style="width:100%;background:#000;border:1px solid #333;padding:12px;border-radius:10px;color:white;text-align:center;">
                 </div>
                 
@@ -286,12 +294,18 @@
     <div id="notifications-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Meldunki</h3>
+                <h3>Skrzynka Odbiorcza</h3>
                 <button onclick="closeNotificationsModal()" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="notif-list-container" style="max-height:300px; overflow-y:auto; padding-top:20px;">
-                <p style="text-align:center; color:#666; margin-top:20px;">Skrzynka jest pusta.</p>
+            
+            <h4 style="margin:0 0 10px 0; font-size:0.8rem; color:#aaa; text-transform:uppercase;">Do odebrania:</h4>
+            <div id="notif-pending-list" style="min-height:50px; margin-bottom:30px;">
+                <p style="text-align:center; color:#666; font-size:0.9rem;">Wszystko wyczyszczone!</p>
             </div>
+
+            <h4 style="margin:0 0 10px 0; font-size:0.8rem; color:#aaa; text-transform:uppercase;">Dziennik:</h4>
+            <div id="notif-history-list" style="max-height:200px; overflow-y:auto;">
+                </div>
         </div>
     </div>
 
@@ -357,13 +371,17 @@
             <i class="fa-solid fa-circle-info"></i><span>Zasady</span>
         </button>
         <button class="nav-item" onclick="switchMode('profile'); switchBottomNav(this)">
-            <i class="fa-solid fa-user"></i><span>Profil</span>
+            <div style="position:relative;">
+                <i class="fa-solid fa-user"></i>
+                <span id="nav-profile-badge" class="notification-badge nav-badge hidden"></span>
+            </div>
+            <span>Profil</span>
         </button>
     </nav>
 
   </div>
   
-  <script src="script.js?v=TIMER_ADDED_V1"></script> 
+  <script src="script.js?v=SOCIAL_V1"></script> 
   
   <script>
     function switchAuthTab(tab) {
@@ -374,7 +392,7 @@
     }
     function switchBottomNav(el) {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
+        el.closest('.nav-item').classList.add('active');
     }
     
     if ('serviceWorker' in navigator) {
