@@ -33,17 +33,16 @@ const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","
 let editInfo = { day: null, docId: null };
 let currentModalDay = null;
 let timerInterval = null;
-// NOWE: Zmienna dla stopera przerw
 let restTimerInterval = null;
 let restTimeRemaining = 0;
+let notificationListener = null; // Do nasłuchiwania powiadomień w czasie rzeczywistym
 
 let currentMode = 'plan'; 
 let currentSelectedDay = 'monday'; 
 let viewingUserId = null; 
-
 let tempWorkoutResult = null; 
 
-// USTAWIENIA APLIKACJI (Audio/Haptic)
+// USTAWIENIA APLIKACJI
 let appSettings = JSON.parse(localStorage.getItem('gympro_settings')) || { audio: true, haptic: true };
 
 /*************************************************************
@@ -170,11 +169,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       checkActiveWorkout();
       updateProfileUI(user);
-      loadProfileStats(); 
-      checkNotificationsCount(); 
+      loadProfileStats();
+      listenForNotifications(); // START NASŁUCHIWANIA CZERWONYCH KROPEK
     } else {
       if(container) container.style.display = 'none';
       if(loginSec) loginSec.style.display = 'flex';
+      if(notificationListener) notificationListener(); // Zatrzymaj nasłuchiwanie
     }
   });
 });
@@ -409,77 +409,188 @@ async function saveHistoryAndPoints(myPoints) {
 
     await batch.commit();
 }
-
 /*************************************************************
-  5. MELDUNKI I POWIADOMIENIA
+  5. SYSTEM POWIADOMIEŃ I KUDOS (NOWA LOGIKA)
 *************************************************************/
+
+// Funkcja nasłuchująca w tle (Real-time) - Zapala czerwone kropki
+function listenForNotifications() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Nasłuchujemy kolekcji "pendingKudos" (Oczekujące piątki)
+    db.collection("users").doc(user.uid).collection("pendingKudos")
+        .onSnapshot(snapshot => {
+            const count = snapshot.size;
+            
+            // Aktualizacja kropki w profilu (przy przycisku)
+            const profileBadge = document.getElementById('profile-btn-badge');
+            if (profileBadge) {
+                profileBadge.textContent = count;
+                if (count > 0) profileBadge.classList.remove('hidden');
+                else profileBadge.classList.add('hidden');
+            }
+
+            // Aktualizacja kropki na dolnym pasku (nawigacja)
+            const navBadge = document.getElementById('nav-profile-badge');
+            if (navBadge) {
+                if (count > 0) navBadge.classList.remove('hidden');
+                else navBadge.classList.add('hidden');
+            }
+        });
+}
+
 function openNotificationsModal() {
     triggerFeedback('light');
     const modal = document.getElementById('notifications-modal');
-    const container = document.getElementById('notif-list-container');
+    const pendingContainer = document.getElementById('notif-pending-list');
+    const historyContainer = document.getElementById('notif-history-list');
     
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.add('active'), 10);
     
-    container.innerHTML = '<p style="text-align:center;color:#666">Sprawdzam pocztę...</p>';
+    pendingContainer.innerHTML = '<p style="text-align:center;color:#666">Ładowanie...</p>';
     
     const user = auth.currentUser;
-    db.collection("users").doc(user.uid).collection("givenKudos").orderBy("date", "desc").limit(20).get()
+
+    // 1. Pobierz OCZEKUJĄCE (Pending)
+    db.collection("users").doc(user.uid).collection("pendingKudos").get()
     .then(async (qs) => {
+        pendingContainer.innerHTML = "";
         if(qs.empty) {
-            container.innerHTML = '<p style="text-align:center; color:#666; margin-top:20px;">Skrzynka jest pusta.<br>Nikt nie przybił jeszcze piątki.</p>';
+            pendingContainer.innerHTML = '<p style="text-align:center; color:#666; font-size:0.9rem; padding:10px;">Wszystko wyczyszczone! Cisza na morzu.</p>';
+        } else {
+            qs.forEach(doc => {
+                const data = doc.data();
+                renderPendingKudosItem(pendingContainer, doc.id, data);
+            });
+        }
+    });
+
+    // 2. Pobierz HISTORIĘ (Już odebrane)
+    db.collection("users").doc(user.uid).collection("kudosHistory").orderBy("date", "desc").limit(10).get()
+    .then(qs => {
+        historyContainer.innerHTML = "";
+        if(qs.empty) {
+            historyContainer.innerHTML = '<p style="text-align:center; color:#444; font-size:0.8rem;">Brak wpisów w dzienniku.</p>';
             return;
         }
-
-        container.innerHTML = ""; 
-        const promises = [];
         qs.forEach(doc => {
-            const giverId = doc.id; 
-            const date = doc.data().date;
-            
-            const p = db.collection("publicUsers").doc(giverId).get().then(uDoc => {
-                if (uDoc.exists) {
-                    return { ...uDoc.data(), dateGiven: date };
-                }
-                return null;
-            });
-            promises.push(p);
+            const data = doc.data();
+            const item = document.createElement('div');
+            item.style.cssText = "padding:10px; border-bottom:1px solid #333; font-size:0.8rem; color:#888;";
+            item.innerHTML = `
+                <div style="display:flex; justify-content:space-between;">
+                    <span>${data.action === 'received' ? 'Odebrano od:' : 'Wysłano do:'} <b>${escapeHTML(data.name)}</b></span>
+                    <span style="color:#ffd700">+${data.points} pkt</span>
+                </div>
+                <div style="font-size:0.7rem; color:#555;">${data.date.split('T')[0]}</div>
+            `;
+            historyContainer.appendChild(item);
+        });
+    });
+}
+
+function renderPendingKudosItem(container, docId, data) {
+    // Obliczamy potencjalny Streak (to tylko wizualizacja, prawdziwe obliczenie przy odbiorze)
+    // Dla uproszczenia w UI pokazujemy po prostu, że ktoś czeka
+    const el = document.createElement('div');
+    el.className = 'pending-item';
+    el.innerHTML = `
+        <div class="pending-left">
+            <div style="font-size:2rem;">${data.senderAvatar || '👤'}</div>
+            <div>
+                <div style="font-weight:bold; font-size:0.9rem;">${escapeHTML(data.senderName)}</div>
+                <div style="font-size:0.75rem; color:#aaa;">Czeka na przybicie!</div>
+            </div>
+        </div>
+        <button class="btn-claim" onclick="claimKudos('${docId}', '${data.senderId}', '${escapeHTML(data.senderName)}')">
+            ODDAJ ✋
+        </button>
+    `;
+    container.appendChild(el);
+}
+
+// --- KLUCZOWA FUNKCJA: ODBIERANIE PUNKTÓW I STREAK ---
+async function claimKudos(docId, senderId, senderName) {
+    triggerFeedback('medium');
+    const user = auth.currentUser;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Sprawdźmy historię interakcji, żeby obliczyć Streak
+    const interactionRef = db.collection("interactions").doc(`${user.uid}_${senderId}`);
+    const senderInteractionRef = db.collection("interactions").doc(`${senderId}_${user.uid}`);
+    
+    try {
+        const docSnap = await interactionRef.get();
+        let streak = 1;
+        let points = 1;
+
+        if (docSnap.exists) {
+            const lastDate = new Date(docSnap.data().lastExchange);
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const lastDateStr = lastDate.toISOString().split('T')[0];
+
+            // Jeśli ostatnia wymiana była wczoraj -> Zwiększamy streak
+            if (lastDateStr === yesterdayStr) {
+                streak = (docSnap.data().currentStreak || 1) + 1;
+            } else {
+                streak = 1; // Przerwana passa
+            }
+        }
+
+        // Limit punktów: Max 3
+        if (streak >= 3) points = 3;
+        else if (streak == 2) points = 2;
+        else points = 1;
+
+        const batch = db.batch();
+
+        // 1. Usuń z oczekujących
+        batch.delete(db.collection("users").doc(user.uid).collection("pendingKudos").doc(docId));
+
+        // 2. Dodaj punkty MI (Odbierającemu)
+        batch.update(db.collection("publicUsers").doc(user.uid), { 
+            totalPoints: firebase.firestore.FieldValue.increment(points) 
         });
 
-        const results = await Promise.all(promises);
-        
-        results.forEach(u => {
-            if (u) {
-                const item = document.createElement('div');
-                item.className = 'notification-item';
-                item.style.borderColor = 'var(--primary-color)';
-                item.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <div style="font-size:1.5rem;">${u.avatar || '?'}</div>
-                        <div>
-                            <div class="notif-title" style="color:var(--primary-color);">✋ Piątka od: ${escapeHTML(u.displayName)}</div>
-                            <div class="notif-desc">Dnia: ${u.dateGiven}</div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(item);
-            }
+        // 3. Dodaj punkty NADAWCY (Temu co wysłał) - Transakcja zwrotna
+        batch.update(db.collection("publicUsers").doc(senderId), { 
+            totalPoints: firebase.firestore.FieldValue.increment(points) 
         });
-    })
-    .catch(e => {
-        container.innerHTML = `<p style="text-align:center; color:red;">Błąd: ${e.message}</p>`;
-    });
+
+        // 4. Zapisz historię interakcji (dla Streaka) - Obustronnie
+        const metaData = { lastExchange: today, currentStreak: streak };
+        batch.set(interactionRef, metaData, { merge: true });
+        batch.set(senderInteractionRef, metaData, { merge: true });
+
+        // 5. Wpisz do historii (Dziennika) w profilu
+        const historyRefMe = db.collection("users").doc(user.uid).collection("kudosHistory").doc();
+        batch.set(historyRefMe, {
+            name: senderName,
+            action: 'received',
+            points: points,
+            date: new Date().toISOString()
+        });
+
+        await batch.commit();
+        
+        triggerFeedback('siren'); // Dźwięk zwycięstwa
+        alert(`Piątka przybita! Oboje dostajecie +${points} pkt! 🔥`);
+        openNotificationsModal(); // Odśwież widok
+
+    } catch (e) {
+        console.error(e);
+        alert("Błąd: " + e.message);
+    }
 }
 
 function closeNotificationsModal() {
     const modal = document.getElementById('notifications-modal');
     modal.classList.remove('active');
     setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-function checkNotificationsCount() {
-    const badge = document.getElementById('profile-notif-badge');
-    if(badge) badge.style.display = 'none';
 }
 
 /*************************************************************
@@ -542,7 +653,7 @@ function updateActionButtons(currentViewDay) {
     }
 }
 
-function addLog(day, docId, restTime) { // NOWOŚĆ: Przyjmujemy restTime
+function addLog(day, docId, restTime) {
     const w = document.getElementById(`log-w-${docId}`).value;
     const r = document.getElementById(`log-r-${docId}`).value;
     if (!w || !r) return;
@@ -554,7 +665,6 @@ function addLog(day, docId, restTime) { // NOWOŚĆ: Przyjmujemy restTime
       .update({ currentLogs: firebase.firestore.FieldValue.arrayUnion({ weight: w, reps: r, id: Date.now() }) }) 
       .then(() => {
           loadCardsDataFromFirestore(day, docId);
-          // URUCHAMIANIE STOPERA
           if (restTime && restTime > 0) {
               startRestTimer(restTime);
           }
@@ -612,7 +722,6 @@ function renderAccordionCard(container, day, doc, openCardId) {
         logsHtml = `<div style="text-align:center; color:#555; font-size:0.8rem; padding:5px;">Brak wpisów. Dodaj pierwszą serię!</div>`;
     }
     
-    // Używamy zdefiniowanego czasu przerwy (data.restTime) lub 0
     const restTime = data.restTime || 0;
 
     card.innerHTML = `
@@ -711,6 +820,7 @@ function loadProfileStats() {
         });
     });
 }
+
 function publishProfileStats(user, total, last, pts, avatar) {
     const dataToUpdate = {
         displayName: user.displayName || user.email.split('@')[0],
@@ -828,7 +938,7 @@ window.toggleHistoryExercise = function(header) {
 window.toggleHistoryCard = function(h) { if(event.target.closest('.history-delete-btn')) return; h.parentElement.classList.toggle('open'); }
 window.deleteHistoryEntry = function(e, id) { e.stopPropagation(); if(!confirm("Usunąć?")) return; db.collection("users").doc(auth.currentUser.uid).collection("history").doc(id).delete().then(()=>e.target.closest('.history-card').remove()); }
 
-// --- NOWA LOGIKA SPOŁECZNOŚCI (STATUS TRENINGU) ---
+// --- SPOŁECZNOŚĆ (STATUSY CZASOWE) ---
 function loadCommunity() {
     const container = document.getElementById("community-list");
     if(!container) return;
@@ -844,7 +954,7 @@ function loadCommunity() {
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            // --- OBLICZANIE STATUSU (CZASU) ---
+            // STATUS CZASOWY
             let statusHtml = `<span class="status-badge status-offline">Ostatnio: ${d.lastWorkout || 'Dawno temu'}</span>`;
             
             if (d.currentWorkoutStart) {
@@ -859,7 +969,6 @@ function loadCommunity() {
                     statusHtml = `<span class="status-badge status-active">🟢 Trenuje: ${timeStr}</span>`;
                 }
             }
-            // -----------------------------------
 
             card.innerHTML = `
                 <div class="user-card-avatar">${d.avatar ? d.avatar : (d.displayName ? d.displayName[0].toUpperCase() : '?')}</div>
@@ -987,7 +1096,7 @@ function saveFromModal(){
         reps: r,
         weight: w, 
         notes: document.getElementById('modal-notes').value,
-        restTime: rest ? parseInt(rest) : 0, // Zapisujemy czas przerwy
+        restTime: rest ? parseInt(rest) : 0, 
         order: Date.now()
     }; 
     
@@ -1013,7 +1122,7 @@ window.triggerEdit=function(day,id){
             document.getElementById('modal-reps').value = data.reps;
             document.getElementById('modal-weight').value = data.weight || "";
             document.getElementById('modal-notes').value = data.notes || "";
-            document.getElementById('modal-rest').value = data.restTime || ""; // Ładujemy czas przerwy
+            document.getElementById('modal-rest').value = data.restTime || ""; 
             document.getElementById('modal-title').textContent = "Edytuj ćwiczenie";
             
             const modal = document.getElementById('modal-overlay');
@@ -1031,7 +1140,30 @@ function loadMuscleGroupFromFirestore(d){ db.collection("users").doc(auth.curren
 
 function escapeHTML(str){ if(!str) return ""; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 async function signIn(){ triggerFeedback('light'); try{ await auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value); }catch(e){alert(e.message);} }
-async function signUp(){ triggerFeedback('light'); try{ await auth.createUserWithEmailAndPassword(document.getElementById('register-email').value, document.getElementById('register-password').value); switchAuthTab('login'); alert("Konto założone!"); }catch(e){alert(e.message);} }
+
+async function signUp(){ 
+    triggerFeedback('light'); 
+    
+    const email = document.getElementById('register-email').value;
+    const pass = document.getElementById('register-password').value;
+    const terms = document.getElementById('terms-check').checked; 
+
+    if(!email || !pass) return alert("Podaj e-mail i hasło.");
+    
+    if(!terms) {
+        triggerFeedback('heavy'); 
+        return alert("Musisz zaakceptować Regulamin, aby założyć konto.");
+    }
+
+    try{ 
+        await auth.createUserWithEmailAndPassword(email, pass); 
+        switchAuthTab('login'); 
+        alert("Konto założone! Możesz się zalogować."); 
+    } catch(e){
+        alert("Błąd: " + e.message);
+    } 
+}
+
 async function signOut(){ triggerFeedback('light'); await auth.signOut(); location.reload(); }
 async function forceAppUpdate(){ 
     triggerFeedback('light');
@@ -1041,17 +1173,48 @@ async function forceAppUpdate(){
     caches.keys().then(k=>k.forEach(c=>caches.delete(c))); 
     location.reload(true); 
 }
-function giveKudos(){
+
+// --- NOWA FUNKCJA DAWANI PIĄTKI (BEZ PUNKTÓW NATYCHMIAST) ---
+async function giveKudos(){
     triggerFeedback('medium');
     if(!viewingUserId) return;
     const currentUser = auth.currentUser;
     if(viewingUserId === currentUser.uid) return alert("Nie sobie!");
-    const interactionRef = db.collection("users").doc(currentUser.uid).collection("givenKudos").doc(viewingUserId);
-    interactionRef.get().then(docSnap => {
-        if (docSnap.exists && docSnap.data().date === new Date().toISOString().split('T')[0]) return alert("Już przybita!");
-        db.batch().update(db.collection("publicUsers").doc(viewingUserId), { totalPoints: firebase.firestore.FieldValue.increment(1) }).set(interactionRef, { date: new Date().toISOString().split('T')[0] }).commit()
-        .then(() => alert("Piątka przybita! (+1 pkt dla Hajera)"));
-    });
+
+    const today = new Date().toISOString().split('T')[0];
+    const interactionRef = db.collection("interactions").doc(`${currentUser.uid}_${viewingUserId}`);
+
+    try {
+        const docSnap = await interactionRef.get();
+        if (docSnap.exists && docSnap.data().lastExchange === today) {
+            triggerFeedback('heavy');
+            return alert("Już dzisiaj wymieniłeś się piątką z tym użytkownikiem! Wróć jutro.");
+        }
+
+        // Sprawdź czy już nie wysłałeś (żeby nie spamować skrzynki)
+        const pendingRef = db.collection("users").doc(viewingUserId).collection("pendingKudos")
+            .where("senderId", "==", currentUser.uid);
+        
+        const pendingSnap = await pendingRef.get();
+        if (!pendingSnap.empty) {
+            triggerFeedback('light');
+            return alert("Twoja piątka już czeka w jego skrzynce! Cierpliwości.");
+        }
+
+        // Wyślij do skrzynki odbiorczej celu
+        await db.collection("users").doc(viewingUserId).collection("pendingKudos").add({
+            senderId: currentUser.uid,
+            senderName: currentUser.displayName || "Ktoś",
+            senderAvatar: document.getElementById('profile-avatar').textContent || "?",
+            date: new Date().toISOString()
+        });
+
+        alert("Piątka wysłana! Czekaj aż on ją odda w skrzynce, wtedy oboje dostaniecie punkty! 🔥");
+        closePublicProfile();
+
+    } catch (e) {
+        alert("Błąd: " + e.message);
+    }
 }
 
 function updateUsername() {
@@ -1079,7 +1242,6 @@ async function exportData() {
     const data = {};
     const daysSnap = await db.collection("users").doc(user.uid).collection("days").get();
     
-    // Pobieramy dni równolegle
     await Promise.all(daysSnap.docs.map(async (doc) => {
         const dayKey = doc.id;
         data[dayKey] = { muscleGroup: doc.data().muscleGroup || "", exercises: [] };
@@ -1209,7 +1371,6 @@ window.addEventListener('appinstalled', () => {
 });
 
 // --- RESET HASŁA I REGULAMIN ---
-
 function resetPasswordLogic() {
     triggerFeedback('light');
     const email = document.getElementById('login-email').value;
@@ -1368,23 +1529,18 @@ function saveUserPoints(targetUid) {
 }
 
 /*************************************************************
-  10. REST TIMER LOGIC (NOWOŚĆ)
+  10. REST TIMER LOGIC
 *************************************************************/
 function startRestTimer(seconds) {
-    // Jeśli stoper już chodzi, zatrzymaj go
     if (restTimerInterval) clearInterval(restTimerInterval);
-    
     restTimeRemaining = seconds;
     updateRestTimerDisplay();
-    
-    // Pokaż pasek
     document.getElementById('rest-timer-bar').classList.remove('hidden');
-    
     restTimerInterval = setInterval(() => {
         restTimeRemaining--;
         if (restTimeRemaining <= 0) {
             clearInterval(restTimerInterval);
-            triggerFeedback('siren'); // KONIEC CZASU!
+            triggerFeedback('siren'); 
             stopRestTimer();
         } else {
             updateRestTimerDisplay();
@@ -1409,3 +1565,4 @@ function updateRestTimerDisplay() {
     const timeStr = `${mins}:${secs < 10 ? '0'+secs : secs}`;
     document.getElementById('timer-display').textContent = timeStr;
 }
+
